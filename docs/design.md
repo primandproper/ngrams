@@ -111,9 +111,11 @@ a trie prunes dead prefixes.
 
 What makes a board good is the real question, and it is not "most words":
 
-- **Fragment shape.** 1 to 2 letter fragments ("a", "in", "er") combine with everything and
-  produce hundreds of junk words. Fragment length bounds (likely 2 to 4) matter more than any
-  search strategy.
+- **Fragment shape.** Short fragments ("in", "er") combine with everything and produce
+  hundreds of junk words. Fragments are at least 2 letters (the original rarely if ever uses
+  1-letter tiles), at most 4 to start, and never on a banned-fragment list. These are filters on
+  the candidate segmentations, applied before any search, and they matter more than the search
+  strategy itself.
 - **Frequency-weighted word count.** Count found words weighted by how common they are, inside
   a target range rather than maximized.
 - **Target uniqueness.** The 5 targets should be the only N-tile words on the board, or "find
@@ -136,8 +138,10 @@ Starting with generate-and-test instead:
   good enough.
 - Optimality only helps once the objective is right, and the objective is the part we don't
   know yet. Playing heuristic boards is how we find it.
-- CP-SAT has no official Go binding (C++, Python, Java, .NET), so it would mean a Python step
-  or a third-party wrapper. Whether a maintained pure-Go MaxSAT solver exists hasn't been checked.
+- CP-SAT does have a Go API in the OR-Tools repo (`ortools/sat/go/cpmodel`, actively maintained),
+  but it is a cgo wrapper over the C API that OR-Tools builds with Bazel, and the README doesn't
+  document it. Using it from a plain `go build` means getting the native library and headers
+  installed and linked first; that setup cost is unmeasured.
 
 Reach for a solver if heuristic boards come out consistently mediocre and the scoring rules can
 be stated precisely. Segmentation with targets already fixed is the part it suits best.

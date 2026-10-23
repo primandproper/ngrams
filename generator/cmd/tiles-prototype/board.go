@@ -13,6 +13,9 @@ const (
 
 	hardPenalty    = 1000.0
 	obscurePenalty = 0.01
+	// blockedPenalty outweighs any plausible distance from the common-word range, so the
+	// search only settles for a blocked found word when it can't climb away from one.
+	blockedPenalty = 10.0
 )
 
 type (
@@ -53,6 +56,7 @@ type (
 		duplicates int
 		common     int
 		obscure    int
+		blocked    int
 		weighted   float64
 		objective  float64
 	}
@@ -207,7 +211,12 @@ func (g *generator) evaluate(c *candidate) *board {
 	slices.Sort(b.violations)
 
 	for i := range b.found {
-		if count, ok := g.lex.freq[b.found[i].word]; ok {
+		word := b.found[i].word
+		if g.lex.blocked[word] {
+			b.blocked++
+			continue
+		}
+		if count, ok := g.lex.freq[word]; ok {
 			b.common++
 			b.weighted += math.Log10(float64(count))
 		} else {
@@ -224,7 +233,8 @@ func (g *generator) evaluate(c *candidate) *board {
 	}
 	b.objective = hardPenalty*float64(len(b.violations)+b.duplicates) +
 		outOfRange +
-		obscurePenalty*float64(b.obscure)
+		obscurePenalty*float64(b.obscure) +
+		blockedPenalty*float64(b.blocked)
 
 	return b
 }

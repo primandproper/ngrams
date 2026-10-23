@@ -3,6 +3,7 @@ GENERATOR_DIR := generator
 GENERATOR_PKG := github.com/verygoodsoftwarenotvirus/ngrams/$(GENERATOR_DIR)
 SCRIPTS_DIR   := scripts
 RAW_DATA_DIR  := data/raw
+BLOCKLIST_DIR := data/blocklists
 
 # CONTAINER VERSIONS
 LINTER_IMAGE     := golangci/golangci-lint:v2.14.0
@@ -52,7 +53,7 @@ lint: golang_lint shellcheck
 test:
 	$(SCRIPTS_DIR)/test.sh $(GENERATOR_DIR)
 
-# Pass prototype flags through ARGS, e.g. make tiles-prototype ARGS="-lang es -n 4".
+# Pass prototype flags through ARGS, e.g. make tiles-prototype ARGS="-langs es -ns 4".
 .PHONY: tiles-prototype
 tiles-prototype: data
-	@$(SCRIPTS_DIR)/tiles_prototype.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(ARGS)
+	@$(SCRIPTS_DIR)/tiles_prototype.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(ARGS)

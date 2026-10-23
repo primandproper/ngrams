@@ -12,14 +12,25 @@ import (
 	"unicode"
 )
 
-// lexicon is one language's word data, all keyed by folded spelling.
-type lexicon struct {
-	_       struct{}          `json:"-"`
-	display map[string]string // folded → spelling shown to the player
-	freq    map[string]int    // folded → subtitle count; absent means obscure
-	words   []string          // sorted, every valid word
-	targets []string          // words fair to use as targets
-}
+type (
+	// lexicon is one language's word data, all keyed by folded spelling.
+	lexicon struct {
+		_       struct{}          `json:"-"`
+		display map[string]string // folded → spelling shown to the player
+		freq    map[string]int    // folded → subtitle count; absent means obscure
+		blocked map[string]bool   // valid, but never a target, and boards avoid them
+		words   []string          // sorted, every valid word
+		targets []string          // words fair to use as targets
+	}
+
+	// lexiconConfig says where a language's data lives and how to judge commonness.
+	lexiconConfig struct {
+		_            struct{} `json:"-"`
+		dataDir      string
+		blocklistDir string
+		minCount     int
+	}
+)
 
 var accentFolds = map[rune]rune{
 	'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u',
@@ -47,19 +58,45 @@ func fold(word string) (string, bool) {
 // which found words count as common.
 const targetRank = 50000
 
-func loadLexicon(lang, dataDir string, minCount int) (*lexicon, error) {
+func loadLexicon(lang string, cfg *lexiconConfig) (*lexicon, error) {
+	blocked, err := loadBlocklist(filepath.Join(cfg.blocklistDir, lang+".txt"))
+	if err != nil {
+		return nil, err
+	}
+
 	switch lang {
 	case "en":
-		return loadEnglish(filepath.Join(dataDir, "en"), minCount)
+		return loadEnglish(filepath.Join(cfg.dataDir, "en"), cfg.minCount, blocked)
 	case "es":
-		return loadSpanish(filepath.Join(dataDir, "es"), minCount)
+		return loadSpanish(filepath.Join(cfg.dataDir, "es"), cfg.minCount, blocked)
 	default:
 		return nil, fmt.Errorf("unsupported language %q", lang)
 	}
 }
 
-func loadEnglish(dir string, minCount int) (*lexicon, error) {
-	lex := &lexicon{display: map[string]string{}}
+// loadBlocklist reads one folded word per line, ignoring blank lines and # comments.
+func loadBlocklist(path string) (map[string]bool, error) {
+	blocked := map[string]bool{}
+	err := eachLine(path, func(lineNum int, line string) error {
+		entry, _, _ := strings.Cut(line, "#")
+		if entry = strings.TrimSpace(entry); entry == "" {
+			return nil
+		}
+		word, ok := fold(entry)
+		if !ok {
+			return fmt.Errorf("line %d: %q isn't a plain word", lineNum, entry)
+		}
+		blocked[word] = true
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return blocked, nil
+}
+
+func loadEnglish(dir string, minCount int, blocked map[string]bool) (*lexicon, error) {
+	lex := &lexicon{display: map[string]string{}, blocked: blocked}
 
 	err := eachLine(filepath.Join(dir, "enable1.txt"), func(_ int, line string) error {
 		if word, ok := fold(strings.TrimSpace(line)); ok {
@@ -78,7 +115,7 @@ func loadEnglish(dir string, minCount int) (*lexicon, error) {
 	lex.freq = freq
 
 	for word := range lex.display {
-		if top[word] {
+		if top[word] && !lex.blocked[word] {
 			lex.targets = append(lex.targets, word)
 		}
 	}
@@ -107,7 +144,7 @@ var vosotrosStems = map[string]bool{
 	"poded": true, "riais": true, "íd": true,
 }
 
-func loadSpanish(dir string, minCount int) (*lexicon, error) {
+func loadSpanish(dir string, minCount int, blocked map[string]bool) (*lexicon, error) {
 	affixes, err := loadAffixes(filepath.Join(dir, "es_MX.aff"))
 	if err != nil {
 		return nil, err
@@ -120,20 +157,28 @@ func loadSpanish(dir string, minCount int) (*lexicon, error) {
 		return nil, err
 	}
 
-	lex := &lexicon{display: map[string]string{}}
+	// Blocklist entries are stems, so every form expanded from one is blocked too.
+	lex := &lexicon{display: map[string]string{}, blocked: maps.Clone(blocked)}
 	stems := map[string]struct{}{}
 	for i := range entries {
 		if vosotrosStems[entries[i].stem] {
 			continue
 		}
-		if stem, ok := fold(entries[i].stem); ok {
+		stem, ok := fold(entries[i].stem)
+		if ok {
 			stems[stem] = struct{}{}
 		}
+		stemBlocked := ok && blocked[stem]
 		affixes.expand(entries[i].stem, entries[i].flags, func(form string) {
-			if word, ok := fold(form); ok {
-				if _, seen := lex.display[word]; !seen {
-					lex.display[word] = form
-				}
+			word, valid := fold(form)
+			if !valid {
+				return
+			}
+			if _, seen := lex.display[word]; !seen {
+				lex.display[word] = form
+			}
+			if stemBlocked {
+				lex.blocked[word] = true
 			}
 		})
 	}
@@ -145,7 +190,7 @@ func loadSpanish(dir string, minCount int) (*lexicon, error) {
 	lex.freq = freq
 
 	for stem := range stems {
-		if top[stem] {
+		if top[stem] && !lex.blocked[stem] {
 			lex.targets = append(lex.targets, stem)
 		}
 	}

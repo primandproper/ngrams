@@ -59,6 +59,7 @@ func main() {
 func run(args []string, out *reporter) error {
 	fs := flag.NewFlagSet("tiles-prototype", flag.ContinueOnError)
 	dataDir := fs.String("data", "../data/raw", "directory holding the downloaded source data")
+	blocklistDir := fs.String("blocklists", "../data/blocklists", "directory holding <lang>.txt blocklists")
 	langs := fs.String("langs", "en,es", "comma-separated languages")
 	ns := fs.String("ns", "3,4,5", "comma-separated tiles-per-word sizes")
 	schemes := fs.String("schemes", schemeFixed5+","+schemeNear20, "comma-separated board-size schemes")
@@ -67,7 +68,7 @@ func run(args []string, out *reporter) error {
 	steps := fs.Int("steps", 150, "moves per hill climb")
 	minCommon := fs.Int("min-common", 30, "fewest common words a good board has")
 	maxCommon := fs.Int("max-common", 80, "most common words a good board has")
-	minCount := fs.Int("min-count", 5, "fewest subtitle occurrences for a found word to count as common")
+	minCount := fs.Int("min-count", 20, "fewest subtitle occurrences for a found word to count as common")
 	ban := fs.String("ban", "", "comma-separated fragments never used as tiles")
 	seed := fs.Uint64("seed", 0, "random seed; 0 picks one and prints it")
 	if err := fs.Parse(args); err != nil {
@@ -89,7 +90,7 @@ func run(args []string, out *reporter) error {
 
 	for _, lang := range splitList(*langs) {
 		started := time.Now()
-		lex, loadErr := loadLexicon(lang, *dataDir, *minCount)
+		lex, loadErr := loadLexicon(lang, &lexiconConfig{dataDir: *dataDir, blocklistDir: *blocklistDir, minCount: *minCount})
 		if loadErr != nil {
 			return fmt.Errorf("loading %s: %w", lang, loadErr)
 		}
@@ -151,8 +152,8 @@ func targetsFor(scheme string, n int) (int, error) {
 }
 
 func printBoard(out *reporter, lex *lexicon, b *board, rank int) {
-	out.printf("\n--- board %d: objective %.2f, %d words (%d common, %d obscure), weighted %.1f\n",
-		rank, b.objective, len(b.found), b.common, b.obscure, b.weighted)
+	out.printf("\n--- board %d: objective %.2f, %d words (%d common, %d obscure, %d blocked), weighted %.1f\n",
+		rank, b.objective, len(b.found), b.common, b.obscure, b.blocked, b.weighted)
 	if len(b.violations) > 0 || b.duplicates > 0 {
 		out.printf("INVALID: %d duplicate tiles, extra full-length words: %s\n",
 			b.duplicates, strings.Join(b.violations, " "))
@@ -173,7 +174,9 @@ func printBoard(out *reporter, lex *lexicon, b *board, rank int) {
 	for j := range b.found {
 		f := &b.found[j]
 		label := lex.display[f.word]
-		if _, common := lex.freq[f.word]; !common {
+		if _, common := lex.freq[f.word]; lex.blocked[f.word] {
+			label += "!"
+		} else if !common {
 			label += "*"
 		}
 		byTileCount[len(f.tiles)] = append(byTileCount[len(f.tiles)], label)
@@ -181,7 +184,7 @@ func printBoard(out *reporter, lex *lexicon, b *board, rank int) {
 			fragmentUse[b.tiles[i]]++
 		}
 	}
-	out.println("words (* = obscure):")
+	out.println("words (* = obscure, ! = blocked):")
 	for tileCount := 1; tileCount <= len(b.targets[0]); tileCount++ {
 		if words := byTileCount[tileCount]; len(words) > 0 {
 			printWrapped(out, fmt.Sprintf("  %d tile: ", tileCount), words)

@@ -8,7 +8,7 @@ Throwaway. Delete this directory once the real generator absorbs the answers.
 2. Which board-size scheme: `fixed5` (5 targets, 15/20/25 tiles) or `near20` (7/5/4 targets)?
 3. What common-word range makes a good board?
 4. Are the `es_MX` `.dic` stems good enough as the Spanish base-form list (design doc open
-   question 5)?
+   question 4)?
 
 Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -seed 7"`.
 
@@ -57,4 +57,9 @@ Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -
 ## Verdict
 
 - Unpronounceable tiles are fine (Jeffrey, 2026-10-23). No syllable-aligned cuts.
+- `near20` (7/5/4 targets, about 20 tiles) is the scheme, recorded in the design doc
+  (2026-10-23). Across seeds 42, 7 and 99 at `-min-common 50`, `fixed5` at n=3 stalled at 32
+  to 39 common words while `near20` reached 38 to 44, and at n=5 both reached 50+.
+- The common-word floor starts at 40 for every n, the highest that n=3 reliably reaches.
+  Whether n=4 and n=5 want their own higher floor is for playtesting to decide.
 - The rest is pending: play some boards first.

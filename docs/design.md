@@ -39,10 +39,12 @@ in the app. In-app names are an open question. Internally the kinds are `word` a
 
 - A board of word fragments ("tiles"). Build words from 1 to N tiles, each tile used at most
   once per word, in order.
-- Each board hides 5 target words of exactly N tiles that together use every tile.
-- Board size scales with N: 15, 20, 25 tiles. The bigger N is the harder board. Holding the
-  tile count near 20 instead (more targets at small N, fewer at large N) is the alternative;
-  the generator prototype should produce both so the choice is made by looking at real boards.
+- Each board hides target words of exactly N tiles that together use every tile: 7, 5, and 4
+  targets at N=3, 4, 5, so every board has about 20 tiles (21, 20, 20).
+- Holding the tile count near 20 beat 5 targets at every N (15/20/25 tiles) in the prototype.
+  At N=3, 15 tiles can't produce 40 common words in either language; 21 can. At N=5, 20 tiles
+  reach the same word counts as 25, so the extra tiles are clutter. A constant tile count also
+  means one board layout on the phone instead of three.
 - Scoring follows the original's shape: points grow with tile count, with a target score to
   reach. Verify the original's exact curve before borrowing it; tune from there.
 
@@ -135,12 +137,12 @@ across the bank. Accepted guesses per length come from the full dictionary.
 
 ### `tiles` puzzles
 
-1. Pick 5 target words that split cleanly into N fragments.
+1. Pick the target words (7, 5, or 4) that split cleanly into N fragments.
 2. Choose a segmentation for each.
 3. Enumerate every valid word buildable from 1 to N tiles, using a trie to prune.
 4. Score the board and keep the good ones for review.
 
-Enumeration cost is not a concern at these sizes: even 25 tiles with 5-tile words is small once
+Enumeration cost is not a concern at these sizes: 20 tiles with 5-tile words is small once
 a trie prunes dead prefixes.
 
 What makes a board good is the real question, and it is not "most words":
@@ -153,8 +155,9 @@ What makes a board good is the real question, and it is not "most words":
   inflectional suffixes (`ar`, `os`, `as`, `mos`, `ron`) attach to nearly every stem. Spanish
   syllables are regular and mostly 2 to 3 letters, which may make clean splits easier to find.
 - **Frequency-weighted word count.** Count found words weighted by how common they are, inside
-  a target range rather than maximized.
-- **Target uniqueness.** The 5 targets should be the only N-tile words on the board, or "find
+  a target range rather than maximized. The prototype's floor of 40 common words is reachable
+  at every N in both languages; whether 40 is the right number is for playtesting to decide.
+- **Target uniqueness.** The targets should be the only N-tile words on the board, or "find
   all the full-length words" becomes ambiguous.
 - **Not trivially guessable.** Fragments should be ambiguous enough that targets aren't
   obvious at a glance.
@@ -253,10 +256,9 @@ bundled copy as fallback" changes nothing about the format.
 ## Open questions
 
 1. In-app names for the two game types.
-2. `tiles` board size: 5 targets with 15/20/25 tiles, or a roughly constant tile count.
-3. `tiles` scoring curve and target score per N.
-4. Paid developer account or not.
-5. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
+2. `tiles` scoring curve and target score per N.
+3. Paid developer account or not.
+4. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
    lemma source is needed.
 
 ## First step

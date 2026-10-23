@@ -1,12 +1,12 @@
 # N-grams design
 
-Status: draft, nothing built yet (2026-10-19)
+Status: draft, nothing built yet (2026-10-23)
 
 ## Goal
 
 Daily word puzzles on iPhone without ads, accounts, energy meters, or upsells. Two game types
 modeled on games I already like (NYT Wordle and Apple News Quartiles), each offered at three
-sizes, so N varies. Six puzzles a day, every day.
+sizes, so N varies, in English and Spanish. Six puzzles a day per language, every day.
 
 Personal use first. A public App Store release is not a goal for now (see [Distribution and legal](#distribution-and-legal)).
 
@@ -16,6 +16,7 @@ Personal use first. A public App Store release is not a goal for now (see [Distr
 - A puzzle archive or "play unlimited" mode.
 - Live puzzle generation on the device.
 - Monetization of any kind.
+- Translating the app's own text. Puzzles are bilingual; the app around them stays English.
 
 ## Games
 
@@ -49,7 +50,30 @@ in the app. In-app names are an open question. Internally the kinds are `word` a
 
 - The day rolls over at local midnight on the device.
 - Results can be shared as an emoji summary (no spoilers).
-- Stats and streaks are per `(kind, n)`.
+- Stats and streaks are per `(lang, kind, n)`.
+
+## Languages
+
+English and Spanish (`en`, `es`). Each language gets its own full daily set, so 12 puzzles a
+day, and a switch in the app moves between them.
+
+- **Region.** Spanish means `es_MX`: dictionary, commonness judgments, and blocklist.
+- **Accents fold.** For matching and scoring, á/é/í/ó/ú/ü count as their plain vowels in both
+  games. `tiles` forces this: CANCIÓN and CANCIONES would otherwise need different tiles for
+  the same fragment. Whole words (the revealed `word` answer, the `tiles` found-words list)
+  display with their accents.
+- **Ñ is its own letter.** N and Ñ score separately. The Spanish keyboard has an Ñ key and no
+  accent keys.
+- **Digraphs are two letters.** CH, LL, and RR count as two letters each, per current RAE
+  spelling.
+- **Base forms as answers.** `word` answers and `tiles` targets are infinitives, singular nouns,
+  and masculine singular adjectives. Every inflected form is still a valid guess or found word.
+  A Spanish verb has around 50 forms, so without this rule a large share of answers would be
+  conjugations.
+- Sizes and guess counts match English to start. Tune by playing.
+
+The generator does the folding, so the app only compares plain strings: tiles and accepted
+guesses ship folded, and each word carries its accented spelling for display.
 
 ## Architecture
 
@@ -65,7 +89,7 @@ flowchart LR
   end
   B -->|bundled resource| A
   subgraph A["iOS app (SwiftUI)"]
-    D[Today's date] --> P[Look up today's puzzles]
+    D[Today's date + selected language] --> P[Look up today's puzzles]
     P --> WG[word: N=4,5,6]
     P --> TG[tiles: N=3,4,5]
     WG & TG --> S[(SwiftData: progress, stats)]
@@ -77,7 +101,7 @@ flowchart LR
 ```text
 generator/   Go module: word list processing, puzzle generation, bank output
 ios/         Xcode project
-data/        source word lists, blocklist, generated bank
+data/        per-language source word lists and blocklists, generated bank
 docs/        this file
 ```
 
@@ -85,14 +109,24 @@ docs/        this file
 
 ## Generator
 
+The generator takes a list of languages and runs the same pipeline once per language. What
+differs between them (word sources, folding, banned fragments, the base-form rule) lives in
+per-language config.
+
 ### Word lists
 
-- Dictionary: ENABLE (public domain). SCOWL (permissive) if ENABLE proves too sparse or too
-  obscure. NYT's own lists are not usable.
+- English dictionary: ENABLE (public domain). SCOWL (permissive) if ENABLE proves too sparse or
+  too obscure. NYT's own lists are not usable.
+- Spanish dictionary: the RLA-ES `es_MX` Hunspell dictionary, licensed GPLv3+, LGPLv3+, or
+  MPL 1.1+ at our choice, and actively maintained. Hunspell stores stems plus affix rules, so
+  the generator expands them into full forms (`unmunch`, or a small Go affix expander). The
+  `.dic` stems are close to lemmas and may seed the base-form answer list; irregular verbs
+  probably break that, unverified.
 - Commonness: a word frequency source (Google Books Ngram data fits the name) decides which
-  words are fair as answers and targets.
-- Blocklist: offensive words are excluded from answers and targets. They stay valid as guesses
-  and as found words, since rejecting a real word reads as a bug.
+  words are fair as answers and targets. Ngram has a Spanish 2019 corpus (`es-2019`).
+- Blocklist: one per language. Offensive words are excluded from answers and targets. They stay
+  valid as guesses and as found words, since rejecting a real word reads as a bug. The Spanish
+  list needs Mexican slang coverage, which is where most of the risk is.
 
 ### `word` puzzles
 
@@ -115,7 +149,9 @@ What makes a board good is the real question, and it is not "most words":
   hundreds of junk words. Fragments are at least 2 letters (the original rarely if ever uses
   1-letter tiles), at most 4 to start, and never on a banned-fragment list. These are filters on
   the candidate segmentations, applied before any search, and they matter more than the search
-  strategy itself.
+  strategy itself. Banned-fragment lists are per language, and Spanish's will be longer:
+  inflectional suffixes (`ar`, `os`, `as`, `mos`, `ron`) attach to nearly every stem. Spanish
+  syllables are regular and mostly 2 to 3 letters, which may make clean splits easier to find.
 - **Frequency-weighted word count.** Count found words weighted by how common they are, inside
   a target range rather than maximized.
 - **Target uniqueness.** The 5 targets should be the only N-tile words on the board, or "find
@@ -149,14 +185,16 @@ be stated precisely. Segmentation with targets already fixed is the part it suit
 ## Puzzle bank
 
 Plain JSON, bundled in the app as a resource and decoded with `Codable` at launch. A year of
-puzzles is roughly 1 MB, almost all of it the precomputed valid-word lists for `tiles` boards.
+puzzles is roughly 1 MB per language, almost all of it the precomputed valid-word lists for
+`tiles` boards.
 The generator computes those lists so the app never has to work them out, and so the review pass
 covers exactly what the app will accept.
 
-Accepted `word` guesses ship as one newline-separated text file per length, loaded into a
+Accepted `word` guesses ship as one newline-separated text file per `(lang, n)`, loaded into a
 `Set<String>`.
 
-Sketch of the format (puzzles are a list per day, so adding a kind or size is additive):
+Sketch of the format (puzzles are a list per day, so adding a language, kind, or size is
+additive). `display` appears only when the accented spelling differs from the folded one:
 
 ```json
 {
@@ -165,8 +203,10 @@ Sketch of the format (puzzles are a list per day, so adding a kind or size is ad
     {
       "date": "2027-01-01",
       "puzzles": [
-        { "kind": "word", "n": 4, "answer": "lamp" },
+        { "lang": "en", "kind": "word", "n": 4, "answer": "lamp" },
+        { "lang": "es", "kind": "word", "n": 5, "answer": "arbol", "display": "árbol" },
         {
+          "lang": "en",
           "kind": "tiles",
           "n": 3,
           "tiles": ["sta", "ple", "ham", "..."],
@@ -196,7 +236,7 @@ Revisit if the bank grows to tens of MB (a many-year archive); split per year or
 | Puzzle bank   | Puzzles, accepted words        | Generator (build) | App bundle    |
 | User progress | Guesses, scores, streaks       | App (runtime)     | SwiftData     |
 
-The only link is the key `(kind, n, date)`. Shipping a new bank never touches user data, and
+The only link is the key `(lang, kind, n, date)`. Shipping a new bank never touches user data, and
 moving the bank from "bundled" to "fetched from a static URL behind Caddy, cached on device,
 bundled copy as fallback" changes nothing about the format.
 
@@ -216,8 +256,12 @@ bundled copy as fallback" changes nothing about the format.
 2. `tiles` board size: 5 targets with 15/20/25 tiles, or a roughly constant tile count.
 3. `tiles` scoring curve and target score per N.
 4. Paid developer account or not.
+5. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
+   lemma source is needed.
 
 ## First step
 
-A throwaway Go prototype of the `tiles` generator for N=3, 4, 5, printing a handful of scored
-boards in both board-size schemes for review. No Swift until those boards are fun.
+A throwaway Go prototype of the `tiles` generator for N=3, 4, 5, in English and Spanish,
+printing a handful of scored boards in both board-size schemes for review. Spanish inflection
+is the riskiest unknown in the design, so it belongs in the first prototype rather than after
+English works. No Swift until those boards are fun.

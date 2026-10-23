@@ -1,6 +1,6 @@
 # N-grams design
 
-Status: draft, nothing built yet (2026-10-23)
+Status: draft. The generator builds `tiles` banks; the iOS app is next (2026-10-23)
 
 ## Goal
 
@@ -21,7 +21,8 @@ Personal use first. A public App Store release is not a goal for now (see [Distr
 ## Games
 
 The originals' names are trademarks (WORDLE is NYT's, Quartiles is Apple's) and must not appear
-in the app. In-app names are an open question. Internally the kinds are `word` and `tiles`.
+in the app. The in-app names are placeholders for now: "Word" and "Tiles", under the app name
+"N-grams". Internally the kinds are `word` and `tiles`.
 
 | Kind    | Modeled on | Sizes (N)          | Daily puzzles |
 | ------- | ---------- | ------------------ | ------------- |
@@ -45,8 +46,13 @@ in the app. In-app names are an open question. Internally the kinds are `word` a
   At N=3, 15 tiles can't produce 40 common words in either language; 21 can. At N=5, 20 tiles
   reach the same word counts as 25, so the extra tiles are clutter. A constant tile count also
   means one board layout on the phone instead of three.
-- Scoring follows the original's shape: points grow with tile count, with a target score to
-  reach. Verify the original's exact curve before borrowing it; tune from there.
+- Scoring borrows the original's curve. Quartiles (per Apple's help page, checked 2026-10-23)
+  scores 1, 2, 4, and 8 points for words of 1 to 4 tiles, adds 40 for finding all five
+  Quartiles, and calls 100 points "Expert". Here a word of k tiles scores 2^(k-1) at every N,
+  finding every target adds 40, and the target score is every target plus the bonus plus 20:
+  88, 100, and 124 at N=3, 4, 5, which reproduces the original at N=4. The generator writes
+  each word's points, the bonus, and the target score into the bank, so retuning is a bank
+  rebuild rather than an app release.
 
 ### Shared
 
@@ -107,7 +113,7 @@ data/        per-language source word lists and blocklists, generated bank
 docs/        this file
 ```
 
-`make format lint test` targets arrive with the first code.
+`make format lint test` covers every part of the repo. `make bank` rebuilds the bank.
 
 ## Generator
 
@@ -124,11 +130,20 @@ per-language config.
   the generator expands them into full forms (`unmunch`, or a small Go affix expander). The
   `.dic` stems are close to lemmas and may seed the base-form answer list; irregular verbs
   probably break that, unverified.
-- Commonness: a word frequency source (Google Books Ngram data fits the name) decides which
-  words are fair as answers and targets. Ngram has a Spanish 2019 corpus (`es-2019`).
-- Blocklist: one per language. Offensive words are excluded from answers and targets. They stay
-  valid as guesses and as found words, since rejecting a real word reads as a bug. The Spanish
-  list needs Mexican slang coverage, which is where most of the risk is.
+- Mexican Spanish uses neither voseo nor vosotros, but a few of `es_MX`'s affix rules and
+  stems produce them (`tené`, `adquiríais`, `dadle`). The generator drops those rules and stems
+  by name, and fails if a dictionary update removes one, so a renamed rule can't sneak back.
+- Commonness: subtitle word counts from hermitdave/FrequencyWords (OpenSubtitles 2018), not
+  Google Books Ngram. English reads the top 50k list. Spanish reads the full list (1.2M lines),
+  since the 50k list misses rare but standard inflections (`untó`, `vencía`); the dictionary
+  filters out the junk in its tail. In both languages targets come only from the top 50k
+  ranks, and a found word counts as common at 20 or more occurrences.
+- Blocklist: one per language, in `data/blocklists/`. Offensive words are excluded from
+  answers and targets. They stay valid as guesses and as found words, since rejecting a real
+  word reads as a bug, but the board search penalizes boards that contain them. Spanish
+  entries are stems, so blocking one blocks every form it expands to; English entries are
+  exact forms, so compounds need their own entries. The Spanish list needs Mexican slang
+  coverage, which is where most of the risk is.
 
 ### `word` puzzles
 
@@ -152,11 +167,15 @@ What makes a board good is the real question, and it is not "most words":
   1-letter tiles), at most 4 to start, and never on a banned-fragment list. These are filters on
   the candidate segmentations, applied before any search, and they matter more than the search
   strategy itself. Banned-fragment lists are per language, and Spanish's will be longer:
-  inflectional suffixes (`ar`, `os`, `as`, `mos`, `ron`) attach to nearly every stem. Spanish
-  syllables are regular and mostly 2 to 3 letters, which may make clean splits easier to find.
+  inflectional suffixes (`ar`, `os`, `as`, `mos`, `ron`) attach to nearly every stem. Cuts
+  land anywhere, so some tiles are unpronounceable (`ysan`, `rpri`, `nsp`); that's fine, so
+  there is no syllable alignment.
 - **Frequency-weighted word count.** Count found words weighted by how common they are, inside
-  a target range rather than maximized. The prototype's floor of 40 common words is reachable
-  at every N in both languages; whether 40 is the right number is for playtesting to decide.
+  a target range rather than maximized. The range starts at 40 to 80 common words at every N.
+  40 is the highest floor N=3 comes close to reliably: in the first 90-day bank, 34 of 180
+  N=3 boards landed at 35 to 39, which the generator logs as a warning. Whether N=4 and N=5 want a higher floor
+  of their own is for playtesting to decide. Boards settle near the floor, because the penalty
+  for obscure words pulls the count down once it's in range.
 - **Target uniqueness.** The targets should be the only N-tile words on the board, or "find
   all the full-length words" becomes ambiguous.
 - **Not trivially guessable.** Fragments should be ambiguous enough that targets aren't
@@ -187,21 +206,28 @@ be stated precisely. Segmentation with targets already fixed is the part it suit
 
 ## Puzzle bank
 
-Plain JSON, bundled in the app as a resource and decoded with `Codable` at launch. A year of
-puzzles is roughly 1 MB per language, almost all of it the precomputed valid-word lists for
-`tiles` boards.
-The generator computes those lists so the app never has to work them out, and so the review pass
-covers exactly what the app will accept.
+Plain JSON at `data/bank/puzzles.json`, committed, bundled in the app as a resource, and
+decoded with `Codable` at launch. 90 days in both languages is about 1.5 MB, so a year is
+roughly 3 MB per language, almost all of it the precomputed valid-word lists for `tiles`
+boards. The generator computes those lists so the app never has to work them out, and so the
+review pass covers exactly what the app will accept.
+
+`make bank` rebuilds it from a fixed start date, length, and seed set in the Makefile; the same
+seed and source data rebuild the same bank. No target repeats within a language. Tiles are
+shuffled, so their order gives no target away. Each day sits in its own block with one word
+per line, so a rebuilt bank diffs by eye; `make bank ARGS=-print` prints every board for review.
 
 Accepted `word` guesses ship as one newline-separated text file per `(lang, n)`, loaded into a
 `Set<String>`.
 
-Sketch of the format (puzzles are a list per day, so adding a language, kind, or size is
-additive). `display` appears only when the accented spelling differs from the folded one:
+The format (puzzles are a list per day, so adding a language, kind, or size is additive).
+`display` appears only when the accented spelling differs from the folded one. `word` puzzles
+are still a sketch:
 
 ```json
 {
   "version": 1,
+  "seed": 1,
   "days": [
     {
       "date": "2027-01-01",
@@ -214,7 +240,9 @@ additive). `display` appears only when the accented spelling differs from the fo
           "n": 3,
           "tiles": ["sta", "ple", "ham", "..."],
           "targets": [[0, 4, 9], "..."],
-          "words": [{ "tiles": [0, 1], "word": "staple" }, "..."]
+          "bonus": 40,
+          "target_score": 88,
+          "words": [{ "word": "staple", "tiles": [0, 1], "points": 2 }, "..."]
         }
       ]
     }
@@ -245,8 +273,9 @@ bundled copy as fallback" changes nothing about the format.
 
 ## Distribution and legal
 
-- Personal install via Xcode for now. Without a paid developer account, sideloaded builds stop
-  launching after 7 days and must be reinstalled; TestFlight builds expire after 90 days.
+- Personal install via Xcode for now, signed with my existing paid developer team, so a
+  development build keeps launching for the year its provisioning profile lasts rather than
+  the 7 days a free account allows. TestFlight builds expire after 90 days.
 - If this ever goes public: no use of either original's name, and a visual design that is
   clearly its own. App Review guideline 4.1 (copycats) can reject apps that look too much like
   an existing game, and NYT pursued Wordle clones in 2022.
@@ -255,16 +284,19 @@ bundled copy as fallback" changes nothing about the format.
 
 ## Open questions
 
-1. In-app names for the two game types.
-2. `tiles` scoring curve and target score per N.
-3. Paid developer account or not.
-4. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
-   lemma source is needed.
+1. In-app names for the two game types. "Word" and "Tiles" are placeholders.
+2. Whether the `tiles` scoring curve and target scores above play well; tune by playing.
+3. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
+   lemma source is needed. On the boards seen so far, stems as targets read like base forms
+   (`musulmán`, `envenenamiento`), including `-mente` adverbs, which the dictionary stores as
+   stems.
 
-## First step
+## Milestones
 
-A throwaway Go prototype of the `tiles` generator for N=3, 4, 5, in English and Spanish,
-printing a handful of scored boards in both board-size schemes for review. Spanish inflection
-is the riskiest unknown in the design, so it belongs in the first prototype rather than after
-English works. Whether boards are fun gets judged by playing them in the app, installed on my
-phone, not by reading printed output, so the app doesn't wait on the generator being tuned.
+Whether boards are fun gets judged by playing them in the app, installed on my phone, not by
+reading printed output. So the order is:
+
+1. `tiles` playable on my phone with real generated boards, in both languages. A Debug-only
+   day picker steps through the whole bank, so a playtest isn't limited to one day's boards.
+2. `word`.
+3. Stats, streaks, and the emoji share.

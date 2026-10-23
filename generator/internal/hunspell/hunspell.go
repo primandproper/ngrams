@@ -1,7 +1,11 @@
-package main
+// Package hunspell reads Hunspell .aff and .dic files and expands stems into every form
+// their affix flags generate. Only the subset of the format that es_MX uses is supported:
+// FLAG UTF-8, cross products, and continuation classes on affixes.
+package hunspell
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"slices"
 	"strconv"
@@ -30,41 +34,40 @@ type (
 		cross         bool
 	}
 
-	// suffixKey identifies one SFX rule the way the .aff file writes it.
-	suffixKey struct {
+	// SuffixKey identifies one SFX rule the way the .aff file writes it.
+	SuffixKey struct {
 		_         struct{} `json:"-"`
-		strip     string
-		add       string
-		condition string
-		flag      rune
+		Strip     string
+		Add       string
+		Condition string
+		Flag      rune
 	}
 
-	// affixSet holds every prefix and suffix rule, keyed by flag. Only the subset of
-	// the format that es_MX uses is supported: FLAG UTF-8, cross products, and
-	// continuation classes on affixes.
-	affixSet struct {
+	// AffixSet holds every prefix and suffix rule, keyed by flag.
+	AffixSet struct {
 		_        struct{} `json:"-"`
 		prefixes map[rune][]affixRule
 		suffixes map[rune][]affixRule
 	}
 
-	// dicEntry is one stem from a Hunspell .dic file, with its affix flags.
-	dicEntry struct {
+	// Entry is one stem from a Hunspell .dic file, with its affix flags.
+	Entry struct {
 		_     struct{} `json:"-"`
-		stem  string
-		flags []rune
+		Stem  string
+		Flags []rune
 	}
 )
 
-func loadAffixes(path string) (*affixSet, error) {
-	set := &affixSet{
+// ParseAffixes reads the PFX and SFX rules from a .aff file, ignoring every other directive.
+func ParseAffixes(r io.Reader) (*AffixSet, error) {
+	set := &AffixSet{
 		prefixes: map[rune][]affixRule{},
 		suffixes: map[rune][]affixRule{},
 	}
 	cross := map[string]bool{}
 	remaining := map[string]int{}
 
-	err := eachLine(path, func(lineNum int, line string) error {
+	err := eachLine(r, func(lineNum int, line string) error {
 		fields := strings.Fields(line)
 		if len(fields) < 4 || (fields[0] != prefixKind && fields[0] != suffixKind) {
 			return nil
@@ -137,19 +140,19 @@ func parseAffixRule(kind string, fields []string, cross bool) (affixRule, error)
 	return rule, nil
 }
 
-// dropSuffixes removes the given SFX rules. It fails if any is missing, so a dictionary
+// DropSuffixes removes the given SFX rules. It fails if any is missing, so a dictionary
 // update that renames or reshapes a rule can't silently bring it back.
-func (s *affixSet) dropSuffixes(keys []suffixKey) error {
+func (s *AffixSet) DropSuffixes(keys []SuffixKey) error {
 	for i := range keys {
 		key := &keys[i]
-		rules := s.suffixes[key.flag]
+		rules := s.suffixes[key.Flag]
 		kept := slices.DeleteFunc(slices.Clone(rules), func(r affixRule) bool {
-			return r.strip == key.strip && r.add == key.add && r.conditionText == key.condition
+			return r.strip == key.Strip && r.add == key.Add && r.conditionText == key.Condition
 		})
 		if len(kept) == len(rules) {
-			return fmt.Errorf("no SFX %c %s %s %s rule to drop", key.flag, key.strip, key.add, key.condition)
+			return fmt.Errorf("no SFX %c %s %s %s rule to drop", key.Flag, key.Strip, key.Add, key.Condition)
 		}
-		s.suffixes[key.flag] = kept
+		s.suffixes[key.Flag] = kept
 	}
 	return nil
 }
@@ -190,12 +193,13 @@ func (r *affixRule) applyPrefix(word string) (string, bool) {
 	return r.add + strings.TrimPrefix(word, r.strip), true
 }
 
-// expand calls emit with the stem and every form its flags generate.
-func (s *affixSet) expand(stem string, flags []rune, emit func(string)) {
+// Expand calls emit with the stem and every form its flags generate. A form can be
+// emitted more than once.
+func (s *AffixSet) Expand(stem string, flags []rune, emit func(string)) {
 	s.expandDepth(stem, flags, 0, emit)
 }
 
-func (s *affixSet) expandDepth(stem string, flags []rune, depth int, emit func(string)) {
+func (s *AffixSet) expandDepth(stem string, flags []rune, depth int, emit func(string)) {
 	emit(stem)
 
 	var crossable []string
@@ -234,11 +238,11 @@ func (s *affixSet) expandDepth(stem string, flags []rune, depth int, emit func(s
 	}
 }
 
-// loadDic reads a Hunspell .dic file, dropping capitalized stems (proper nouns and
+// ParseDic reads a .dic file, dropping capitalized stems (proper nouns and
 // abbreviations) since they aren't fair game in a word puzzle.
-func loadDic(path string) ([]dicEntry, error) {
-	var entries []dicEntry
-	err := eachLine(path, func(lineNum int, line string) error {
+func ParseDic(r io.Reader) ([]Entry, error) {
+	var entries []Entry
+	err := eachLine(r, func(lineNum int, line string) error {
 		fields := strings.Fields(line)
 		if lineNum == 1 || len(fields) == 0 { // first line is the entry count
 			return nil
@@ -249,7 +253,7 @@ func loadDic(path string) ([]dicEntry, error) {
 		if stem == "" || unicode.IsUpper(first) {
 			return nil
 		}
-		entries = append(entries, dicEntry{stem: stem, flags: []rune(flags)})
+		entries = append(entries, Entry{Stem: stem, Flags: []rune(flags)})
 		return nil
 	})
 	if err != nil {
@@ -257,4 +261,23 @@ func loadDic(path string) ([]dicEntry, error) {
 	}
 
 	return entries, nil
+}
+
+// eachLine calls fn with every line and its 1-based line number. Source files are a few
+// MB at most, so reading them whole is simpler than streaming.
+func eachLine(r io.Reader, fn func(lineNum int, line string) error) error {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("reading: %w", err)
+	}
+
+	lineNum := 0
+	for line := range strings.Lines(string(data)) {
+		lineNum++
+		if err = fn(lineNum, strings.TrimRight(line, "\r\n")); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

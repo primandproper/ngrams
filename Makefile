@@ -4,6 +4,13 @@ GENERATOR_PKG := github.com/verygoodsoftwarenotvirus/ngrams/$(GENERATOR_DIR)
 SCRIPTS_DIR   := scripts
 RAW_DATA_DIR  := data/raw
 BLOCKLIST_DIR := data/blocklists
+BANK_FILE     := data/bank/puzzles.json
+
+# BANK
+# The committed bank starts here. Moving the start or seed regenerates every board.
+BANK_START := 2026-10-23
+BANK_DAYS  := 90
+BANK_SEED  := 1
 
 # CONTAINER VERSIONS
 LINTER_IMAGE     := golangci/golangci-lint:v2.14.0
@@ -53,7 +60,8 @@ lint: golang_lint shellcheck
 test:
 	$(SCRIPTS_DIR)/test.sh $(GENERATOR_DIR)
 
-# Pass prototype flags through ARGS, e.g. make tiles-prototype ARGS="-langs es -ns 4".
-.PHONY: tiles-prototype
-tiles-prototype: data
-	@$(SCRIPTS_DIR)/tiles_prototype.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(ARGS)
+# Pass generator flags through ARGS, e.g. make bank ARGS="-print -langs es".
+.PHONY: bank
+bank: data
+	@$(SCRIPTS_DIR)/generate_bank.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(BANK_FILE) \
+		-start $(BANK_START) -days $(BANK_DAYS) -seed $(BANK_SEED) $(ARGS)

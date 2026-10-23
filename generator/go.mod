@@ -13,8 +13,10 @@ require (
 	github.com/4meepo/tagalign v1.4.4 // indirect
 	github.com/alfatraining/structtag v1.0.0 // indirect
 	github.com/daixiang0/gci v0.14.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/shoenig/test v1.13.2 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.7.0 // indirect

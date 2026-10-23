@@ -34,4 +34,5 @@ Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -
 
 ## Verdict
 
-Pending: play some boards first.
+- Unpronounceable tiles are fine (Jeffrey, 2026-10-23). No syllable-aligned cuts.
+- The rest is pending: play some boards first.

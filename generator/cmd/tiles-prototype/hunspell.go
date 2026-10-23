@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -20,12 +21,22 @@ const (
 type (
 	// affixRule is one PFX or SFX line from a Hunspell .aff file.
 	affixRule struct {
+		_             struct{} `json:"-"`
+		condition     *regexp.Regexp
+		strip         string
+		add           string
+		conditionText string
+		cont          []rune
+		cross         bool
+	}
+
+	// suffixKey identifies one SFX rule the way the .aff file writes it.
+	suffixKey struct {
 		_         struct{} `json:"-"`
-		condition *regexp.Regexp
 		strip     string
 		add       string
-		cont      []rune
-		cross     bool
+		condition string
+		flag      rune
 	}
 
 	// affixSet holds every prefix and suffix rule, keyed by flag. Only the subset of
@@ -121,8 +132,26 @@ func parseAffixRule(kind string, fields []string, cross bool) (affixRule, error)
 		return affixRule{}, fmt.Errorf("compiling condition %q: %w", condition, err)
 	}
 	rule.condition = re
+	rule.conditionText = condition
 
 	return rule, nil
+}
+
+// dropSuffixes removes the given SFX rules. It fails if any is missing, so a dictionary
+// update that renames or reshapes a rule can't silently bring it back.
+func (s *affixSet) dropSuffixes(keys []suffixKey) error {
+	for i := range keys {
+		key := &keys[i]
+		rules := s.suffixes[key.flag]
+		kept := slices.DeleteFunc(slices.Clone(rules), func(r affixRule) bool {
+			return r.strip == key.strip && r.add == key.add && r.conditionText == key.condition
+		})
+		if len(kept) == len(rules) {
+			return fmt.Errorf("no SFX %c %s %s %s rule to drop", key.flag, key.strip, key.add, key.condition)
+		}
+		s.suffixes[key.flag] = kept
+	}
+	return nil
 }
 
 // conditionToRegexp translates a Hunspell condition, which is only literals, '.', and

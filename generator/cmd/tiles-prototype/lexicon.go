@@ -79,10 +79,33 @@ func loadEnglish(dir string) (*lexicon, error) {
 	return lex, nil
 }
 
+// Mexican Spanish uses neither voseo nor vosotros. es_MX's affix rules already leave
+// out vosotros conjugations, but it keeps these voseo imperatives (matate, tené, vení).
+// It also keeps r → 0 for -ír verbs, whose output (oí, reí) doubles as the standard
+// yo preterite, so that one stays.
+var voseoSuffixes = []suffixKey{
+	{flag: 'ô', strip: "r", add: "te", condition: "[aei]r"},
+	{flag: 'X', strip: "er", add: "é", condition: "er"},
+	{flag: 'X', strip: "ir", add: "í", condition: "ir"},
+}
+
+// vosotrosStems are vosotros forms es_MX carries as bare stems, by way of RLA-ES's
+// irregular conjugation list, found by scanning flagless stems for vosotros endings.
+var vosotrosStems = map[string]bool{
+	"andéis": true, "balbucisteis": true, "criais": true, "crieis": true, "dad": true,
+	"dadle": true, "dadles": true, "dadme": true, "deis": true, "estéis": true,
+	"fiais": true, "fieis": true, "friais": true, "guiais": true, "guieis": true,
+	"jugaréis": true, "liais": true, "lieis": true, "piais": true, "pieis": true,
+	"poded": true, "riais": true, "íd": true,
+}
+
 func loadSpanish(dir string) (*lexicon, error) {
 	affixes, err := loadAffixes(filepath.Join(dir, "es_MX.aff"))
 	if err != nil {
 		return nil, err
+	}
+	if err = affixes.dropSuffixes(voseoSuffixes); err != nil {
+		return nil, fmt.Errorf("dropping voseo rules: %w", err)
 	}
 	entries, err := loadDic(filepath.Join(dir, "es_MX.dic"))
 	if err != nil {
@@ -92,6 +115,9 @@ func loadSpanish(dir string) (*lexicon, error) {
 	lex := &lexicon{display: map[string]string{}}
 	stems := map[string]struct{}{}
 	for i := range entries {
+		if vosotrosStems[entries[i].stem] {
+			continue
+		}
 		if stem, ok := fold(entries[i].stem); ok {
 			stems[stem] = struct{}{}
 		}

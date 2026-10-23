@@ -18,8 +18,13 @@ Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -
   every (lang, n, scheme), in 0.4 to 4.3 s per batch. Search cost is not a concern.
 - Boards settle near the `-min-common` floor (30) because the obscure-word penalty pulls the
   count down once it's in range. The range is a guess until boards get played.
-- `es_MX` expands to forms Mexican Spanish doesn't use: vosotros (`dadle`) and voseo (`matate`).
-  They're most of the Spanish obscure words. Dropping those affix classes is worth trying.
+- `es_MX` carries a few forms Mexican Spanish doesn't use: three voseo imperative rules
+  (`matate`, `tené`, `vení`) and 23 vosotros forms stored as bare stems (`dadle`, `estéis`).
+  The prototype drops them, which removes 96 of 496k forms. They were not a meaningful share of
+  the obscure words; those are rare but standard forms the 50k subtitle list misses (`untó`,
+  `transpón`, `vencía`). A bigger frequency list is the lever there, not the dictionary.
+  Dropping them still matters for targets: `dadles` is a stem and common in Spain-dubbed
+  subtitles, so it could have been a target.
 - `.dic` stems as targets read like base forms on the boards seen so far (`musulmán`,
   `envenenamiento`), including `-mente` adverbs, which the dictionary stores as stems.
 - Cutting anywhere produces unpronounceable tiles (`ysan`, `rpri`, `nsp`, `ialm`, `sq`) in both

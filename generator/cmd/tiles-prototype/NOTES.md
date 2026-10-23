@@ -20,7 +20,9 @@ Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -
   count down once it's in range. The range is a guess until boards get played.
 - `es_MX` carries a few forms Mexican Spanish doesn't use: three voseo imperative rules
   (`matate`, `tené`, `vení`) and 23 vosotros forms stored as bare stems (`dadle`, `estéis`).
-  The prototype drops them, which removes 96 of 496k forms. They were not a meaningful share of
+  The prototype drops them, which removes 96 of 496k forms. A later sweep of every SFX rule
+  for vosotros endings found four more rules (`adquiríais`, `oíais`, `sonreís`, `divertíos`),
+  another 185 forms; those are dropped too. They were not a meaningful share of
   the obscure words; those are rare but standard forms the 50k subtitle list misses (`untó`,
   `transpón`, `vencía`). A bigger frequency list is the lever there, not the dictionary.
 - Spanish now reads the full subtitle list (1.2M lines) instead of the top 50k, which covers
@@ -36,6 +38,13 @@ Run it with `make tiles-prototype`, narrowing with e.g. `ARGS="-langs es -ns 4 -
   blocks all its valid forms (`joden`), 434 forms from 24 stems. Blocked words are never
   targets and stay valid as found words, per the design doc, but a soft penalty steers the
   search away from boards that contain them. Across a full seed-7 run, no board kept one.
+  English entries are exact forms, so compounds slip through: `horseshit` became a target
+  until the derived forms of each root were added.
+- `-min-common 50` fills in the middle tiers (more 3- and 4-tile words) at n=4 and n=5 in
+  both languages, at the cost of more obscure words (up to 10 per English board). n=3 with
+  5 targets (15 tiles) can't reach 50 in either language and tops out around 33. n=3 with 7
+  targets (21 tiles) gets to 42 to 44. So if the floor goes up, n=3 needs the bigger board,
+  or a floor of its own.
   Dropping them still matters for targets: `dadles` is a stem and common in Spain-dubbed
   subtitles, so it could have been a target.
 - `.dic` stems as targets read like base forms on the boards seen so far (`musulmán`,

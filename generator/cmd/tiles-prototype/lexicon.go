@@ -124,14 +124,18 @@ func loadEnglish(dir string, minCount int, blocked map[string]bool) (*lexicon, e
 	return lex, nil
 }
 
-// Mexican Spanish uses neither voseo nor vosotros. es_MX's affix rules already leave
-// out vosotros conjugations, but it keeps these voseo imperatives (matate, tené, vení).
-// It also keeps r → 0 for -ír verbs, whose output (oí, reí) doubles as the standard
-// yo preterite, so that one stays.
-var voseoSuffixes = []suffixKey{
-	{flag: 'ô', strip: "r", add: "te", condition: "[aei]r"},
-	{flag: 'X', strip: "er", add: "é", condition: "er"},
-	{flag: 'X', strip: "ir", add: "í", condition: "ir"},
+// Mexican Spanish uses neither voseo nor vosotros. es_MX's affix rules mostly leave
+// vosotros out, but these slip through, found by sweeping every SFX rule for voseo and
+// vosotros endings. es_MX also keeps r → 0 for -ír verbs, whose output (oí, reí) doubles
+// as the standard yo preterite, so that one stays.
+var nonMexicanSuffixes = []suffixKey{
+	{flag: 'ô', strip: "r", add: "te", condition: "[aei]r"}, // voseo: matate
+	{flag: 'X', strip: "er", add: "é", condition: "er"},     // voseo: tené
+	{flag: 'X', strip: "ir", add: "í", condition: "ir"},     // voseo: vení
+	{flag: 'X', strip: "ir", add: "íais", condition: "ir"},  // vosotros: adquiríais
+	{flag: 'X', strip: "r", add: "ais", condition: "ír"},    // vosotros: oíais
+	{flag: 'X', strip: "r", add: "s", condition: "ír"},      // vosotros: sonreís
+	{flag: 'ô', strip: "ir", add: "íos", condition: "ir"},   // vosotros: divertíos
 }
 
 // vosotrosStems are vosotros forms es_MX carries as bare stems, by way of RLA-ES's
@@ -149,8 +153,8 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*lexicon, e
 	if err != nil {
 		return nil, err
 	}
-	if err = affixes.dropSuffixes(voseoSuffixes); err != nil {
-		return nil, fmt.Errorf("dropping voseo rules: %w", err)
+	if err = affixes.dropSuffixes(nonMexicanSuffixes); err != nil {
+		return nil, fmt.Errorf("dropping voseo and vosotros rules: %w", err)
 	}
 	entries, err := loadDic(filepath.Join(dir, "es_MX.dic"))
 	if err != nil {

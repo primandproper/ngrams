@@ -266,4 +266,5 @@ bundled copy as fallback" changes nothing about the format.
 A throwaway Go prototype of the `tiles` generator for N=3, 4, 5, in English and Spanish,
 printing a handful of scored boards in both board-size schemes for review. Spanish inflection
 is the riskiest unknown in the design, so it belongs in the first prototype rather than after
-English works. No Swift until those boards are fun.
+English works. Whether boards are fun gets judged by playing them in the app, installed on my
+phone, not by reading printed output, so the app doesn't wait on the generator being tuned.

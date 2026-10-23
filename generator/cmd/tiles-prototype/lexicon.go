@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -41,18 +42,23 @@ func fold(word string) (string, bool) {
 	return b.String(), b.Len() > 0
 }
 
-func loadLexicon(lang, dataDir string) (*lexicon, error) {
+// targetRank is how far down its frequency list a word can sit and still be a target.
+// It matches the 50k lists the prototype started with, so a longer list changes only
+// which found words count as common.
+const targetRank = 50000
+
+func loadLexicon(lang, dataDir string, minCount int) (*lexicon, error) {
 	switch lang {
 	case "en":
-		return loadEnglish(filepath.Join(dataDir, "en"))
+		return loadEnglish(filepath.Join(dataDir, "en"), minCount)
 	case "es":
-		return loadSpanish(filepath.Join(dataDir, "es"))
+		return loadSpanish(filepath.Join(dataDir, "es"), minCount)
 	default:
 		return nil, fmt.Errorf("unsupported language %q", lang)
 	}
 }
 
-func loadEnglish(dir string) (*lexicon, error) {
+func loadEnglish(dir string, minCount int) (*lexicon, error) {
 	lex := &lexicon{display: map[string]string{}}
 
 	err := eachLine(filepath.Join(dir, "enable1.txt"), func(_ int, line string) error {
@@ -65,12 +71,14 @@ func loadEnglish(dir string) (*lexicon, error) {
 		return nil, err
 	}
 
-	if lex.freq, err = loadFrequencies(filepath.Join(dir, "en_50k.txt"), lex.display); err != nil {
+	freq, top, err := loadFrequencies(filepath.Join(dir, "en_50k.txt"), lex.display, minCount)
+	if err != nil {
 		return nil, err
 	}
+	lex.freq = freq
 
 	for word := range lex.display {
-		if _, common := lex.freq[word]; common {
+		if top[word] {
 			lex.targets = append(lex.targets, word)
 		}
 	}
@@ -99,7 +107,7 @@ var vosotrosStems = map[string]bool{
 	"poded": true, "riais": true, "íd": true,
 }
 
-func loadSpanish(dir string) (*lexicon, error) {
+func loadSpanish(dir string, minCount int) (*lexicon, error) {
 	affixes, err := loadAffixes(filepath.Join(dir, "es_MX.aff"))
 	if err != nil {
 		return nil, err
@@ -130,12 +138,14 @@ func loadSpanish(dir string) (*lexicon, error) {
 		})
 	}
 
-	if lex.freq, err = loadFrequencies(filepath.Join(dir, "es_50k.txt"), lex.display); err != nil {
+	freq, top, err := loadFrequencies(filepath.Join(dir, "es_full.txt"), lex.display, minCount)
+	if err != nil {
 		return nil, err
 	}
+	lex.freq = freq
 
 	for stem := range stems {
-		if _, common := lex.freq[stem]; common {
+		if top[stem] {
 			lex.targets = append(lex.targets, stem)
 		}
 	}
@@ -144,14 +154,16 @@ func loadSpanish(dir string) (*lexicon, error) {
 	return lex, nil
 }
 
-// loadFrequencies reads a "word count" list, keeping only words already in display.
-// Spellings that fold together have their counts summed, and the most common spelling
-// becomes the display form.
-func loadFrequencies(path string, display map[string]string) (map[string]int, error) {
-	freq := map[string]int{}
+// loadFrequencies reads a "word count" list, most common first, keeping only words
+// already in display. Spellings that fold together have their counts summed, and the
+// most common spelling becomes the display form. It returns the words counted at least
+// minCount times, and the set ranked within targetRank.
+func loadFrequencies(path string, display map[string]string, minCount int) (freq map[string]int, top map[string]bool, err error) {
+	freq = map[string]int{}
+	top = map[string]bool{}
 	best := map[string]int{}
 
-	err := eachLine(path, func(_ int, line string) error {
+	err = eachLine(path, func(lineNum int, line string) error {
 		spelling, countText, ok := strings.Cut(strings.TrimSpace(line), " ")
 		if !ok {
 			return nil
@@ -170,6 +182,9 @@ func loadFrequencies(path string, display map[string]string) (map[string]int, er
 		}
 
 		freq[word] += count
+		if lineNum <= targetRank {
+			top[word] = true
+		}
 		if count > best[word] {
 			best[word] = count
 			display[word] = strings.ToLower(spelling)
@@ -177,10 +192,12 @@ func loadFrequencies(path string, display map[string]string) (map[string]int, er
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return freq, nil
+	maps.DeleteFunc(freq, func(_ string, count int) bool { return count < minCount })
+
+	return freq, top, nil
 }
 
 func (l *lexicon) finish() {

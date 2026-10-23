@@ -32,4 +32,4 @@ fetch "${GITHUB_RAW}/hermitdave/FrequencyWords/${FREQUENCY_WORDS_SHA}/content/20
 
 fetch "${GITHUB_RAW}/LibreOffice/dictionaries/${LIBREOFFICE_DICTIONARIES_SHA}/es/es_MX.aff" "${RAW_DIR}/es/es_MX.aff"
 fetch "${GITHUB_RAW}/LibreOffice/dictionaries/${LIBREOFFICE_DICTIONARIES_SHA}/es/es_MX.dic" "${RAW_DIR}/es/es_MX.dic"
-fetch "${GITHUB_RAW}/hermitdave/FrequencyWords/${FREQUENCY_WORDS_SHA}/content/2018/es/es_50k.txt" "${RAW_DIR}/es/es_50k.txt"
+fetch "${GITHUB_RAW}/hermitdave/FrequencyWords/${FREQUENCY_WORDS_SHA}/content/2018/es/es_full.txt" "${RAW_DIR}/es/es_full.txt"

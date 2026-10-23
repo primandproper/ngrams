@@ -1,0 +1,66 @@
+name: Ngrams
+
+options:
+  bundleIdPrefix: software.primandproper
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    DEVELOPMENT_TEAM: K8R2Q5UWQS
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+
+packages:
+  primitives-swift:
+    url: https://github.com/primandproper/primitives-swift
+    from: 0.0.1
+
+targets:
+  Ngrams:
+    type: application
+    platform: iOS
+    sources:
+      - Ngrams
+      - path: ../data/bank/puzzles.json
+        buildPhase: resources
+    dependencies:
+      - package: primitives-swift
+        product: Observability
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: software.primandproper.ngrams
+    info:
+      path: Ngrams/Info.plist
+      properties:
+        CFBundleDisplayName: N-grams
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+
+  NgramsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - NgramsTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Ngrams
+      - package: primitives-swift
+        product: Observability
+
+schemes:
+  Ngrams:
+    build:
+      targets:
+        Ngrams: all
+        NgramsTests: [test]
+    test:
+      targets:
+        - NgramsTests

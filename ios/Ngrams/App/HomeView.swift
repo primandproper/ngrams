@@ -15,8 +15,9 @@ struct HomeView: View {
 
   var body: some View {
     NavigationStack {
-      DayList(puzzles: bank.tilesPuzzles(on: day), day: day, isToday: day == today)
+      DayList(puzzles: bank.tilesPuzzles(on: day), day: day)
         .navigationTitle("N-grams")
+        .navigationSubtitle(day == today ? "Today" : day.description)
         .navigationDestination(for: TilesRoute.self) { route in
           TilesScreen(puzzle: route.puzzle, day: route.day)
         }
@@ -50,18 +51,17 @@ private struct TilesRoute: Hashable {
   let day: PuzzleDay
 }
 
-/// One day's boards. Starred boards drop to a section of their own at the bottom.
+/// One day's boards, a section per game and size. Starred boards leave their section for a
+/// "Completed" section at the bottom.
 private struct DayList: View {
   let puzzles: [TilesPuzzle]
   let day: PuzzleDay
-  let isToday: Bool
 
   @Query private var progress: [PuzzleProgress]
 
-  init(puzzles: [TilesPuzzle], day: PuzzleDay, isToday: Bool) {
+  init(puzzles: [TilesPuzzle], day: PuzzleDay) {
     self.puzzles = puzzles
     self.day = day
-    self.isToday = isToday
     _progress = Query(filter: PuzzleProgress.matching(kind: .tiles, day: day))
   }
 
@@ -70,31 +70,32 @@ private struct DayList: View {
       progress.map { ("\($0.language)-\($0.n)", $0.entries) },
       uniquingKeysWith: { first, _ in first })
     let games = puzzles.map { TilesGame(puzzle: $0, foundWords: entries[$0.id] ?? []) }
-    let starred = games.filter(\.earnedStar)
+    let open = games.filter { !$0.earnedStar }
+    let completed = games.filter(\.earnedStar)
 
     List {
-      Section {
-        if puzzles.isEmpty {
-          Text("No puzzles for \(day.description).")
-            .foregroundStyle(.secondary)
-        }
-        rows(games.filter { !$0.earnedStar })
-      } header: {
-        Text(isToday ? "Today" : day.description)
+      if puzzles.isEmpty {
+        Text("No puzzles for \(day.description).")
+          .foregroundStyle(.secondary)
       }
-      if !starred.isEmpty {
-        Section("Starred") {
-          rows(starred)
+      ForEach(Set(open.map(\.puzzle.n)).sorted(), id: \.self) { n in
+        Section("Tiles · N=\(n)") {
+          rows(open.filter { $0.puzzle.n == n }, showsSize: false)
+        }
+      }
+      if !completed.isEmpty {
+        Section("Completed") {
+          rows(completed, showsSize: true)
         }
       }
     }
-    .animation(.default, value: starred.map(\.puzzle.id))
+    .animation(.default, value: completed.map(\.puzzle.id))
   }
 
-  private func rows(_ games: [TilesGame]) -> some View {
+  private func rows(_ games: [TilesGame], showsSize: Bool) -> some View {
     ForEach(games, id: \.puzzle.id) { game in
       NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
-        TilesRow(game: game)
+        TilesRow(game: game, showsSize: showsSize)
       }
     }
   }
@@ -102,14 +103,20 @@ private struct DayList: View {
 
 private struct TilesRow: View {
   let game: TilesGame
+  /// Whether the row names its game and size, which a size's own section already does.
+  let showsSize: Bool
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text("\(puzzle.language.flag) Tiles · \(puzzle.n)")
-          .font(.headline)
-        Text("\(puzzle.targets.count) targets of \(puzzle.n) tiles")
+        Text(
+          showsSize
+            ? "\(puzzle.language.flag) Tiles · N=\(puzzle.n)"
+            : "\(puzzle.language.flag) \(puzzle.language.name)"
+        )
+        .font(.headline)
+        Text("\(puzzle.targets.count) targets")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }

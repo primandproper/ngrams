@@ -71,9 +71,10 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
 ### Shared
 
 - The day rolls over at local midnight on the device.
-- Home lists every puzzle for the day in one scrolling list, both languages marked by flag
-  (🇺🇸, 🇲🇽 for the American and Mexican word lists). Starred puzzles drop to a section at
-  the bottom.
+- Home lists every puzzle for the day on one screen, a section per game and size ("Tiles ·
+  N=3"), each holding both languages marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word
+  lists). Sections are per game as well as size because N counts tiles in one game and letters
+  in the other. Starred puzzles move to a "Completed" section at the bottom.
 - Results can be shared as an emoji summary (no spoilers).
 - Stats and streaks are per `(lang, kind, n)`.
 

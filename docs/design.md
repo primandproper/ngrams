@@ -75,6 +75,9 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
   N=3"), each holding both languages marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word
   lists). Sections are per game as well as size because N counts tiles in one game and letters
   in the other. Starred puzzles move to a "Completed" section at the bottom.
+- Players choose which languages they want puzzles in, once on first launch (pre-checked from
+  the device's preferred languages) and any time after in Settings. Home shows only those, so
+  nobody is handed puzzles in a language they don't play. At least one stays on.
 - Results can be shared as an emoji summary (no spoilers).
 - Stats and streaks are per `(lang, kind, n)`.
 

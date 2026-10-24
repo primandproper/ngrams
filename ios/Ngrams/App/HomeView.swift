@@ -10,30 +10,43 @@ struct HomeView: View {
   /// Debug builds can step through the whole bank, so a playtest isn't limited to today.
   @State private var pickedDay: PuzzleDay?
   @State private var showingSettings = false
+  @AppStorage(SettingsKey.languages) private var languages: LanguageSelection?
 
   private var day: PuzzleDay { pickedDay ?? today }
 
+  private var needsLanguages: Bool {
+    languages?.languages.isEmpty ?? true
+  }
+
   var body: some View {
     NavigationStack {
-      DayList(puzzles: bank.tilesPuzzles(on: day), day: day)
-        .navigationTitle("N-grams")
-        .navigationSubtitle(day == today ? "Today" : day.description)
-        .navigationDestination(for: TilesRoute.self) { route in
-          TilesScreen(puzzle: route.puzzle, day: route.day)
+      DayList(
+        puzzles: bank.tilesPuzzles(on: day).filter {
+          languages?.languages.contains($0.language) ?? true
+        },
+        day: day
+      )
+      .navigationTitle("N-grams")
+      .navigationSubtitle(day == today ? "Today" : day.description)
+      .navigationDestination(for: TilesRoute.self) { route in
+        TilesScreen(puzzle: route.puzzle, day: route.day)
+      }
+      .sheet(isPresented: $showingSettings) {
+        SettingsView()
+      }
+      .sheet(isPresented: .constant(needsLanguages)) {
+        LanguagePrompt { languages = $0 }
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("Settings", systemImage: "gearshape") { showingSettings = true }
         }
-        .sheet(isPresented: $showingSettings) {
-          SettingsView()
-        }
-        .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button("Settings", systemImage: "gearshape") { showingSettings = true }
+        #if DEBUG
+          ToolbarItemGroup(placement: .bottomBar) {
+            DayPicker(days: bank.days, today: today, picked: $pickedDay)
           }
-          #if DEBUG
-            ToolbarItemGroup(placement: .bottomBar) {
-              DayPicker(days: bank.days, today: today, picked: $pickedDay)
-            }
-          #endif
-        }
+        #endif
+      }
     }
     .onChange(of: scenePhase) {
       if scenePhase == .active {

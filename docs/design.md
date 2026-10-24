@@ -150,10 +150,11 @@ per-language config.
   instead of points: a plain rejection of a real word would read as a bug. The bar is slurs,
   sexual or anatomical vulgarity, and sexual-violence terms; words whose innocent sense
   dominates stay (sexual, suck, butt, Spanish pedo), and mild profanity (damn, hell, crap)
-  stays except "ass". Spanish
-  entries are stems, so blocking one blocks every form it expands to; English entries are
-  exact forms, so compounds need their own entries. The Spanish list needs Mexican slang
-  coverage, which is where most of the risk is.
+  stays except "ass". Spanish entries are stems, so blocking one blocks every form it
+  expands to; English entries are exact forms, so compounds need their own entries. Stems
+  also mean a Spanish word can only be blocked with its whole family: mamar takes mamá with
+  it and violar takes viola, so their vulgar forms (mame, violen) stay unblocked until the
+  list supports exact forms.
 
 ### `word` puzzles
 
@@ -182,10 +183,11 @@ What makes a board good is the real question, and it is not "most words":
   there is no syllable alignment.
 - **Frequency-weighted word count.** Count found words weighted by how common they are, inside
   a target range rather than maximized. The range starts at 40 to 80 common words at every N.
-  40 is the highest floor N=3 comes close to reliably: in the first 90-day bank, 34 of 180
-  N=3 boards landed at 35 to 39, which the generator logs as a warning. Whether N=4 and N=5 want a higher floor
-  of their own is for playtesting to decide. Boards settle near the floor, because the penalty
-  for obscure words pulls the count down once it's in range.
+  40 is the highest floor N=3 comes close to reliably: in the 90-day bank, 47 of 180 N=3
+  boards (30 English, 17 Spanish) land at 35 to 39, which the generator logs as a warning.
+  Whether N=4 and N=5 want a higher floor of their own is for playtesting to decide. Boards
+  settle near the floor, because the penalty for obscure words pulls the count down once it's
+  in range.
 - **Target uniqueness.** The targets should be the only N-tile words on the board, or "find
   all the full-length words" becomes ambiguous.
 - **Not trivially guessable.** Fragments should be ambiguous enough that targets aren't

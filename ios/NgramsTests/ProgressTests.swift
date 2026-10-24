@@ -68,8 +68,9 @@ struct TilesSessionTests {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
     try store.append("efgh", for: key)
 
-    #expect(session(store).boardTiles == [2, 3, 0, 1])
-    #expect(session(store, solvedTilesLeave: true).boardTiles == [0, 1])
+    // "abcd" alone is left, so its tiles can only be spread out of order.
+    #expect(session(store).boardTiles == [2, 3, 1, 0])
+    #expect(session(store, solvedTilesLeave: true).boardTiles == [1, 0])
   }
 
   @Test("answers a blocked word without saving it")
@@ -105,5 +106,6 @@ struct TilesSessionTests {
     session.shuffle()
 
     #expect(session.boardTiles.sorted() == [0, 1, 2, 3])
+    #expect(TilesLayout.isSpread(session.boardTiles, in: smallPuzzle))
   }
 }

@@ -26,7 +26,7 @@ final class TilesSession {
 
   let key: ProgressKey
   private(set) var game: TilesGame
-  /// The order the board shows tiles in. Shuffling changes only this.
+  /// The order the board shows tiles in, unsolved tiles first. Shuffling changes only this.
   private(set) var order: [Int]
   private(set) var feedback: Feedback?
 
@@ -43,8 +43,8 @@ final class TilesSession {
     self.key = key
     self.store = store
     self.logger = logger
-    self.order = Array(puzzle.tiles.indices)
 
+    var game: TilesGame
     do {
       game = TilesGame(
         puzzle: puzzle, foundWords: try store.entries(for: key),
@@ -54,6 +54,18 @@ final class TilesSession {
       game = TilesGame(puzzle: puzzle, solvedTilesLeave: solvedTilesLeave)
       feedback = Feedback(kind: .loadFailed)
     }
+    self.game = game
+    var rng = SeededGenerator(seed: "\(key.language.rawValue)-\(key.kind.rawValue)-\(key.n)-\(day)")
+    self.order = Self.arranged(game, using: &rng)
+  }
+
+  /// Spreads the unsolved tiles, then appends the solved ones, which `boardTiles` places itself.
+  private static func arranged(
+    _ game: TilesGame, using rng: inout some RandomNumberGenerator
+  ) -> [Int] {
+    let solved = game.solvedTiles
+    let unsolved = game.puzzle.tiles.indices.filter { !solved.contains($0) }
+    return TilesLayout.spread(unsolved, in: game.puzzle, using: &rng) + solved.sorted()
   }
 
   /// Tiles on the board, `n` to a row: solved targets first in the order they were found, unless
@@ -74,7 +86,8 @@ final class TilesSession {
   }
 
   func shuffle() {
-    order.shuffle()
+    var rng = SystemRandomNumberGenerator()
+    order = Self.arranged(game, using: &rng)
   }
 
   func submit() {

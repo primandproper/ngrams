@@ -46,6 +46,13 @@ final class PuzzleProgress {
       $0.language == language && $0.kind == kind && $0.n == n && $0.day == day
     }
   }
+
+  /// Every language and size of one kind on one day.
+  static func matching(kind: PuzzleKind, day: PuzzleDay) -> Predicate<PuzzleProgress> {
+    let kind = kind.rawValue
+    let day = day.description
+    return #Predicate { $0.kind == kind && $0.day == day }
+  }
 }
 
 /// Reads and writes saved progress.

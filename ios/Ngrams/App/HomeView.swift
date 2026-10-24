@@ -1,11 +1,10 @@
 import SwiftData
 import SwiftUI
 
-/// Today's puzzles in the chosen language.
+/// Every one of the day's puzzles, in every language.
 struct HomeView: View {
   let bank: PuzzleBank
 
-  @AppStorage("language") private var language = Language.en
   @Environment(\.scenePhase) private var scenePhase
   @State private var today = PuzzleDay(containing: .now)
   /// Debug builds can step through the whole bank, so a playtest isn't limited to today.
@@ -16,46 +15,24 @@ struct HomeView: View {
 
   var body: some View {
     NavigationStack {
-      List {
-        Section {
-          let puzzles = bank.tilesPuzzles(on: day, in: language)
-          if puzzles.isEmpty {
-            Text("No puzzles for \(day.description).")
-              .foregroundStyle(.secondary)
+      DayList(puzzles: bank.tilesPuzzles(on: day), day: day, isToday: day == today)
+        .navigationTitle("N-grams")
+        .navigationDestination(for: TilesRoute.self) { route in
+          TilesScreen(puzzle: route.puzzle, day: route.day)
+        }
+        .sheet(isPresented: $showingSettings) {
+          SettingsView()
+        }
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button("Settings", systemImage: "gearshape") { showingSettings = true }
           }
-          ForEach(puzzles) { puzzle in
-            NavigationLink(value: TilesRoute(puzzle: puzzle, day: day)) {
-              TilesRow(puzzle: puzzle, day: day)
+          #if DEBUG
+            ToolbarItemGroup(placement: .bottomBar) {
+              DayPicker(days: bank.days, today: today, picked: $pickedDay)
             }
-          }
-        } header: {
-          Text(day == today ? "Today" : day.description)
+          #endif
         }
-      }
-      .navigationTitle("N-grams")
-      .navigationDestination(for: TilesRoute.self) { route in
-        TilesScreen(puzzle: route.puzzle, day: route.day)
-      }
-      .sheet(isPresented: $showingSettings) {
-        SettingsView()
-      }
-      .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
-          Button("Settings", systemImage: "gearshape") { showingSettings = true }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-          Picker("Language", selection: $language) {
-            ForEach(Language.allCases, id: \.self) { language in
-              Text(language.name).tag(language)
-            }
-          }
-        }
-        #if DEBUG
-          ToolbarItemGroup(placement: .bottomBar) {
-            DayPicker(days: bank.days, today: today, picked: $pickedDay)
-          }
-        #endif
-      }
     }
     .onChange(of: scenePhase) {
       if scenePhase == .active {
@@ -73,29 +50,71 @@ private struct TilesRoute: Hashable {
   let day: PuzzleDay
 }
 
-private struct TilesRow: View {
-  let puzzle: TilesPuzzle
+/// One day's boards. Starred boards drop to a section of their own at the bottom.
+private struct DayList: View {
+  let puzzles: [TilesPuzzle]
+  let day: PuzzleDay
+  let isToday: Bool
 
   @Query private var progress: [PuzzleProgress]
 
-  init(puzzle: TilesPuzzle, day: PuzzleDay) {
-    self.puzzle = puzzle
-    let key = ProgressKey(language: puzzle.language, kind: .tiles, n: puzzle.n, day: day)
-    _progress = Query(filter: PuzzleProgress.matching(key))
+  init(puzzles: [TilesPuzzle], day: PuzzleDay, isToday: Bool) {
+    self.puzzles = puzzles
+    self.day = day
+    self.isToday = isToday
+    _progress = Query(filter: PuzzleProgress.matching(kind: .tiles, day: day))
   }
 
   var body: some View {
-    let game = TilesGame(puzzle: puzzle, foundWords: progress.first?.entries ?? [])
+    let entries = Dictionary(
+      progress.map { ("\($0.language)-\($0.n)", $0.entries) },
+      uniquingKeysWith: { first, _ in first })
+    let games = puzzles.map { TilesGame(puzzle: $0, foundWords: entries[$0.id] ?? []) }
+    let starred = games.filter(\.earnedStar)
+
+    List {
+      Section {
+        if puzzles.isEmpty {
+          Text("No puzzles for \(day.description).")
+            .foregroundStyle(.secondary)
+        }
+        rows(games.filter { !$0.earnedStar })
+      } header: {
+        Text(isToday ? "Today" : day.description)
+      }
+      if !starred.isEmpty {
+        Section("Starred") {
+          rows(starred)
+        }
+      }
+    }
+    .animation(.default, value: starred.map(\.puzzle.id))
+  }
+
+  private func rows(_ games: [TilesGame]) -> some View {
+    ForEach(games, id: \.puzzle.id) { game in
+      NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
+        TilesRow(game: game)
+      }
+    }
+  }
+}
+
+private struct TilesRow: View {
+  let game: TilesGame
+
+  var body: some View {
+    let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text("Tiles · \(puzzle.n)")
+        Text("\(puzzle.language.flag) Tiles · \(puzzle.n)")
           .font(.headline)
         Text("\(puzzle.targets.count) targets of \(puzzle.n) tiles")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
       Spacer()
-      if game.reachedTargetScore {
+      if game.earnedStar {
         Image(systemName: "star.fill")
           .foregroundStyle(.orange)
       }

@@ -48,6 +48,14 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
   means one board layout on the phone instead of three.
 - The board has N columns, so 21 or 20 tiles always fill a rectangle (7×3, 5×4, 4×5) and a
   solved target fills exactly one row.
+- The app lays tiles out, not the bank: a uniform shuffle left two of a target's tiles side by
+  side, in order, on about half of all boards. A row holds at most one tile of any target at
+  N=3 and 4 (two at N=5, where five tiles from four targets must repeat one), and no target's
+  tiles sit side by side in reading order. The app redraws random layouts until one passes
+  (about 1 in 300 at N=4, so microseconds), seeding the first by board so it's stable across
+  launches. Shuffle redraws the unsolved tiles; solving a target leaves the rest to slide up
+  as in the original.
+- A board's star takes every target and the target score.
 - As in the original, a found target's tiles lock into a row at the top of the board and stay
   usable in other words. A global "hard mode" setting takes them off the board instead. Since
   every tile belongs to a target, finishing the last target empties the board, so in hard mode
@@ -63,6 +71,9 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
 ### Shared
 
 - The day rolls over at local midnight on the device.
+- Home lists every puzzle for the day in one scrolling list, both languages marked by flag
+  (🇺🇸, 🇲🇽 for the American and Mexican word lists). Starred puzzles drop to a section at
+  the bottom.
 - Results can be shared as an emoji summary (no spoilers).
 - Stats and streaks are per `(lang, kind, n)`.
 
@@ -226,7 +237,7 @@ review pass covers exactly what the app will accept.
 
 `make bank` rebuilds it from a fixed start date, length, and seed set in the Makefile; the same
 seed and source data rebuild the same bank. No target repeats within a language. Tiles are
-shuffled, so their order gives no target away. Each day sits in its own block with one word
+shuffled, though the app lays them out itself. Each day sits in its own block with one word
 per line, so a rebuilt bank diffs by eye; `make bank ARGS=-print` prints every board for review.
 
 Accepted `word` guesses ship as one newline-separated text file per `(lang, n)`, loaded into a

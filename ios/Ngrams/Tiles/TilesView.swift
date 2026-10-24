@@ -20,7 +20,7 @@ struct TilesScreen: View {
         ProgressView()
       }
     }
-    .navigationTitle("Tiles · \(puzzle.n)")
+    .navigationTitle("\(puzzle.language.flag) Tiles · \(puzzle.n)")
     .navigationBarTitleDisplayMode(.inline)
     .onAppear {
       if session == nil {
@@ -119,10 +119,14 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(game.puzzle.targetScore), 1))
-      if game.reachedTargetScore {
-        Label("Target reached", systemImage: "star.fill")
+      if game.earnedStar {
+        Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(.orange)
+      } else if game.score >= game.puzzle.targetScore {
+        Text("Find every target for the star")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
       }
     }
   }

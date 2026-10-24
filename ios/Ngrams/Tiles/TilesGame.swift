@@ -69,8 +69,9 @@ nonisolated struct TilesGame: Sendable {
     found.reduce(0) { $0 + $1.points } + (allTargetsFound ? puzzle.bonus : 0)
   }
 
-  var reachedTargetScore: Bool {
-    score >= puzzle.targetScore
+  /// A star takes every target and the target score.
+  var earnedStar: Bool {
+    allTargetsFound && score >= puzzle.targetScore
   }
 
   /// Selects a tile, or deselects it if it's already selected. A word holds at most `n` tiles,

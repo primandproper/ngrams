@@ -105,19 +105,31 @@ struct TilesGameTests {
 
     #expect(game.allTargetsFound)
     #expect(game.score == 2 + 2 + 40)
-    #expect(!game.reachedTargetScore)
+    #expect(!game.earnedStar)
   }
 
-  @Test("reaches the target score")
-  func reachesTarget() {
+  @Test("earns a star with every target and the target score")
+  func earnsStar() {
     let game = TilesGame(puzzle: smallPuzzle, foundWords: ["abcd", "efgh", "ab", "ef"])
 
     #expect(game.score == 46)
-    #expect(!game.reachedTargetScore)
-    let easier = TilesPuzzle(
+    #expect(!game.earnedStar)
+    let easier = puzzle(targetScore: 46)
+    #expect(TilesGame(puzzle: easier, foundWords: game.foundWords).earnedStar)
+  }
+
+  @Test("withholds the star until every target is found")
+  func starNeedsTargets() {
+    let game = TilesGame(puzzle: puzzle(targetScore: 4), foundWords: ["abcd", "ab", "ef"])
+
+    #expect(game.score >= 4)
+    #expect(!game.earnedStar)
+  }
+
+  private func puzzle(targetScore: Int) -> TilesPuzzle {
+    TilesPuzzle(
       language: .en, n: 2, tiles: smallPuzzle.tiles, targets: smallPuzzle.targets, bonus: 40,
-      targetScore: 46, words: smallPuzzle.words, blocked: [])
-    #expect(TilesGame(puzzle: easier, foundWords: game.foundWords).reachedTargetScore)
+      targetScore: targetScore, words: smallPuzzle.words, blocked: [])
   }
 
   @Test("restores saved words, dropping repeats and words the board doesn't have")

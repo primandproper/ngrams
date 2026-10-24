@@ -11,7 +11,7 @@ struct PuzzleBankTests {
 
     #expect(bank.seed == 7)
     #expect(bank.days == [testDay])
-    let puzzle = try #require(bank.tilesPuzzles(on: testDay, in: .en).first)
+    let puzzle = try #require(bank.tilesPuzzles(on: testDay).first)
     #expect(puzzle.tiles == ["ab", "cd"])
     #expect(puzzle.targets == [[0, 1]])
     #expect(puzzle.targetScore == 62)
@@ -23,21 +23,20 @@ struct PuzzleBankTests {
   func decodesWithoutBlocked() throws {
     let bank = try PuzzleBank.decode(bankJSON(puzzles: [tilesPuzzleJSON(blocked: nil)]))
 
-    let puzzle = try #require(bank.tilesPuzzles(on: testDay, in: .en).first)
+    let puzzle = try #require(bank.tilesPuzzles(on: testDay).first)
     #expect(puzzle.blocked.isEmpty)
   }
 
-  @Test("filters by language and sorts by size")
-  func filtersAndSorts() throws {
+  @Test("sorts by language, then size")
+  func sorts() throws {
     let bank = try PuzzleBank.decode(
       bankJSON(puzzles: [
-        tilesPuzzleJSON(n: 3, targets: "[]"), tilesPuzzleJSON(lang: "es"),
+        tilesPuzzleJSON(lang: "es"), tilesPuzzleJSON(n: 3, targets: "[]"),
         tilesPuzzleJSON(n: 2),
       ]))
 
-    #expect(bank.tilesPuzzles(on: testDay, in: .en).map(\.n) == [2, 3])
-    #expect(bank.tilesPuzzles(on: testDay, in: .es).count == 1)
-    #expect(bank.tilesPuzzles(on: PuzzleDay(year: 2027, month: 1, day: 2), in: .en).isEmpty)
+    #expect(bank.tilesPuzzles(on: testDay).map(\.id) == ["en-2", "en-3", "es-2"])
+    #expect(bank.tilesPuzzles(on: PuzzleDay(year: 2027, month: 1, day: 2)).isEmpty)
   }
 
   @Test("skips kinds and languages it doesn't know")
@@ -48,7 +47,7 @@ struct PuzzleBankTests {
         tilesPuzzleJSON(lang: "fr"),
       ]))
 
-    #expect(bank.tilesPuzzles(on: testDay, in: .en).isEmpty)
+    #expect(bank.tilesPuzzles(on: testDay).isEmpty)
   }
 
   @Test("rejects an unsupported version")
@@ -79,9 +78,8 @@ struct PuzzleBankTests {
 
     #expect(!bank.days.isEmpty)
     for day in bank.days {
-      for language in Language.allCases {
-        #expect(bank.tilesPuzzles(on: day, in: language).map(\.n) == [3, 4, 5])
-      }
+      #expect(
+        bank.tilesPuzzles(on: day).map(\.id) == ["en-3", "en-4", "en-5", "es-3", "es-4", "es-5"])
     }
   }
 }

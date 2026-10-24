@@ -11,6 +11,14 @@ nonisolated enum Language: String, CaseIterable, Codable, Sendable {
     case .es: "Español"
     }
   }
+
+  /// The country whose word list and usage the language follows.
+  var flag: String {
+    switch self {
+    case .en: "🇺🇸"
+    case .es: "🇲🇽"
+    }
+  }
 }
 
 /// The game kinds, as the bank and saved progress name them.
@@ -33,9 +41,12 @@ nonisolated struct PuzzleBank: Sendable {
     self.days = tiles.keys.sorted()
   }
 
-  /// The day's tiles puzzles in one language, smallest board first.
-  func tilesPuzzles(on day: PuzzleDay, in language: Language) -> [TilesPuzzle] {
-    (tiles[day] ?? []).filter { $0.language == language }.sorted { $0.n < $1.n }
+  /// The day's tiles puzzles, by language in `Language.allCases` order, then smallest board first.
+  func tilesPuzzles(on day: PuzzleDay) -> [TilesPuzzle] {
+    let rank = Dictionary(uniqueKeysWithValues: Language.allCases.enumerated().map { ($1, $0) })
+    return (tiles[day] ?? []).sorted {
+      (rank[$0.language] ?? 0, $0.n) < (rank[$1.language] ?? 0, $1.n)
+    }
   }
 
   /// Decodes a bank from the generator's JSON.

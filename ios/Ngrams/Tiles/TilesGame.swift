@@ -3,6 +3,7 @@ nonisolated struct TilesGame: Sendable {
   enum Submission: Equatable, Sendable {
     case found(TilesWord)
     case alreadyFound(TilesWord)
+    case blocked(String)
     case notAWord(String)
     case empty
   }
@@ -12,14 +13,18 @@ nonisolated struct TilesGame: Sendable {
   private(set) var found: [TilesWord] = []
   /// Selected tile indices, in the order they were tapped.
   private(set) var selection: [Int] = []
+  /// Whether a found target's tiles leave the board, so no other word can use them. Quartiles
+  /// keeps them in play; this is the harder variant.
+  let solvedTilesLeave: Bool
 
   private let words: [String: TilesWord]
   private let targetIndex: [String: Int]
 
   /// Starts a board, restoring `foundWords` from saved progress. Saved words the board doesn't
   /// have (the bank was rebuilt since) are dropped.
-  init(puzzle: TilesPuzzle, foundWords: [String] = []) {
+  init(puzzle: TilesPuzzle, foundWords: [String] = [], solvedTilesLeave: Bool = false) {
     self.puzzle = puzzle
+    self.solvedTilesLeave = solvedTilesLeave
     let words = Dictionary(
       puzzle.words.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.words = words
@@ -51,7 +56,7 @@ nonisolated struct TilesGame: Sendable {
     found.compactMap { targetIndex[$0.word] }
   }
 
-  /// Tiles belonging to a found target. They leave the board.
+  /// Tiles belonging to a found target.
   var solvedTiles: Set<Int> {
     Set(solvedTargets.flatMap { puzzle.targets[$0] })
   }
@@ -68,13 +73,13 @@ nonisolated struct TilesGame: Sendable {
     score >= puzzle.targetScore
   }
 
-  /// Selects a tile, or deselects it if it's already selected. Solved tiles can't be selected,
-  /// and a word holds at most `n` tiles.
+  /// Selects a tile, or deselects it if it's already selected. A word holds at most `n` tiles,
+  /// and solved tiles can't be selected once they've left the board.
   mutating func toggle(_ tile: Int) {
     if let position = selection.firstIndex(of: tile) {
       selection.remove(at: position)
     } else if selection.count < puzzle.n, puzzle.tiles.indices.contains(tile),
-      !solvedTiles.contains(tile)
+      !(solvedTilesLeave && solvedTiles.contains(tile))
     {
       selection.append(tile)
     }
@@ -92,6 +97,9 @@ nonisolated struct TilesGame: Sendable {
     }
     selection.removeAll()
 
+    if puzzle.blocked.contains(text) {
+      return .blocked(text)
+    }
     guard let word = words[text] else {
       return .notAWord(text)
     }

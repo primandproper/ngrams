@@ -15,17 +15,19 @@ import (
 )
 
 // testLanguage has eight four-letter targets that each split only as two 2-letter tiles,
-// plus "ab", a one-tile word, and "cañon", whose display spelling differs.
+// plus "ab", a one-tile word, "cañon", whose display spelling differs, and "cdab", which is
+// blocked.
 func testLanguage() Language {
 	targets := []string{"abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "bdac", "egfh"}
-	display := map[string]string{"ab": "ab", "cañon": "cañón"}
+	display := map[string]string{"ab": "ab", "cañon": "cañón", "cdab": "cdab"}
 	freq := map[string]int{"ab": 50}
+	blocked := map[string]bool{"cdab": true}
 	for _, word := range targets {
 		display[word] = word
 		freq[word] = 100
 	}
 
-	return Language{Code: "en", Lexicon: lexicon.New(display, freq, nil, targets)}
+	return Language{Code: "en", Lexicon: lexicon.New(display, freq, blocked, targets)}
 }
 
 func testBuildConfig() *BuildConfig {
@@ -153,6 +155,26 @@ func TestTilesPuzzle(T *testing.T) {
 		must.Eq(t, "cañón", p.Words[2].Display)
 		must.Eq(t, "abcd", joinTiles(&p, p.Targets[0]))
 		must.Eq(t, 2+tiles.AllTargetsBonus+20, p.TargetScore)
+	})
+
+	T.Run("moves blocked words out of the scoring list", func(t *testing.T) {
+		t.Parallel()
+
+		lang := testLanguage()
+		board := &tiles.Board{
+			Targets: []string{"abcd"},
+			Tiles:   []string{"ab", "cd"},
+			Found: []tiles.FoundWord{
+				{Word: "abcd", Tiles: []int{0, 1}},
+				{Word: "cdab", Tiles: []int{1, 0}},
+			},
+		}
+
+		p := tilesPuzzle(lang, 2, board, testRand())
+
+		must.Eq(t, []string{"cdab"}, p.Blocked)
+		must.SliceLen(t, 1, p.Words)
+		must.Eq(t, "abcd", p.Words[0].Word)
 	})
 }
 

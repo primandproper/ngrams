@@ -1,8 +1,8 @@
-# Starter English blocklist. One word per line; # starts a comment.
+# English blocklist. One word per line; # starts a comment.
 # ENABLE has no stems, so list every form to block.
 #
-# Blocked words never become targets. They stay valid as found words, but the
-# generator steers away from boards that contain them.
+# Blocked words never become targets or score, and the generator steers away from
+# boards that can spell them. Spelling one in the app gets "How dare you".
 
 asshole
 assholes

@@ -10,6 +10,7 @@ struct HomeView: View {
   @State private var today = PuzzleDay(containing: .now)
   /// Debug builds can step through the whole bank, so a playtest isn't limited to today.
   @State private var pickedDay: PuzzleDay?
+  @State private var showingSettings = false
 
   private var day: PuzzleDay { pickedDay ?? today }
 
@@ -35,7 +36,13 @@ struct HomeView: View {
       .navigationDestination(for: TilesRoute.self) { route in
         TilesScreen(puzzle: route.puzzle, day: route.day)
       }
+      .sheet(isPresented: $showingSettings) {
+        SettingsView()
+      }
       .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button("Settings", systemImage: "gearshape") { showingSettings = true }
+        }
         ToolbarItem(placement: .topBarTrailing) {
           Picker("Language", selection: $language) {
             ForEach(Language.allCases, id: \.self) { language in

@@ -58,6 +58,17 @@ struct TilesGameTests {
     #expect(game.found.isEmpty)
   }
 
+  @Test("recognizes a blocked word without scoring it")
+  func blocked() {
+    var game = TilesGame(puzzle: smallPuzzle)
+    game.toggle(2)
+    game.toggle(0)
+
+    #expect(game.submit() == .blocked("efab"))
+    #expect(game.found.isEmpty)
+    #expect(game.score == 0)
+  }
+
   @Test("ignores an empty submission")
   func empty() {
     var game = TilesGame(puzzle: smallPuzzle)
@@ -65,7 +76,7 @@ struct TilesGameTests {
     #expect(game.submit() == .empty)
   }
 
-  @Test("takes a found target's tiles off the board")
+  @Test("keeps a found target's tiles in play")
   func solvesTarget() {
     var game = TilesGame(puzzle: smallPuzzle)
     game.toggle(2)
@@ -75,7 +86,17 @@ struct TilesGameTests {
     #expect(game.solvedTargets == [1])
     #expect(game.solvedTiles == [2, 3])
     game.toggle(2)
+    #expect(game.selection == [2])
+  }
+
+  @Test("takes a found target's tiles off the board when solved tiles leave")
+  func solvedTilesLeave() {
+    var game = TilesGame(puzzle: smallPuzzle, foundWords: ["efgh"], solvedTilesLeave: true)
+
+    game.toggle(2)
     #expect(game.selection.isEmpty)
+    game.toggle(0)
+    #expect(game.selection == [0])
   }
 
   @Test("adds the bonus once every target is found")
@@ -95,7 +116,7 @@ struct TilesGameTests {
     #expect(!game.reachedTargetScore)
     let easier = TilesPuzzle(
       language: .en, n: 2, tiles: smallPuzzle.tiles, targets: smallPuzzle.targets, bonus: 40,
-      targetScore: 46, words: smallPuzzle.words)
+      targetScore: 46, words: smallPuzzle.words, blocked: [])
     #expect(TilesGame(puzzle: easier, foundWords: game.foundWords).reachedTargetScore)
   }
 

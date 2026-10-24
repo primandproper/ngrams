@@ -46,6 +46,12 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
   At N=3, 15 tiles can't produce 40 common words in either language; 21 can. At N=5, 20 tiles
   reach the same word counts as 25, so the extra tiles are clutter. A constant tile count also
   means one board layout on the phone instead of three.
+- The board has N columns, so 21 or 20 tiles always fill a rectangle (7×3, 5×4, 4×5) and a
+  solved target fills exactly one row.
+- As in the original, a found target's tiles lock into a row at the top of the board and stay
+  usable in other words. A global "hard mode" setting takes them off the board instead. Since
+  every tile belongs to a target, finishing the last target empties the board, so in hard mode
+  the 20 points beyond the targets and bonus have to come before the last target.
 - Scoring borrows the original's curve. Quartiles (per Apple's help page, checked 2026-10-23)
   scores 1, 2, 4, and 8 points for words of 1 to 4 tiles, adds 40 for finding all five
   Quartiles, and calls 100 points "Expert". Here a word of k tiles scores 2^(k-1) at every N,
@@ -139,8 +145,12 @@ per-language config.
   filters out the junk in its tail. In both languages targets come only from the top 50k
   ranks, and a found word counts as common at 20 or more occurrences.
 - Blocklist: one per language, in `data/blocklists/`. Offensive words are excluded from
-  answers and targets. They stay valid as guesses and as found words, since rejecting a real
-  word reads as a bug, but the board search penalizes boards that contain them. Spanish
+  answers and targets, and the board search penalizes boards that can spell them. A board
+  that still can lists them apart from its scoring words, and spelling one gets "How dare you"
+  instead of points: a plain rejection of a real word would read as a bug. The bar is slurs,
+  sexual or anatomical vulgarity, and sexual-violence terms; words whose innocent sense
+  dominates stay (sexual, suck, butt, Spanish pedo), and mild profanity (damn, hell, crap)
+  stays except "ass". Spanish
   entries are stems, so blocking one blocks every form it expands to; English entries are
   exact forms, so compounds need their own entries. The Spanish list needs Mexican slang
   coverage, which is where most of the risk is.
@@ -221,8 +231,9 @@ Accepted `word` guesses ship as one newline-separated text file per `(lang, n)`,
 `Set<String>`.
 
 The format (puzzles are a list per day, so adding a language, kind, or size is additive).
-`display` appears only when the accented spelling differs from the folded one. `word` puzzles
-are still a sketch:
+`display` appears only when the accented spelling differs from the folded one. `blocked` lists
+the folded spellings of offensive words the tiles can build, and appears only when there are
+any. `word` puzzles are still a sketch:
 
 ```json
 {
@@ -242,6 +253,7 @@ are still a sketch:
           "targets": [[0, 4, 9], "..."],
           "bonus": 40,
           "target_score": 88,
+          "blocked": ["..."],
           "words": [{ "word": "staple", "tiles": [0, 1], "points": 2 }, "..."]
         }
       ]

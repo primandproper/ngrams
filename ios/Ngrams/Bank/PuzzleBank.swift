@@ -94,6 +94,8 @@ nonisolated struct TilesPuzzle: Sendable, Hashable, Identifiable {
   let bonus: Int
   let targetScore: Int
   let words: [TilesWord]
+  /// Folded spellings of offensive words the tiles can build. They score nothing.
+  let blocked: Set<String>
 
   var id: String { "\(language.rawValue)-\(n)" }
 }
@@ -129,7 +131,7 @@ nonisolated private struct PuzzleFile: Decodable {
   let tiles: TilesPuzzle?
 
   private enum CodingKeys: String, CodingKey {
-    case lang, kind, n, tiles, targets, bonus, targetScore, words
+    case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked
   }
 
   init(from decoder: any Decoder) throws {
@@ -156,6 +158,7 @@ nonisolated private struct PuzzleFile: Decodable {
       targets: targets,
       bonus: try container.decode(Int.self, forKey: .bonus),
       targetScore: try container.decode(Int.self, forKey: .targetScore),
-      words: words)
+      words: words,
+      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []))
   }
 }

@@ -49,16 +49,13 @@ func printBank(w io.Writer, b *bank.Bank, lexicons map[string]*lexicon.Lexicon) 
 }
 
 func printPuzzle(out *reporter, date string, p *bank.Puzzle, lex *lexicon.Lexicon) {
-	var common, obscure, blocked int
+	var common, obscure int
 	byTileCount := map[int][]string{}
 	fragmentUse := map[string]int{}
 	for i := range p.Words {
 		w := &p.Words[i]
 		label := cmp.Or(w.Display, w.Word)
-		if _, isCommon := lex.Count(w.Word); lex.Blocked(w.Word) {
-			label += "!"
-			blocked++
-		} else if !isCommon {
+		if _, isCommon := lex.Count(w.Word); !isCommon {
 			label += "*"
 			obscure++
 		} else {
@@ -71,7 +68,7 @@ func printPuzzle(out *reporter, date string, p *bank.Puzzle, lex *lexicon.Lexico
 	}
 
 	out.printf("\n==== %s %s n=%d: %d words (%d common, %d obscure, %d blocked), target score %d\n",
-		date, p.Lang, p.N, len(p.Words), common, obscure, blocked, p.TargetScore)
+		date, p.Lang, p.N, len(p.Words), common, obscure, len(p.Blocked), p.TargetScore)
 
 	sorted := slices.Clone(p.Tiles)
 	slices.Sort(sorted)
@@ -87,11 +84,14 @@ func printPuzzle(out *reporter, date string, p *bank.Puzzle, lex *lexicon.Lexico
 		out.printf("  %-20s %s\n", lex.Display(word), strings.Join(split, " · "))
 	}
 
-	out.println("words (* = obscure, ! = blocked):")
+	out.println("words (* = obscure):")
 	for tileCount := 1; tileCount <= p.N; tileCount++ {
 		if words := byTileCount[tileCount]; len(words) > 0 {
 			printWrapped(out, fmt.Sprintf("  %d tile: ", tileCount), words)
 		}
+	}
+	if len(p.Blocked) > 0 {
+		printWrapped(out, "  blocked: ", p.Blocked)
 	}
 
 	fragments := make([]string, 0, len(fragmentUse))

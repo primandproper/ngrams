@@ -1,9 +1,9 @@
-# Starter Spanish blocklist, Mexican usage. One word per line; # starts a comment.
+# Spanish blocklist, Mexican usage. One word per line; # starts a comment.
 # Entries are dictionary stems: every form expanded from a stem is blocked too
 # (joder blocks joden, mamón blocks mamona). Accents are optional.
 #
-# Blocked words never become targets. They stay valid as found words, but the
-# generator steers away from boards that contain them.
+# Blocked words never become targets or score, and the generator steers away from
+# boards that can spell them. Spelling one in the app gets "How dare you".
 
 cabrón
 chingada

@@ -42,11 +42,16 @@ struct ProgressStoreTests {
 
 @Suite("TilesSession")
 struct TilesSessionTests {
+  private func session(_ store: ProgressStore, solvedTilesLeave: Bool = false) -> TilesSession {
+    TilesSession(
+      puzzle: smallPuzzle, day: testDay, solvedTilesLeave: solvedTilesLeave, store: store,
+      observer: recordingObserver("test"))
+  }
+
   @Test("saves each found word and restores it")
   func savesAndRestores() throws {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
-    let session = TilesSession(
-      puzzle: smallPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+    let session = self.session(store)
 
     session.tap(0)
     session.tap(1)
@@ -54,17 +59,36 @@ struct TilesSessionTests {
 
     #expect(session.feedback?.kind == .found(smallPuzzle.words[2]))
     #expect(try store.entries(for: key) == ["abcd"])
-    let restored = TilesSession(
-      puzzle: smallPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+    let restored = self.session(store)
     #expect(restored.game.foundWords == ["abcd"])
-    #expect(restored.boardTiles == [2, 3])
+  }
+
+  @Test("puts solved targets first on the board")
+  func solvedRowsFirst() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    try store.append("efgh", for: key)
+
+    #expect(session(store).boardTiles == [2, 3, 0, 1])
+    #expect(session(store, solvedTilesLeave: true).boardTiles == [0, 1])
+  }
+
+  @Test("answers a blocked word without saving it")
+  func blocked() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    session.tap(2)
+    session.tap(0)
+    session.submit()
+
+    #expect(session.feedback?.kind == .blocked)
+    #expect(try store.entries(for: key).isEmpty)
   }
 
   @Test("doesn't save words that aren't on the list")
   func skipsMisses() throws {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
-    let session = TilesSession(
-      puzzle: smallPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+    let session = self.session(store)
 
     session.tap(1)
     session.submit()
@@ -76,8 +100,7 @@ struct TilesSessionTests {
   @Test("shuffles without losing tiles")
   func shuffles() throws {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
-    let session = TilesSession(
-      puzzle: smallPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+    let session = self.session(store)
 
     session.shuffle()
 

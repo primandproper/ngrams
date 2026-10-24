@@ -43,11 +43,14 @@ type (
 
 	// Puzzle is one game. Fields past N belong to one kind and are empty for the others.
 	Puzzle struct {
-		_           struct{} `json:"-"`
-		Lang        string   `json:"lang"`
-		Kind        string   `json:"kind"`
-		Tiles       []string `json:"tiles,omitempty"`
-		Targets     [][]int  `json:"targets,omitempty"`
+		_       struct{} `json:"-"`
+		Lang    string   `json:"lang"`
+		Kind    string   `json:"kind"`
+		Tiles   []string `json:"tiles,omitempty"`
+		Targets [][]int  `json:"targets,omitempty"`
+		// Blocked holds the folded spellings of offensive words the tiles can build. They
+		// score nothing, so they aren't in Words.
+		Blocked     []string `json:"blocked,omitempty"`
 		Words       []Word   `json:"words,omitempty"`
 		N           int      `json:"n"`
 		Bonus       int      `json:"bonus,omitempty"`
@@ -189,6 +192,10 @@ func tilesPuzzle(lang Language, n int, board *tiles.Board, rng *rand.Rand) Puzzl
 
 	for i := range board.Found {
 		found := &board.Found[i]
+		if lang.Lexicon.Blocked(found.Word) {
+			p.Blocked = append(p.Blocked, found.Word)
+			continue
+		}
 		w := Word{Word: found.Word, Tiles: moved(found.Tiles), Points: tiles.Points(len(found.Tiles))}
 		if shown := lang.Lexicon.Display(found.Word); shown != found.Word {
 			w.Display = shown

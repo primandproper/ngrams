@@ -14,6 +14,7 @@ final class TilesSession {
     enum Kind: Equatable {
       case found(TilesWord)
       case alreadyFound(TilesWord)
+      case blocked
       case notAWord(String)
       case saveFailed
       case loadFailed
@@ -32,7 +33,10 @@ final class TilesSession {
   private let store: ProgressStore
   private let logger: any Logger
 
-  init(puzzle: TilesPuzzle, day: PuzzleDay, store: ProgressStore, observer: any Observer) {
+  init(
+    puzzle: TilesPuzzle, day: PuzzleDay, solvedTilesLeave: Bool, store: ProgressStore,
+    observer: any Observer
+  ) {
     let key = ProgressKey(language: puzzle.language, kind: .tiles, n: puzzle.n, day: day)
     let logger = observer.logger.withValue("day", day.description).withValue("n", puzzle.n)
       .withValue("lang", puzzle.language.rawValue)
@@ -42,18 +46,23 @@ final class TilesSession {
     self.order = Array(puzzle.tiles.indices)
 
     do {
-      game = TilesGame(puzzle: puzzle, foundWords: try store.entries(for: key))
+      game = TilesGame(
+        puzzle: puzzle, foundWords: try store.entries(for: key),
+        solvedTilesLeave: solvedTilesLeave)
     } catch {
       logger.error("loading tiles progress", error)
-      game = TilesGame(puzzle: puzzle)
+      game = TilesGame(puzzle: puzzle, solvedTilesLeave: solvedTilesLeave)
       feedback = Feedback(kind: .loadFailed)
     }
   }
 
-  /// Unsolved tiles, in board order.
+  /// Tiles on the board, `n` to a row: solved targets first in the order they were found, unless
+  /// solved tiles leave the board, then the rest in board order.
   var boardTiles: [Int] {
     let solved = game.solvedTiles
-    return order.filter { !solved.contains($0) }
+    let solvedRows =
+      game.solvedTilesLeave ? [] : game.solvedTargets.flatMap { game.puzzle.targets[$0] }
+    return solvedRows + order.filter { !solved.contains($0) }
   }
 
   func tap(_ tile: Int) {
@@ -76,6 +85,9 @@ final class TilesSession {
       feedback = Feedback(kind: .notAWord(text))
     case .alreadyFound(let word):
       feedback = Feedback(kind: .alreadyFound(word))
+    case .blocked:
+      logger.debug("spelled a blocked word")
+      feedback = Feedback(kind: .blocked)
     case .found(let word):
       feedback = Feedback(kind: .found(word))
       do {

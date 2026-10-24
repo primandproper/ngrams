@@ -16,6 +16,15 @@ struct PuzzleBankTests {
     #expect(puzzle.targets == [[0, 1]])
     #expect(puzzle.targetScore == 62)
     #expect(puzzle.words.map(\.shown) == ["ab", "ábcd"])
+    #expect(puzzle.blocked == ["cdab"])
+  }
+
+  @Test("decodes a board with no blocked words")
+  func decodesWithoutBlocked() throws {
+    let bank = try PuzzleBank.decode(bankJSON(puzzles: [tilesPuzzleJSON(blocked: nil)]))
+
+    let puzzle = try #require(bank.tilesPuzzles(on: testDay, in: .en).first)
+    #expect(puzzle.blocked.isEmpty)
   }
 
   @Test("filters by language and sorts by size")

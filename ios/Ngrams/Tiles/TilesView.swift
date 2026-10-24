@@ -9,6 +9,7 @@ struct TilesScreen: View {
 
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
+  @AppStorage(SettingsKey.solvedTilesLeave) private var solvedTilesLeave = false
   @State private var session: TilesSession?
 
   var body: some View {
@@ -25,8 +26,8 @@ struct TilesScreen: View {
       if session == nil {
         let observer = makeObserver("TilesSession", pillars)
         session = TilesSession(
-          puzzle: puzzle, day: day, store: ProgressStore(context: context, observer: observer),
-          observer: observer)
+          puzzle: puzzle, day: day, solvedTilesLeave: solvedTilesLeave,
+          store: ProgressStore(context: context, observer: observer), observer: observer)
       }
     }
   }
@@ -35,13 +36,19 @@ struct TilesScreen: View {
 struct TilesView: View {
   @Bindable var session: TilesSession
 
-  private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+  /// One column per tile in a target, so every board is a full rectangle and a solved target
+  /// fills exactly one row.
+  private var columns: [GridItem] {
+    Array(repeating: GridItem(.flexible(), spacing: 8), count: session.game.puzzle.n)
+  }
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
         ScoreHeader(game: session.game)
-        SolvedTargets(game: session.game)
+        if session.game.solvedTilesLeave {
+          SolvedTargets(game: session.game)
+        }
         board
         controls
         FoundWords(words: session.game.found)
@@ -72,7 +79,8 @@ struct TilesView: View {
         ForEach(session.boardTiles, id: \.self) { tile in
           TileButton(
             text: session.game.puzzle.tiles[tile],
-            position: session.game.selection.firstIndex(of: tile)
+            position: session.game.selection.firstIndex(of: tile),
+            solved: session.game.solvedTiles.contains(tile)
           ) {
             session.tap(tile)
           }
@@ -154,18 +162,25 @@ private struct TileButton: View {
   let text: String
   /// Where this tile sits in the current word, if it's selected.
   let position: Int?
+  let solved: Bool
   let action: () -> Void
+
+  private var background: Color {
+    if position != nil {
+      return .accentColor
+    }
+    return solved ? .green.opacity(0.2) : Color(.secondarySystemBackground)
+  }
 
   var body: some View {
     Button(action: action) {
       Text(text)
         .font(.title3.weight(.medium).monospaced())
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
         .frame(maxWidth: .infinity, minHeight: 56)
         .foregroundStyle(position == nil ? Color.primary : Color.white)
-        .background(
-          position == nil ? Color(.secondarySystemBackground) : Color.accentColor,
-          in: .rect(cornerRadius: 10)
-        )
+        .background(background, in: .rect(cornerRadius: 10))
         .overlay(alignment: .topTrailing) {
           if let position {
             Text("\(position + 1)")
@@ -218,6 +233,7 @@ private struct FeedbackBanner: View {
     switch feedback.kind {
     case .found(let word): "\(word.shown) +\(word.points)"
     case .alreadyFound(let word): "Already found \(word.shown)"
+    case .blocked: "How dare you"
     case .notAWord(let text): "\(text) isn't on the list"
     case .saveFailed: "Couldn't save that word"
     case .loadFailed: "Couldn't load saved progress"

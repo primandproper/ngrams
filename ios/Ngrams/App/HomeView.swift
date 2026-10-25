@@ -150,14 +150,14 @@ private enum Entry: Identifiable {
     }
   }
 
-  /// Orders by the grouping's section first, then the other of game and size, then language.
-  /// Games and languages go in `allCases` order.
+  /// By game: game, then language, then size. By N: size, then game, then language. Games and
+  /// languages go in `allCases` order.
   func precedes(_ other: Entry, groupedBy grouping: HomeGrouping) -> Bool {
     func key(_ entry: Entry) -> (Int, Int, Int) {
       let kind = PuzzleKind.allCases.firstIndex(of: entry.kind) ?? 0
       let language = Language.allCases.firstIndex(of: entry.language) ?? 0
       return switch grouping {
-      case .game: (kind, entry.n, language)
+      case .game: (kind, language, entry.n)
       case .n: (entry.n, kind, language)
       }
     }
@@ -165,7 +165,8 @@ private enum Entry: Identifiable {
   }
 }
 
-/// One day's puzzles, a section per game or per N. Completed puzzles leave their section for a
+/// One day's puzzles, a section per game or per N. By game, each language gets its own group
+/// within the section when more than one is on. Completed puzzles leave their section for a
 /// "Completed" section at the bottom.
 private struct DayList: View {
   let words: [WordPuzzle]
@@ -213,6 +214,7 @@ private struct DayList: View {
     let all = self.all
     let open = all.filter { !$0.isCompleted }
     let completed = all.filter(\.isCompleted)
+    let multilingual = Set(all.map(\.language)).count > 1
 
     List {
       if all.isEmpty {
@@ -225,20 +227,37 @@ private struct DayList: View {
           let ofKind = open.filter { $0.kind == kind }
           if !ofKind.isEmpty {
             Section(kind.name) {
-              rows(ofKind, in: .game)
+              if multilingual {
+                ForEach(
+                  Language.allCases.filter { l in ofKind.contains { $0.language == l } }, id: \.self
+                ) {
+                  language in
+                  Text("\(language.flag) \(language.name)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                  rows(
+                    ofKind.filter { $0.language == language },
+                    labeled: RowLabeling(section: .game, showsFlag: false)
+                  )
+                  .padding(.leading)
+                }
+              } else {
+                rows(ofKind, labeled: RowLabeling(section: .game, showsFlag: false))
+              }
             }
           }
         }
       case .n:
         ForEach(Set(open.map(\.n)).sorted(), id: \.self) { n in
           Section("N=\(n)") {
-            rows(open.filter { $0.n == n }, in: .n)
+            rows(
+              open.filter { $0.n == n }, labeled: RowLabeling(section: .n, showsFlag: multilingual))
           }
         }
       }
       if !completed.isEmpty {
         Section("Completed") {
-          rows(completed, in: nil)
+          rows(completed, labeled: RowLabeling(section: nil, showsFlag: multilingual))
         }
       }
     }
@@ -246,48 +265,55 @@ private struct DayList: View {
     .animation(.default, value: grouping)
   }
 
-  /// `section` is the grouping whose section the rows sit in, or nil in Completed.
-  private func rows(_ entries: [Entry], in section: HomeGrouping?) -> some View {
+  private func rows(_ entries: [Entry], labeled labeling: RowLabeling) -> some View {
     ForEach(entries) { entry in
       switch entry {
       case .word(let game):
         NavigationLink(value: WordRoute(puzzle: game.puzzle, day: day)) {
-          WordRow(game: game, section: section)
+          WordRow(game: game, labeling: labeling)
         }
       case .tiles(let game):
         NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
-          TilesRow(game: game, section: section)
+          TilesRow(game: game, labeling: labeling)
         }
       case .pangram(let game):
         NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
-          PangramRow(game: game, section: section)
+          PangramRow(game: game, labeling: labeling)
         }
       }
     }
   }
 }
 
-/// A row's headline: the language's flag, then whichever of the game and N its section header
-/// doesn't already say.
-private func rowTitle(
-  _ kind: PuzzleKind, _ language: Language, _ n: Int, section: HomeGrouping?
-) -> String {
-  switch section {
-  case .game: "\(language.flag) N=\(n)"
-  case .n: "\(language.flag) \(kind.name)"
-  case nil: "\(language.flag) \(kind.name) · N=\(n)"
+/// What a row's headline says beyond its section header.
+private struct RowLabeling {
+  /// The grouping whose section the row sits in, or nil in Completed.
+  let section: HomeGrouping?
+  /// Whether the headline leads with the language's flag: only when more than one language is
+  /// on, and not under a language's own group.
+  let showsFlag: Bool
+
+  /// Whichever of the game and N the section header doesn't already say.
+  func title(_ kind: PuzzleKind, _ language: Language, _ n: Int) -> String {
+    let title =
+      switch section {
+      case .game: "N=\(n)"
+      case .n: kind.name
+      case nil: "\(kind.name) · N=\(n)"
+      }
+    return showsFlag ? "\(language.flag) \(title)" : title
   }
 }
 
 private struct WordRow: View {
   let game: WordGame
-  let section: HomeGrouping?
+  let labeling: RowLabeling
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.word, puzzle.language, puzzle.n, section: section))
+        Text(labeling.title(.word, puzzle.language, puzzle.n))
           .font(.headline)
         Text("\(puzzle.n) letters")
           .font(.subheadline)
@@ -318,13 +344,13 @@ private struct WordRow: View {
 
 private struct PangramRow: View {
   let game: PangramGame
-  let section: HomeGrouping?
+  let labeling: RowLabeling
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.pangram, puzzle.language, puzzle.n, section: section))
+        Text(labeling.title(.pangram, puzzle.language, puzzle.n))
           .font(.headline)
         Text("\(puzzle.n) letters")
           .font(.subheadline)
@@ -344,13 +370,13 @@ private struct PangramRow: View {
 
 private struct TilesRow: View {
   let game: TilesGame
-  let section: HomeGrouping?
+  let labeling: RowLabeling
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.tiles, puzzle.language, puzzle.n, section: section))
+        Text(labeling.title(.tiles, puzzle.language, puzzle.n))
           .font(.headline)
         Text("\(puzzle.targets.count) targets")
           .font(.subheadline)

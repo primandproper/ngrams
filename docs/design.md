@@ -115,8 +115,10 @@ game under that name, is already on the App Store (checked 2026-10-24).
 
 - The day rolls over at local midnight on the device.
 - Home lists every puzzle for the day on one screen, grouped by game ("Tiles") or by N ("N=4")
-  from a toolbar menu, and remembers the choice. Within a section rows run by the other of game
-  and N, then by language, marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word lists).
+  from a toolbar menu, and remembers the choice. By game, each language gets its own group in
+  the section, its puzzles running by N; by N, rows run by game, then language. Languages are
+  marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word lists), and only when more than
+  one is on.
   Grouping by N mixes games whose N means different things (tiles per word, letters per answer,
   letters per board); that's accepted, since it's the player's choice. Completed puzzles move
   to a "Completed" section at the bottom: a `tiles` or `pangram` board once it has its star, a

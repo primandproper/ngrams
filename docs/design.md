@@ -105,9 +105,11 @@ game under that name, is already on the App Store (checked 2026-10-24).
 - Sizes are N=6, 7, and 8 letters. A 5-letter hive was measured at a median of 10 common words
   in English, too thin to be a puzzle. Each size has its own range of common words, centered
   near what a typical board reaches: 20 to 45, 30 to 70, and 50 to 110. Tune by playing.
-- The hive puts the center in the middle and the rest on a ring. Six outer letters tile as a
-  honeycomb; five or seven sit on the same ring, spaced so they don't overlap. Shuffle moves
-  only the outer letters, and the first order is seeded by board, as in `tiles`.
+- The letters sit on a wheel: the center in a circle, the rest in a ring cut into one wedge
+  each. The original's hexagons only close up with exactly six around the center; a wheel
+  closes at any size, keeps one shape across sizes, and its wedges make bigger tap targets than
+  circles on a ring would. Shuffle moves only the outer letters, and the first order is seeded
+  by board, as in `tiles`.
 
 ### Shared
 

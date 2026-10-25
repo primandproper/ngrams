@@ -42,7 +42,8 @@ struct PangramView: View {
       VStack(spacing: 20) {
         ScoreHeader(game: session.game)
         CurrentWord(game: session.game)
-        Hive(center: session.game.puzzle.center, outer: session.outer, onLetter: session.type)
+        LetterWheel(
+          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type)
         controls
         FoundWords(game: session.game)
       }
@@ -131,73 +132,91 @@ private struct CurrentWord: View {
   }
 }
 
-/// The center letter ringed by the others. Six outer letters tile as a honeycomb; five or
-/// seven sit on the same ring, spaced so they don't overlap.
-private struct Hive: View {
+/// The center letter in a circle, ringed by a wheel cut into a wedge per other letter, so every
+/// board size gets the same shape.
+private struct LetterWheel: View {
   let center: Character
   let outer: [Character]
   let onLetter: (Character) -> Void
 
-  private static let width: CGFloat = 92
-  private static let height = width * 3.squareRoot() / 2
-  private static let gap: CGFloat = 6
-
-  private var radius: CGFloat {
-    let spacing = Self.height + Self.gap
-    guard outer.count > 1 else {
-      return spacing
-    }
-    return max(spacing, spacing / (2 * sin(.pi / CGFloat(outer.count))))
-  }
+  static let centerRadius: CGFloat = 46
+  static let ringWidth: CGFloat = 90
+  static let gap: CGFloat = 6
+  static let radius = centerRadius + gap + ringWidth
 
   var body: some View {
-    let radius = self.radius
-    let side = 2 * radius + Self.width
+    let span = Angle.degrees(360 / Double(max(outer.count, 1)))
     ZStack {
-      HexKey(letter: center, isCenter: true) { onLetter(center) }
       ForEach(Array(outer.enumerated()), id: \.element) { index, letter in
-        let angle = -CGFloat.pi / 2 + 2 * .pi * CGFloat(index) / CGFloat(outer.count)
-        HexKey(letter: letter, isCenter: false) { onLetter(letter) }
-          .offset(x: radius * cos(angle), y: radius * sin(angle))
+        WedgeKey(letter: letter, span: span, rotation: span * Double(index)) { onLetter(letter) }
       }
+      Button {
+        onLetter(center)
+      } label: {
+        Text(String(center).uppercased())
+          .font(.title.weight(.bold))
+          .foregroundStyle(.white)
+          .frame(width: 2 * Self.centerRadius, height: 2 * Self.centerRadius)
+          .background(Color.accentColor, in: .circle)
+          .contentShape(.circle)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("\(String(center).uppercased()), center")
     }
-    .frame(width: Self.width, height: Self.height)
-    .frame(width: side, height: side)
+    .frame(width: 2 * Self.radius, height: 2 * Self.radius)
   }
 
-  private struct HexKey: View {
+  /// A wedge drawn pointing up and turned into place, so shuffling swings it around the ring.
+  /// The letter turns back the other way to stay upright.
+  private struct WedgeKey: View {
     let letter: Character
-    let isCenter: Bool
+    let span: Angle
+    let rotation: Angle
     let action: () -> Void
 
     var body: some View {
+      let wedge = Wedge(
+        span: span, inner: LetterWheel.centerRadius + LetterWheel.gap, outer: LetterWheel.radius,
+        gap: LetterWheel.gap)
       Button(action: action) {
-        Text(String(letter).uppercased())
-          .font(.title.weight(.bold))
-          .foregroundStyle(isCenter ? Color.white : Color.primary)
-          .frame(width: Hive.width, height: Hive.height)
-          .background(
-            isCenter ? Color.accentColor : Color(.secondarySystemBackground), in: Hexagon()
-          )
-          .contentShape(Hexagon())
+        wedge
+          .fill(Color(.secondarySystemBackground))
+          .overlay {
+            Text(String(letter).uppercased())
+              .font(.title.weight(.bold))
+              .foregroundStyle(.primary)
+              .rotationEffect(-rotation)
+              .offset(y: -(LetterWheel.radius - LetterWheel.ringWidth / 2))
+          }
+          .contentShape([.interaction, .accessibility], wedge)
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(
-        isCenter ? "\(String(letter).uppercased()), center" : String(letter).uppercased())
+      .rotationEffect(rotation)
+      .accessibilityLabel(String(letter).uppercased())
     }
   }
 }
 
-/// A flat-topped hexagon filling its rect.
-nonisolated private struct Hexagon: Shape {
+/// One wedge of a ring centered in its rect, pointing up and `span` wide. Its straight sides are
+/// inset by half of `gap`, so neighboring wedges sit `gap` apart along their whole length.
+nonisolated private struct Wedge: Shape {
+  let span: Angle
+  let inner: CGFloat
+  let outer: CGFloat
+  let gap: CGFloat
+
   func path(in rect: CGRect) -> Path {
-    Path { path in
-      path.move(to: CGPoint(x: rect.minX, y: rect.midY))
-      path.addLine(to: CGPoint(x: rect.minX + rect.width / 4, y: rect.minY))
-      path.addLine(to: CGPoint(x: rect.maxX - rect.width / 4, y: rect.minY))
-      path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-      path.addLine(to: CGPoint(x: rect.maxX - rect.width / 4, y: rect.maxY))
-      path.addLine(to: CGPoint(x: rect.minX + rect.width / 4, y: rect.maxY))
+    let center = CGPoint(x: rect.midX, y: rect.midY)
+    let start = -Double.pi / 2 - span.radians / 2
+    let end = start + span.radians
+    func inset(_ radius: CGFloat) -> Double { asin(gap / 2 / radius) }
+    return Path { path in
+      path.addArc(
+        center: center, radius: outer, startAngle: .radians(start + inset(outer)),
+        endAngle: .radians(end - inset(outer)), clockwise: false)
+      path.addArc(
+        center: center, radius: inner, startAngle: .radians(end - inset(inner)),
+        endAngle: .radians(start + inset(inner)), clockwise: true)
       path.closeSubpath()
     }
   }

@@ -29,7 +29,7 @@ final class PangramSession {
 
   let key: ProgressKey
   private(set) var game: PangramGame
-  /// Every letter but the center, in the order the hive shows them. Shuffling changes only this.
+  /// Every letter but the center, in the order the wheel shows them. Shuffling changes only this.
   private(set) var outer: [Character]
   private(set) var feedback: Feedback?
 

@@ -28,6 +28,9 @@ targets:
       - Ngrams
       - path: ../data/bank/puzzles.json
         buildPhase: resources
+      - path: ../data/bank/guesses
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: primitives-swift
         product: Observability

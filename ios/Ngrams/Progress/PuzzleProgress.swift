@@ -47,11 +47,10 @@ final class PuzzleProgress {
     }
   }
 
-  /// Every language and size of one kind on one day.
-  static func matching(kind: PuzzleKind, day: PuzzleDay) -> Predicate<PuzzleProgress> {
-    let kind = kind.rawValue
+  /// Every kind, language, and size on one day.
+  static func matching(day: PuzzleDay) -> Predicate<PuzzleProgress> {
     let day = day.description
-    return #Predicate { $0.kind == kind && $0.day == day }
+    return #Predicate { $0.day == day }
   }
 }
 

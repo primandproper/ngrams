@@ -42,3 +42,9 @@ func tilesPuzzleJSON(
   ]}
   """
 }
+
+/// A five-letter word puzzle whose answer has a repeated letter, so marking repeats matters.
+let wordPuzzle = WordPuzzle(language: .en, n: 5, answer: "llama", display: nil)
+
+let wordList = GuessList(
+  accepted: ["llama", "label", "allay", "lolls", "cramp", "plaza"], blocked: ["bitch"])

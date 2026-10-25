@@ -3,10 +3,27 @@ package lexicon
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/shoenig/test/must"
 )
+
+// spanishAff carries every voseo and vosotros rule the loader drops, which it requires.
+const spanishAff = `SFX ô Y 2
+SFX ô r te [aei]r
+SFX ô ir íos ir
+SFX X Y 5
+SFX X er é er
+SFX X ir í ir
+SFX X ir íais ir
+SFX X r ais ír
+SFX X r s ír
+SFX S Y 1
+SFX S 0 es n
+SFX J Y 1
+SFX J er en er
+`
 
 // writeFiles writes name → contents under dir, creating parent directories.
 func writeFiles(t *testing.T, dir string, files map[string]string) {
@@ -119,25 +136,34 @@ func TestLoad(T *testing.T) {
 		must.False(t, common)
 	})
 
+	T.Run("drops english plurals and past tenses from answers", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		words := "bake\nbaked\nbos\nboss\ncat\ncats\nfree\nfreed\nbed\n"
+		writeFiles(t, dir, map[string]string{
+			"raw/en/enable1.txt": words,
+			"raw/en/en_50k.txt":  strings.ReplaceAll(words, "\n", " 100\n"),
+			"blocklists/en.txt":  "",
+		})
+
+		lex, err := Load("en", &Config{
+			DataDir:      filepath.Join(dir, "raw"),
+			BlocklistDir: filepath.Join(dir, "blocklists"),
+			MinCount:     20,
+		})
+		must.NoError(t, err)
+
+		must.Eq(t, []string{"bake", "bed", "bos", "boss", "cat", "free"}, lex.Answers())
+		must.SliceLen(t, 9, lex.Targets())
+	})
+
 	T.Run("loads spanish, dropping voseo and vosotros", func(t *testing.T) {
 		t.Parallel()
 
 		dir := t.TempDir()
 		writeFiles(t, dir, map[string]string{
-			"raw/es/es_MX.aff": `SFX ô Y 2
-SFX ô r te [aei]r
-SFX ô ir íos ir
-SFX X Y 5
-SFX X er é er
-SFX X ir í ir
-SFX X ir íais ir
-SFX X r ais ír
-SFX X r s ír
-SFX S Y 1
-SFX S 0 es n
-SFX J Y 1
-SFX J er en er
-`,
+			"raw/es/es_MX.aff":   spanishAff,
 			"raw/es/es_MX.dic":   "5\ncanción/S\njoder/J\nvivir/X\ndad\nMéxico\n",
 			"raw/es/es_full.txt": "canción 300\ncancion 10\njoder 200\ndad 90\ncanciones 50\nméxico 80\n",
 			"blocklists/es.txt":  "joder\n",
@@ -151,6 +177,7 @@ SFX J er en er
 		must.NoError(t, err)
 
 		must.Eq(t, []string{"cancion"}, lex.Targets())
+		must.Eq(t, []string{"cancion"}, lex.Answers())
 		must.Eq(t, "canción", lex.Display("cancion"))
 
 		count, common := lex.Count("cancion")
@@ -165,6 +192,30 @@ SFX J er en er
 		must.False(t, isWord, must.Sprint("vosotros stem dropped"))
 		isWord, _ = lex.Lookup("mexico")
 		must.False(t, isWord, must.Sprint("capitalized stem dropped"))
+	})
+
+	T.Run("keeps flagless spanish stems out of answers", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		writeFiles(t, dir, map[string]string{
+			"raw/es/es_MX.aff":   spanishAff,
+			"raw/es/es_MX.dic":   "2\nvera/S\nseré\n",
+			"raw/es/es_full.txt": "verá 500\nvera 10\nseré 300\n",
+			"blocklists/es.txt":  "",
+		})
+
+		lex, err := Load("es", &Config{
+			DataDir:      filepath.Join(dir, "raw"),
+			BlocklistDir: filepath.Join(dir, "blocklists"),
+			MinCount:     20,
+		})
+		must.NoError(t, err)
+
+		must.Eq(t, []string{"sere", "vera"}, lex.Targets())
+		must.Eq(t, []string{"vera"}, lex.Answers())
+		must.Eq(t, "vera", lex.Display("vera"), must.Sprint("the stem's spelling beats its homograph"))
+		must.Eq(t, "seré", lex.Display("sere"))
 	})
 
 	T.Run("rejects an unsupported language", func(t *testing.T) {

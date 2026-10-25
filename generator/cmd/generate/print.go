@@ -42,7 +42,12 @@ func printBank(w io.Writer, b *bank.Bank, lexicons map[string]*lexicon.Lexicon) 
 		day := &b.Days[d]
 		for i := range day.Puzzles {
 			p := &day.Puzzles[i]
-			printPuzzle(out, day.Date, p, lexicons[p.Lang])
+			switch p.Kind {
+			case bank.KindWord:
+				out.printf("\n==== %s %s word n=%d: %s\n", day.Date, p.Lang, p.N, cmp.Or(p.Display, p.Answer))
+			default:
+				printPuzzle(out, day.Date, p, lexicons[p.Lang])
+			}
 		}
 	}
 	return out.err

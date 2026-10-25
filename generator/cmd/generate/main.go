@@ -2,9 +2,11 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,6 +17,7 @@ import (
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/bank"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 )
 
 func main() {
@@ -29,8 +32,11 @@ func run(args []string) error {
 	dataDir := fs.String("data", "../data/raw", "directory holding the downloaded source data")
 	blocklistDir := fs.String("blocklists", "../data/blocklists", "directory holding <lang>.txt blocklists")
 	out := fs.String("out", "../data/bank/puzzles.json", "where to write the bank")
+	guessDir := fs.String("guesses", "../data/bank/guesses", "where to write each word size's accepted guesses")
 	langs := fs.String("langs", "en,es", "comma-separated languages")
-	ns := fs.String("ns", "3,4,5", "comma-separated tiles-per-word sizes")
+	tilesNs := fs.String("tiles-ns", "3,4,5", "comma-separated tiles-per-word sizes")
+	wordNs := fs.String("word-ns", "4,5,6", "comma-separated word puzzle lengths")
+	wordPool := fs.Int("word-pool", 1500, "how many of the most common answers of each length a word puzzle picks from")
 	start := fs.String("start", "", "first day of the bank, YYYY-MM-DD")
 	days := fs.Int("days", 90, "days of puzzles to build")
 	seed := fs.Uint64("seed", 1, "random seed; the same seed and data rebuild the same bank")
@@ -56,7 +62,11 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("parsing -start %q: %w", *start, err)
 	}
-	sizes, err := parseInts(*ns)
+	sizes, err := parseInts(*tilesNs)
+	if err != nil {
+		return err
+	}
+	wordSizes, err := parseInts(*wordNs)
 	if err != nil {
 		return err
 	}
@@ -75,8 +85,10 @@ func run(args []string) error {
 			Tries:     *tries,
 			Steps:     *steps,
 		},
-		Days: *days,
-		Seed: *seed,
+		WordSizes: wordSizes,
+		WordPool:  *wordPool,
+		Days:      *days,
+		Seed:      *seed,
 	}
 	for _, n := range sizes {
 		cfg.Sizes = append(cfg.Sizes, bank.Size{N: n, Targets: tiles.TargetsFor(n)})
@@ -100,10 +112,20 @@ func run(args []string) error {
 		return fmt.Errorf("building bank: %w", err)
 	}
 
-	if err = writeBank(*out, b); err != nil {
+	if err = writeFile(*out, func(w io.Writer) error { return bank.Write(w, b) }); err != nil {
 		return err
 	}
 	logger.Info("wrote bank", "path", *out, "days", len(b.Days))
+
+	for _, lang := range cfg.Languages {
+		for _, n := range wordSizes {
+			accepted, blocked := word.Guesses(lang.Lexicon, n)
+			if err = writeGuesses(*guessDir, lang.Code, n, accepted, blocked); err != nil {
+				return err
+			}
+			logger.Info("wrote guesses", "lang", lang.Code, "n", n, "accepted", len(accepted), "blocked", len(blocked))
+		}
+	}
 
 	if *review {
 		if err = printBank(os.Stdout, b, lexicons); err != nil {
@@ -114,11 +136,33 @@ func run(args []string) error {
 	return nil
 }
 
-// writeBank writes through a temporary file and renames it into place, so a failed run
-// never leaves a truncated bank behind.
-func writeBank(path string, b *bank.Bank) error {
+// writeGuesses writes one word size's accepted guesses as <lang>-<n>.txt and its blocked
+// words as <lang>-<n>-blocked.txt, one word per line.
+func writeGuesses(dir, lang string, n int, accepted, blocked []string) error {
+	for name, words := range map[string][]string{
+		fmt.Sprintf("%s-%d.txt", lang, n):         accepted,
+		fmt.Sprintf("%s-%d-blocked.txt", lang, n): blocked,
+	} {
+		err := writeFile(filepath.Join(dir, name), func(w io.Writer) error {
+			for _, word := range words {
+				if _, err := fmt.Fprintln(w, word); err != nil {
+					return fmt.Errorf("writing %s: %w", name, err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeFile writes through a temporary file and renames it into place, so a failed run
+// never leaves a truncated file behind.
+func writeFile(path string, write func(io.Writer) error) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-		return fmt.Errorf("creating bank directory: %w", err)
+		return fmt.Errorf("creating %s: %w", filepath.Dir(path), err)
 	}
 
 	partial := path + ".partial"
@@ -126,14 +170,15 @@ func writeBank(path string, b *bank.Bank) error {
 	if err != nil {
 		return fmt.Errorf("creating %s: %w", partial, err)
 	}
-	if err = bank.Write(f, b); err != nil {
+	buffered := bufio.NewWriter(f)
+	if err = errors.Join(write(buffered), buffered.Flush()); err != nil {
 		return errors.Join(err, f.Close(), os.Remove(partial))
 	}
 	if err = f.Close(); err != nil {
 		return fmt.Errorf("closing %s: %w", partial, err)
 	}
 	if err = os.Rename(partial, path); err != nil {
-		return fmt.Errorf("moving bank into place: %w", err)
+		return fmt.Errorf("moving %s into place: %w", path, err)
 	}
 
 	return nil

@@ -10,22 +10,24 @@ import (
 
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 
 	"github.com/shoenig/test/must"
 )
 
 // testLanguage has eight four-letter targets that each split only as two 2-letter tiles,
-// plus "ab", a one-tile word, "cañon", whose display spelling differs, and "cdab", which is
-// blocked.
+// plus "ab", a one-tile word, "cdab", which is blocked, and two five-letter targets:
+// "zebra" and "cañon", whose display spelling differs.
 func testLanguage() Language {
-	targets := []string{"abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "bdac", "egfh"}
-	display := map[string]string{"ab": "ab", "cañon": "cañón", "cdab": "cdab"}
+	targets := []string{"abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "bdac", "egfh", "cañon", "zebra"}
+	display := map[string]string{"ab": "ab", "cdab": "cdab"}
 	freq := map[string]int{"ab": 50}
 	blocked := map[string]bool{"cdab": true}
-	for _, word := range targets {
-		display[word] = word
-		freq[word] = 100
+	for _, target := range targets {
+		display[target] = target
+		freq[target] = 100
 	}
+	display["cañon"] = "cañón"
 
 	return Language{Code: "en", Lexicon: lexicon.New(display, freq, blocked, targets)}
 }
@@ -82,9 +84,9 @@ func TestBuild(T *testing.T) {
 			for i := range day.Puzzles {
 				p := &day.Puzzles[i]
 				for _, target := range p.Targets {
-					word := joinTiles(p, target)
-					must.False(t, seen[word], must.Sprintf("%s repeated", word))
-					seen[word] = true
+					spelled := joinTiles(p, target)
+					must.False(t, seen[spelled], must.Sprintf("%s repeated", spelled))
+					seen[spelled] = true
 				}
 			}
 		}
@@ -125,10 +127,81 @@ func TestBuild(T *testing.T) {
 		t.Parallel()
 
 		cfg := testBuildConfig()
-		cfg.Days = 3
+		cfg.Days = 4
 
 		_, err := Build(cfg)
 		must.ErrorIs(t, err, tiles.ErrNoBoard)
+	})
+}
+
+func TestBuild_words(T *testing.T) {
+	T.Parallel()
+
+	wordConfig := func() *BuildConfig {
+		cfg := testBuildConfig()
+		cfg.WordSizes = []int{4, 5}
+		cfg.WordPool = 10
+		return cfg
+	}
+
+	T.Run("adds a word puzzle per size after the tiles boards", func(t *testing.T) {
+		t.Parallel()
+
+		b, err := Build(wordConfig())
+		must.NoError(t, err)
+
+		for _, day := range b.Days {
+			must.SliceLen(t, 4, day.Puzzles)
+			must.Eq(t, KindWord, day.Puzzles[2].Kind)
+			must.Eq(t, 4, day.Puzzles[2].N)
+			must.Eq(t, 5, day.Puzzles[3].N)
+		}
+	})
+
+	T.Run("never repeats an answer and shows accents only when they differ", func(t *testing.T) {
+		t.Parallel()
+
+		b, err := Build(wordConfig())
+		must.NoError(t, err)
+
+		seen := map[string]bool{}
+		for _, day := range b.Days {
+			for _, p := range day.Puzzles[2:] {
+				must.False(t, seen[p.Answer], must.Sprintf("%s repeated", p.Answer))
+				seen[p.Answer] = true
+				if p.Answer == "cañon" {
+					must.Eq(t, "cañón", p.Display)
+				} else {
+					must.Eq(t, "", p.Display)
+				}
+			}
+		}
+		must.True(t, seen["cañon"])
+	})
+
+	T.Run("leaves the tiles boards as they were", func(t *testing.T) {
+		t.Parallel()
+
+		withWords, err := Build(wordConfig())
+		must.NoError(t, err)
+		without, err := Build(testBuildConfig())
+		must.NoError(t, err)
+
+		for d := range without.Days {
+			must.Eq(t, without.Days[d].Puzzles, withWords.Days[d].Puzzles[:2])
+		}
+	})
+
+	T.Run("fails once the answer pool runs out", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := wordConfig()
+		cfg.Days = 3
+		cfg.Sizes = nil
+		cfg.WordSizes = []int{5}
+
+		_, err := Build(cfg)
+		must.ErrorIs(t, err, word.ErrNoAnswer)
 	})
 }
 

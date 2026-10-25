@@ -1,5 +1,5 @@
 // Package lexicon loads one language's word data: every valid word, how common each is,
-// which are blocked, and which are fair to use as answers and targets.
+// which are blocked, and which are fair to use as targets and answers.
 package lexicon
 
 import (
@@ -28,6 +28,7 @@ type (
 		blocked map[string]bool   // valid, but never a target, and boards avoid them
 		words   []string          // sorted, every valid word
 		targets []string          // sorted, words fair to use as targets
+		answers []string          // sorted, targets in base form, fair to use as word answers
 	}
 
 	// Config says where a language's data lives and how to judge commonness.
@@ -42,6 +43,7 @@ type (
 
 // New builds a lexicon from folded words. display maps every valid word to the spelling
 // shown to the player, freq holds the common words' counts, and targets must be valid words.
+// Every target is also an answer.
 func New(display map[string]string, freq map[string]int, blocked map[string]bool, targets []string) *Lexicon {
 	l := &Lexicon{
 		display: display,
@@ -51,6 +53,7 @@ func New(display map[string]string, freq map[string]int, blocked map[string]bool
 		targets: slices.Clone(targets),
 	}
 	slices.Sort(l.targets)
+	l.answers = l.targets
 
 	return l
 }
@@ -99,6 +102,16 @@ func (l *Lexicon) Size() int {
 // Targets returns the words fair to use as targets, sorted. Callers must not modify it.
 func (l *Lexicon) Targets() []string {
 	return l.targets
+}
+
+// Answers returns the targets in base form, sorted. Callers must not modify it.
+func (l *Lexicon) Answers() []string {
+	return l.answers
+}
+
+// Words returns every valid word, sorted. Callers must not modify it.
+func (l *Lexicon) Words() []string {
+	return l.words
 }
 
 // Lookup reports whether s is a word, and whether any word starts with s.
@@ -176,7 +189,33 @@ func loadEnglish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 		}
 	}
 
-	return New(display, freq, blocked, targets), nil
+	lex := New(display, freq, blocked, targets)
+	lex.answers = slices.DeleteFunc(slices.Clone(lex.targets), func(word string) bool {
+		return englishInflection(word, display)
+	})
+	return lex, nil
+}
+
+// englishInflection reports whether word looks like a plural or past tense of another
+// word: a stem plus "s", "ed", or "d". ENABLE carries no lemmas, so this guesses, and it
+// drops some base forms (need, from nee) along with the inflections. Words ending in
+// "ss" are never plurals.
+func englishInflection(word string, display map[string]string) bool {
+	isWord := func(stem string) bool {
+		_, ok := display[stem]
+		return len(stem) >= 2 && ok
+	}
+
+	switch {
+	case strings.HasSuffix(word, "ss"):
+		return false
+	case strings.HasSuffix(word, "s"):
+		return isWord(strings.TrimSuffix(word, "s"))
+	case strings.HasSuffix(word, "ed"):
+		return isWord(strings.TrimSuffix(word, "ed")) || isWord(strings.TrimSuffix(word, "d"))
+	default:
+		return false
+	}
 }
 
 // loadFrequencies reads a "word count" list, most common first, keeping only words

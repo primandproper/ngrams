@@ -39,15 +39,38 @@ struct PuzzleBankTests {
     #expect(bank.tilesPuzzles(on: PuzzleDay(year: 2027, month: 1, day: 2)).isEmpty)
   }
 
+  @Test("decodes word puzzles")
+  func decodesWords() throws {
+    let bank = try PuzzleBank.decode(
+      bankJSON(puzzles: [
+        #"{"lang":"es","kind":"word","n":5,"answer":"arbol","display":"árbol"}"#,
+        #"{"lang":"en","kind":"word","n":4,"answer":"lamp"}"#,
+      ]))
+
+    let puzzles = bank.wordPuzzles(on: testDay)
+    #expect(puzzles.map(\.id) == ["en-4", "es-5"])
+    #expect(puzzles.map(\.shown) == ["lamp", "árbol"])
+  }
+
+  @Test("rejects an answer of the wrong length")
+  func rejectsAnswerLength() {
+    #expect(throws: BankError.badAnswer("lamp", n: 5)) {
+      try PuzzleBank.decode(
+        bankJSON(puzzles: [#"{"lang":"en","kind":"word","n":5,"answer":"lamp"}"#]))
+    }
+  }
+
   @Test("skips kinds and languages it doesn't know")
   func skipsUnknown() throws {
     let bank = try PuzzleBank.decode(
       bankJSON(puzzles: [
-        #"{"lang":"en","kind":"word","n":4,"answer":"lamp"}"#,
+        #"{"lang":"en","kind":"crossword","n":4}"#,
+        #"{"lang":"fr","kind":"word","n":4,"answer":"lamp"}"#,
         tilesPuzzleJSON(lang: "fr"),
       ]))
 
     #expect(bank.tilesPuzzles(on: testDay).isEmpty)
+    #expect(bank.wordPuzzles(on: testDay).isEmpty)
   }
 
   @Test("rejects an unsupported version")

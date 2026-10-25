@@ -1,6 +1,6 @@
 # N-grams design
 
-Status: draft. The generator builds `tiles` banks; the iOS app is next (2026-10-23)
+Status: draft. The generator and the app cover `word` and `tiles` (2026-10-24)
 
 ## Goal
 
@@ -8,7 +8,12 @@ Daily word puzzles on iPhone without ads, accounts, energy meters, or upsells. T
 modeled on games I already like (NYT Wordle and Apple News Quartiles), each offered at three
 sizes, so N varies, in English and Spanish. Six puzzles a day per language, every day.
 
-Personal use first. A public App Store release is not a goal for now (see [Distribution and legal](#distribution-and-legal)).
+Built to launch publicly on the App Store. What a launch still needs:
+
+- A third game modeled on NYT Spelling Bee (`pangram`).
+- An app icon.
+- Final names for the app and the games (see [Open questions](#open-questions)).
+- Stats, streaks, and the emoji share.
 
 ## Non-goals (for now)
 
@@ -31,10 +36,17 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
 
 ### `word`
 
-- Guess an N-letter word; each guess marks letters as correct, present, or absent.
+- Guess an N-letter word; each guess marks letters as correct, present, or absent. A
+  misplaced letter is marked present only as many times as the answer has it left over after
+  its correct letters, as in the original.
 - 6 guesses at every N to start. Shorter words are the trap-prone ones (BATE/DATE/FATE/GATE),
   so scaling guesses as N+1 would make the hardest variant harder. Tune by playing.
-- Guesses must come from the accepted-guess list for that length.
+- Guesses must come from the accepted-guess list for that length: every dictionary form,
+  plurals and conjugations included. A blocked word gets "How dare you", as in `tiles`.
+- The app has its own keyboard; the Spanish one adds Ñ. A lost puzzle shows the answer with
+  its accents.
+- Solving earns the star. A puzzle is completed once it's over, won or lost, and its row
+  shows the guesses used ("4/6", "X/6").
 
 ### `tiles`
 
@@ -74,7 +86,8 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
 - Home lists every puzzle for the day on one screen, a section per game and size ("Tiles ·
   N=3"), each holding both languages marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word
   lists). Sections are per game as well as size because N counts tiles in one game and letters
-  in the other. Starred puzzles move to a "Completed" section at the bottom.
+  in the other. Completed puzzles move to a "Completed" section at the bottom: a `tiles`
+  board once it has its star, a `word` puzzle once it's over.
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.
@@ -173,8 +186,21 @@ per-language config.
 
 ### `word` puzzles
 
-Pick one answer per length per day from the frequency-filtered answer list, without repeats
-across the bank. Accepted guesses per length come from the full dictionary.
+Pick one answer per length per day at random from the 1,500 most common answers of that
+length, without repeats within a language. Each kind draws from its own random stream, so
+adding word puzzles left every `tiles` board as it was. Accepted guesses per length come
+from the full dictionary.
+
+Answers are base forms, which neither dictionary marks directly:
+
+- English drops a target that is another word plus "s", "ed", or "d" (CATS, BAKED, FREED),
+  except words ending in "ss". ENABLE has no lemmas, so this guesses, and it also drops some
+  base forms (NEED, from NEE). Gerunds (TIRING, ASKING) stay.
+- Spanish takes the `.dic` stems that carry affix flags. The flagless ones are mostly
+  irregular conjugations and abbreviations (seré, podrán, dpto). A stem displays as the
+  dictionary spells it rather than as its most common homograph (vera, not verá), which also
+  changed a few `tiles` words' display spellings.
+- At 4 letters Spanish has only about 720 answers, under 2 years of puzzles.
 
 ### `tiles` puzzles
 
@@ -244,13 +270,14 @@ seed and source data rebuild the same bank. No target repeats within a language.
 shuffled, though the app lays them out itself. Each day sits in its own block with one word
 per line, so a rebuilt bank diffs by eye; `make bank ARGS=-print` prints every board for review.
 
-Accepted `word` guesses ship as one newline-separated text file per `(lang, n)`, loaded into a
-`Set<String>`.
+Accepted `word` guesses ship as one newline-separated text file per `(lang, n)` in
+`data/bank/guesses/` (`en-5.txt`), with that length's blocked words beside it
+(`en-5-blocked.txt`), loaded into a `Set<String>` when a puzzle opens.
 
 The format (puzzles are a list per day, so adding a language, kind, or size is additive).
 `display` appears only when the accented spelling differs from the folded one. `blocked` lists
 the folded spellings of offensive words the tiles can build, and appears only when there are
-any. `word` puzzles are still a sketch:
+any.
 
 ```json
 {
@@ -305,7 +332,7 @@ bundled copy as fallback" changes nothing about the format.
 - Personal install via Xcode for now, signed with my existing paid developer team, so a
   development build keeps launching for the year its provisioning profile lasts rather than
   the 7 days a free account allows. TestFlight builds expire after 90 days.
-- If this ever goes public: no use of either original's name, and a visual design that is
+- Going public means no use of any original's name, and a visual design that is
   clearly its own. App Review guideline 4.1 (copycats) can reject apps that look too much like
   an existing game, and NYT pursued Wordle clones in 2022.
 - "N-grams" is not taken on the US App Store (checked 2026-10-19), but App Store search for
@@ -328,4 +355,6 @@ reading printed output. So the order is:
 1. `tiles` playable on my phone with real generated boards, in both languages. A Debug-only
    day picker steps through the whole bank, so a playtest isn't limited to one day's boards.
 2. `word`.
-3. Stats, streaks, and the emoji share.
+3. `pangram`.
+4. The app icon.
+5. Stats, streaks, and the emoji share.

@@ -109,3 +109,49 @@ struct TilesSessionTests {
     #expect(TilesLayout.isSpread(session.boardTiles, in: smallPuzzle))
   }
 }
+
+@Suite("WordSession")
+struct WordSessionTests {
+  private let wordKey = ProgressKey(language: .en, kind: .word, n: 5, day: testDay)
+
+  private func session(_ store: ProgressStore) -> WordSession {
+    WordSession(
+      puzzle: wordPuzzle, day: testDay, list: wordList, store: store,
+      observer: recordingObserver("test"))
+  }
+
+  private func guess(_ text: String, in session: WordSession) {
+    for letter in text {
+      session.type(letter)
+    }
+    session.submit()
+  }
+
+  @Test("saves each guess and restores it")
+  func savesAndRestores() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    guess("cramp", in: session)
+    guess("llama", in: session)
+
+    #expect(try store.entries(for: wordKey) == ["cramp", "llama"])
+    #expect(self.session(store).game.status == .won(guesses: 2))
+  }
+
+  @Test("doesn't save rejected guesses")
+  func skipsRejected() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    guess("llamz", in: session)
+    #expect(session.feedback?.kind == .notAWord("llamz"))
+    for _ in 0..<5 {
+      session.deleteLetter()
+    }
+    guess("bitch", in: session)
+
+    #expect(session.feedback?.kind == .blocked)
+    #expect(try store.entries(for: wordKey).isEmpty)
+  }
+}

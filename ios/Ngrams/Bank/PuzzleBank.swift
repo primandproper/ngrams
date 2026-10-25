@@ -22,9 +22,16 @@ nonisolated enum Language: String, CaseIterable, Codable, Sendable {
 }
 
 /// The game kinds, as the bank and saved progress name them.
-nonisolated enum PuzzleKind: String, Codable, Sendable {
+nonisolated enum PuzzleKind: String, CaseIterable, Codable, Sendable {
   case word
   case tiles
+
+  var name: String {
+    switch self {
+    case .word: "Word"
+    case .tiles: "Tiles"
+    }
+  }
 }
 
 /// Every puzzle the app ships with, built offline by the generator. See docs/design.md.
@@ -34,18 +41,32 @@ nonisolated struct PuzzleBank: Sendable {
   let seed: UInt64
   let days: [PuzzleDay]
   private let tiles: [PuzzleDay: [TilesPuzzle]]
+  private let words: [PuzzleDay: [WordPuzzle]]
 
-  init(seed: UInt64, tiles: [PuzzleDay: [TilesPuzzle]]) {
+  init(seed: UInt64, tiles: [PuzzleDay: [TilesPuzzle]], words: [PuzzleDay: [WordPuzzle]] = [:]) {
     self.seed = seed
     self.tiles = tiles
-    self.days = tiles.keys.sorted()
+    self.words = words
+    self.days = Set(tiles.keys).union(words.keys).sorted()
   }
 
   /// The day's tiles puzzles, by language in `Language.allCases` order, then smallest board first.
   func tilesPuzzles(on day: PuzzleDay) -> [TilesPuzzle] {
+    Self.sorted(tiles[day] ?? [], by: { ($0.language, $0.n) })
+  }
+
+  /// The day's word puzzles, by language in `Language.allCases` order, then shortest first.
+  func wordPuzzles(on day: PuzzleDay) -> [WordPuzzle] {
+    Self.sorted(words[day] ?? [], by: { ($0.language, $0.n) })
+  }
+
+  private static func sorted<Puzzle>(
+    _ puzzles: [Puzzle], by key: (Puzzle) -> (Language, Int)
+  ) -> [Puzzle] {
     let rank = Dictionary(uniqueKeysWithValues: Language.allCases.enumerated().map { ($1, $0) })
-    return (tiles[day] ?? []).sorted {
-      (rank[$0.language] ?? 0, $0.n) < (rank[$1.language] ?? 0, $1.n)
+    return puzzles.sorted {
+      let (left, right) = (key($0), key($1))
+      return (rank[left.0] ?? 0, left.1) < (rank[right.0] ?? 0, right.1)
     }
   }
 
@@ -59,13 +80,15 @@ nonisolated struct PuzzleBank: Sendable {
     }
 
     var tiles: [PuzzleDay: [TilesPuzzle]] = [:]
+    var words: [PuzzleDay: [WordPuzzle]] = [:]
     for day in file.days {
       guard let date = PuzzleDay(day.date) else {
         throw BankError.badDate(day.date)
       }
       tiles[date] = day.puzzles.compactMap(\.tiles)
+      words[date] = day.puzzles.compactMap(\.word)
     }
-    return PuzzleBank(seed: file.seed, tiles: tiles)
+    return PuzzleBank(seed: file.seed, tiles: tiles, words: words)
   }
 
   /// Reads and decodes the bank bundled with the app, off the main actor.
@@ -83,6 +106,7 @@ nonisolated enum BankError: Error, Equatable, CustomStringConvertible {
   case unsupportedVersion(Int)
   case badDate(String)
   case badTileIndex(Int, tiles: Int)
+  case badAnswer(String, n: Int)
 
   var description: String {
     switch self {
@@ -90,6 +114,7 @@ nonisolated enum BankError: Error, Equatable, CustomStringConvertible {
     case .unsupportedVersion(let version): "bank version \(version) isn't supported"
     case .badDate(let date): "bank date \(date) isn't YYYY-MM-DD"
     case .badTileIndex(let index, let tiles): "tile index \(index) is outside a \(tiles)-tile board"
+    case .badAnswer(let answer, let n): "answer \(answer) isn't \(n) letters"
     }
   }
 }
@@ -123,6 +148,19 @@ nonisolated struct TilesWord: Sendable, Hashable, Decodable {
   var shown: String { display ?? word }
 }
 
+/// A word puzzle: guess the `n`-letter answer.
+nonisolated struct WordPuzzle: Sendable, Hashable, Identifiable {
+  let language: Language
+  let n: Int
+  /// Accent-folded, so it compares against guesses letter for letter.
+  let answer: String
+  /// Accented spelling, present only when it differs from `answer`.
+  let display: String?
+
+  var id: String { "\(language.rawValue)-\(n)" }
+  var shown: String { display ?? answer }
+}
+
 // MARK: - Wire format
 
 nonisolated private struct BankFile: Decodable {
@@ -139,21 +177,40 @@ nonisolated private struct DayFile: Decodable {
 /// One puzzle of any kind. Kinds and languages this build doesn't know decode to nothing, so a
 /// newer bank still loads in an older app.
 nonisolated private struct PuzzleFile: Decodable {
-  let tiles: TilesPuzzle?
+  var tiles: TilesPuzzle?
+  var word: WordPuzzle?
 
   private enum CodingKeys: String, CodingKey {
-    case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked
+    case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked, answer, display
   }
 
   init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let kind = PuzzleKind(rawValue: try container.decode(String.self, forKey: .kind))
-    let language = Language(rawValue: try container.decode(String.self, forKey: .lang))
-    guard kind == .tiles, let language else {
-      tiles = nil
+    guard let kind,
+      let language = Language(rawValue: try container.decode(String.self, forKey: .lang))
+    else {
       return
     }
+    let n = try container.decode(Int.self, forKey: .n)
 
+    switch kind {
+    case .word:
+      let answer = try container.decode(String.self, forKey: .answer)
+      guard answer.count == n else {
+        throw BankError.badAnswer(answer, n: n)
+      }
+      word = WordPuzzle(
+        language: language, n: n, answer: answer,
+        display: try container.decodeIfPresent(String.self, forKey: .display))
+    case .tiles:
+      tiles = try Self.tiles(from: container, language: language, n: n)
+    }
+  }
+
+  private static func tiles(
+    from container: KeyedDecodingContainer<CodingKeys>, language: Language, n: Int
+  ) throws -> TilesPuzzle {
     let board = try container.decode([String].self, forKey: .tiles)
     let targets = try container.decode([[Int]].self, forKey: .targets)
     let words = try container.decode([TilesWord].self, forKey: .words)
@@ -162,9 +219,9 @@ nonisolated private struct PuzzleFile: Decodable {
       throw BankError.badTileIndex(index, tiles: board.count)
     }
 
-    tiles = TilesPuzzle(
+    return TilesPuzzle(
       language: language,
-      n: try container.decode(Int.self, forKey: .n),
+      n: n,
       tiles: board,
       targets: targets,
       bonus: try container.decode(Int.self, forKey: .bonus),

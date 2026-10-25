@@ -13,6 +13,7 @@ import (
 
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 )
 
 const (
@@ -21,6 +22,8 @@ const (
 
 	// KindTiles is the tiles game.
 	KindTiles = "tiles"
+	// KindWord is the word game.
+	KindWord = "word"
 
 	dateLayout = time.DateOnly
 )
@@ -43,9 +46,13 @@ type (
 
 	// Puzzle is one game. Fields past N belong to one kind and are empty for the others.
 	Puzzle struct {
-		_       struct{} `json:"-"`
-		Lang    string   `json:"lang"`
-		Kind    string   `json:"kind"`
+		_    struct{} `json:"-"`
+		Lang string   `json:"lang"`
+		Kind string   `json:"kind"`
+		// Answer is a word puzzle's folded answer, and Display its accented spelling,
+		// present only when it differs.
+		Answer  string   `json:"answer,omitempty"`
+		Display string   `json:"display,omitempty"`
 		Tiles   []string `json:"tiles,omitempty"`
 		Targets [][]int  `json:"targets,omitempty"`
 		// Blocked holds the folded spellings of offensive words the tiles can build. They
@@ -90,16 +97,18 @@ type (
 		Logger    *slog.Logger
 		Languages []Language
 		Sizes     []Size
-		// Search sets every board search's knobs except N and Targets, which come from Sizes.
-		Search tiles.SearchConfig
-		Days   int
-		Seed   uint64
+		WordSizes []int
+		Search    tiles.SearchConfig
+		WordPool  int
+		Days      int
+		Seed      uint64
 	}
 )
 
-// Build generates cfg.Days days of tiles puzzles from cfg.Start, for every language and
-// size. No target word repeats within a language. The bank depends only on the config
-// and the word data, so the same seed rebuilds the same bank.
+// Build generates cfg.Days days of puzzles from cfg.Start, for every language, kind, and
+// size. No target or answer repeats within a language. The bank depends only on the
+// config and the word data, so the same seed rebuilds the same bank, and each kind draws
+// from its own random stream, so adding a kind leaves the others' puzzles as they were.
 func Build(cfg *BuildConfig) (*Bank, error) {
 	logger := cfg.Logger
 	if logger == nil {
@@ -145,11 +154,45 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 			}
 		}
 
+		if err := buildWords(cfg, lang, b, logger); err != nil {
+			return nil, err
+		}
+
 		logger.Info("built language", "lang", lang.Code, "boards", len(b.Days)*len(cfg.Sizes),
 			"took", time.Since(started).Round(time.Millisecond))
 	}
 
 	return b, nil
+}
+
+func buildWords(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) error {
+	rng := rand.New(rand.NewPCG(cfg.Seed, langSeed(lang.Code+"/"+KindWord))) //nolint:gosec // banks must be reproducible from a seed, not secret
+
+	generators := make([]*word.Generator, len(cfg.WordSizes))
+	for i, n := range cfg.WordSizes {
+		generators[i] = word.NewGenerator(lang.Lexicon, n, cfg.WordPool)
+		logger.Info("pooled answers", "lang", lang.Code, "n", n, "pool", generators[i].PoolSize())
+	}
+
+	used := map[string]bool{}
+	for d := range b.Days {
+		day := &b.Days[d]
+		for i, n := range cfg.WordSizes {
+			answer, err := generators[i].Pick(rng, used)
+			if err != nil {
+				return fmt.Errorf("%s word n=%d on %s: %w", lang.Code, n, day.Date, err)
+			}
+			used[answer] = true
+
+			p := Puzzle{Lang: lang.Code, Kind: KindWord, N: n, Answer: answer}
+			if shown := lang.Lexicon.Display(answer); shown != answer {
+				p.Display = shown
+			}
+			day.Puzzles = append(day.Puzzles, p)
+		}
+	}
+
+	return nil
 }
 
 func langSeed(code string) uint64 {
@@ -260,12 +303,12 @@ func writePuzzle(buf *bytes.Buffer, p *Puzzle) error {
 		if i > 0 {
 			buf.WriteString(",")
 		}
-		word, wordErr := json.Marshal(&p.Words[i])
+		encodedWord, wordErr := json.Marshal(&p.Words[i])
 		if wordErr != nil {
 			return fmt.Errorf("encoding word %q: %w", p.Words[i].Word, wordErr)
 		}
 		buf.WriteString("\n          ")
-		buf.Write(word)
+		buf.Write(encodedWord)
 	}
 	buf.WriteString("\n        ]}")
 

@@ -16,6 +16,7 @@ struct WordScreen: View {
 
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
+  @AppStorage(SettingsKey.wordHardMode) private var hardMode = false
   @State private var state = LoadState.loading
 
   var body: some View {
@@ -41,7 +42,7 @@ struct WordScreen: View {
       let list = try await GuessList.loadBundled(language: puzzle.language, n: puzzle.n)
       state = .loaded(
         WordSession(
-          puzzle: puzzle, day: day, list: list,
+          puzzle: puzzle, day: day, list: list, hardMode: hardMode,
           store: ProgressStore(context: context, observer: observer), observer: observer))
     } catch {
       observer.logger.withValue("lang", puzzle.language.rawValue).withValue("n", puzzle.n)
@@ -266,8 +267,21 @@ private struct FeedbackBanner: View {
     case .tooShort: "Not enough letters"
     case .blocked: "How dare you"
     case .notAWord(let text): "\(text.uppercased()) isn't on the list"
+    case .missingHint(.position(let letter, let index)):
+      "\(ordinal(index + 1)) letter must be \(String(letter).uppercased())"
+    case .missingHint(.letter(let letter)): "Guess must contain \(String(letter).uppercased())"
     case .saveFailed: "Couldn't save that guess"
     case .loadFailed: "Couldn't load saved progress"
     }
+  }
+}
+
+/// English ordinals, correct through 20th.
+private func ordinal(_ n: Int) -> String {
+  switch n {
+  case 1: "1st"
+  case 2: "2nd"
+  case 3: "3rd"
+  default: "\(n)th"
   }
 }

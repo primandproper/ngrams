@@ -51,6 +51,10 @@ game under that name, is already on the App Store (checked 2026-10-24).
   its accents.
 - Solving earns the star. A puzzle is completed once it's over, won or lost, and its row
   shows the guesses used ("4/6", "X/6").
+- A "hard mode" setting makes every guess use the hints so far, by the original's rule: a
+  correct letter stays in its spot, and a found letter appears at least as many times as any
+  earlier guess showed it. Absent letters stay allowed. A refused guess says which hint it
+  left out ("2nd letter must be R", "Guess must contain E").
 
 ### `tiles`
 
@@ -94,6 +98,8 @@ game under that name, is already on the App Store (checked 2026-10-24).
   points in the common words alone, so obscure words help but are never needed.
 - A board's star takes every common pangram and the target score, as a `tiles` star takes
   every target. Obscure pangrams score but aren't required.
+- A "hard mode" setting makes the first word found a pangram, any pangram, obscure ones
+  included.
 - No S on any board in either language: plurals would double every board, and in Spanish S
   also ends most second-person and plural verb forms.
 - Sizes are N=6, 7, and 8 letters. A 5-letter hive was measured at a median of 10 common words
@@ -116,6 +122,9 @@ game under that name, is already on the App Store (checked 2026-10-24).
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.
+- `word` and `pangram` hard modes lock per puzzle: the setting applies until a puzzle's first
+  guess or word is saved, and the puzzle keeps that mode after, saved with its progress. `tiles`
+  hard mode predates this and still reads the setting whenever a board opens.
 - Results can be shared as an emoji summary (no spoilers).
 - Stats and streaks are per `(lang, kind, n)`.
 

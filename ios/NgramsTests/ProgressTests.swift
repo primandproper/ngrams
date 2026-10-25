@@ -38,6 +38,17 @@ struct ProgressStoreTests {
     #expect(try store.entries(for: otherDay) == ["ef"])
     #expect(try store.entries(for: otherLanguage).isEmpty)
   }
+
+  @Test("keeps the mode a puzzle's first entry recorded")
+  func keepsMode() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    #expect(try store.hardMode(for: key) == nil)
+
+    try store.append("ab", for: key, hardMode: true)
+    try store.append("abcd", for: key, hardMode: false)
+
+    #expect(try store.hardMode(for: key) == true)
+  }
 }
 
 @Suite("TilesSession")
@@ -114,9 +125,9 @@ struct TilesSessionTests {
 struct WordSessionTests {
   private let wordKey = ProgressKey(language: .en, kind: .word, n: 5, day: testDay)
 
-  private func session(_ store: ProgressStore) -> WordSession {
+  private func session(_ store: ProgressStore, hardMode: Bool = false) -> WordSession {
     WordSession(
-      puzzle: wordPuzzle, day: testDay, list: wordList, store: store,
+      puzzle: wordPuzzle, day: testDay, list: wordList, hardMode: hardMode, store: store,
       observer: recordingObserver("test"))
   }
 
@@ -154,15 +165,30 @@ struct WordSessionTests {
     #expect(session.feedback?.kind == .blocked)
     #expect(try store.entries(for: wordKey).isEmpty)
   }
+
+  @Test("takes the setting until the first guess, then keeps the puzzle's mode")
+  func locksMode() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    #expect(self.session(store, hardMode: true).game.hardMode)
+
+    guess("plaza", in: self.session(store, hardMode: true))
+    let session = self.session(store, hardMode: false)
+    #expect(session.game.hardMode)
+
+    guess("label", in: session)
+    #expect(session.feedback?.kind == .missingHint(.position("l", 1)))
+    #expect(try store.entries(for: wordKey) == ["plaza"])
+  }
 }
 
 @Suite("PangramSession")
 struct PangramSessionTests {
   private let pangramKey = ProgressKey(language: .en, kind: .pangram, n: 6, day: testDay)
 
-  private func session(_ store: ProgressStore) -> PangramSession {
+  private func session(_ store: ProgressStore, hardMode: Bool = false) -> PangramSession {
     PangramSession(
-      puzzle: pangramPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+      puzzle: pangramPuzzle, day: testDay, hardMode: hardMode, store: store,
+      observer: recordingObserver("test"))
   }
 
   private func spell(_ text: String, in session: PangramSession) {
@@ -195,6 +221,20 @@ struct PangramSessionTests {
 
     #expect(session.feedback?.kind == .missingCenter)
     #expect(try store.entries(for: pangramKey).isEmpty)
+  }
+
+  @Test("takes the setting until the first word, then keeps the board's mode")
+  func locksMode() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store, hardMode: true)
+
+    spell("place", in: session)
+    #expect(session.feedback?.kind == .needsPangram)
+    #expect(!self.session(store, hardMode: false).game.hardMode)
+
+    spell("plaice", in: session)
+    #expect(self.session(store, hardMode: false).game.hardMode)
+    #expect(try store.entries(for: pangramKey) == ["plaice"])
   }
 
   @Test("shuffles only the outer letters, starting from a stable order")

@@ -46,6 +46,18 @@ struct PangramGameTests {
     #expect(game.score == 1)
   }
 
+  @Test("makes hard mode's first word a pangram")
+  func hardStartsWithPangram() {
+    var game = PangramGame(puzzle: pangramPuzzle, hardMode: true)
+
+    #expect(submit("place", in: &game) == .needsPangram)
+    #expect(submit("plaice", in: &game) == .found(pangramPuzzle.words[3]))
+    #expect(submit("place", in: &game) == .found(pangramPuzzle.words[2]))
+
+    var easy = PangramGame(puzzle: pangramPuzzle)
+    #expect(submit("place", in: &easy) == .found(pangramPuzzle.words[2]))
+  }
+
   @Test("deletes typed letters")
   func deletes() {
     var game = PangramGame(puzzle: pangramPuzzle)

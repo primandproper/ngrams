@@ -79,6 +79,38 @@ struct WordGameTests {
     #expect(game.guesses.isEmpty)
   }
 
+  @Test("makes hard mode guesses keep correct letters in place")
+  func hardKeepsPositions() {
+    // PLAZA finds L, A, and A in place against LLAMA.
+    var game = WordGame(puzzle: wordPuzzle, guesses: ["plaza"], hardMode: true)
+    typed("label", into: &game)
+
+    #expect(game.submit(against: wordList) == .missingHint(.position("l", 1)))
+    #expect(game.current == "label")
+    #expect(game.guesses == ["plaza"])
+
+    var easy = WordGame(puzzle: wordPuzzle, guesses: ["plaza"])
+    typed("label", into: &easy)
+    #expect(easy.submit(against: wordList) == .guessed("label"))
+  }
+
+  @Test("makes hard mode guesses use every found letter, counting copies")
+  func hardUsesLetters() {
+    // LABEL finds an L in place, another L, and an A.
+    var game = WordGame(puzzle: wordPuzzle, guesses: ["label"], hardMode: true)
+    typed("lolls", into: &game)
+    #expect(game.submit(against: wordList) == .missingHint(.letter("a")))
+
+    // LOLLS finds an L in place and a second L that LOAMY leaves out.
+    game = WordGame(puzzle: wordPuzzle, guesses: ["lolls"], hardMode: true)
+    typed("loamy", into: &game)
+    #expect(game.submit(against: wordList) == .missingHint(.letter("l")))
+
+    game = WordGame(puzzle: wordPuzzle, guesses: ["label"], hardMode: true)
+    typed("llama", into: &game)
+    #expect(game.submit(against: wordList) == .guessed("llama"))
+  }
+
   @Test("types at most n letters")
   func capsTyping() {
     var game = WordGame(puzzle: wordPuzzle)

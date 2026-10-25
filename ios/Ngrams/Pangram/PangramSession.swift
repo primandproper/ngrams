@@ -18,6 +18,7 @@ final class PangramSession {
       case missingCenter
       case blocked
       case notAWord(String)
+      case needsPangram
       case saveFailed
       case loadFailed
     }
@@ -35,7 +36,12 @@ final class PangramSession {
   private let store: ProgressStore
   private let logger: any Logger
 
-  init(puzzle: PangramPuzzle, day: PuzzleDay, store: ProgressStore, observer: any Observer) {
+  /// `hardMode` is the setting, which applies only until the first word is saved; after that
+  /// the board keeps the mode it was saved with.
+  init(
+    puzzle: PangramPuzzle, day: PuzzleDay, hardMode: Bool, store: ProgressStore,
+    observer: any Observer
+  ) {
     let key = ProgressKey(language: puzzle.language, kind: .pangram, n: puzzle.n, day: day)
     let logger = observer.logger.withValue("day", day.description).withValue("n", puzzle.n)
       .withValue("lang", puzzle.language.rawValue)
@@ -44,10 +50,12 @@ final class PangramSession {
     self.logger = logger
 
     do {
-      game = PangramGame(puzzle: puzzle, foundWords: try store.entries(for: key))
+      game = PangramGame(
+        puzzle: puzzle, foundWords: try store.entries(for: key),
+        hardMode: try store.hardMode(for: key) ?? hardMode)
     } catch {
       logger.error("loading pangram progress", error)
-      game = PangramGame(puzzle: puzzle)
+      game = PangramGame(puzzle: puzzle, hardMode: hardMode)
       feedback = Feedback(kind: .loadFailed)
     }
     var rng = SeededGenerator(seed: "\(key.language.rawValue)-\(key.kind.rawValue)-\(key.n)-\(day)")
@@ -76,6 +84,8 @@ final class PangramSession {
       feedback = Feedback(kind: .missingCenter)
     case .notAWord(let text):
       feedback = Feedback(kind: .notAWord(text))
+    case .needsPangram:
+      feedback = Feedback(kind: .needsPangram)
     case .alreadyFound(let word):
       feedback = Feedback(kind: .alreadyFound(word))
     case .blocked:
@@ -84,7 +94,7 @@ final class PangramSession {
     case .found(let word):
       feedback = Feedback(kind: .found(word, pangram: game.puzzle.isPangram(word.word)))
       do {
-        try store.append(word.word, for: key)
+        try store.append(word.word, for: key, hardMode: game.hardMode)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

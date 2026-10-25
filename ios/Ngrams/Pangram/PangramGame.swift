@@ -7,10 +7,13 @@ nonisolated struct PangramGame: Sendable {
     case missingCenter
     case blocked(String)
     case notAWord(String)
+    case needsPangram
     case empty
   }
 
   let puzzle: PangramPuzzle
+  /// Whether the first word found has to be a pangram.
+  let hardMode: Bool
   /// Words found so far, oldest first.
   private(set) var found: [PangramWord] = []
   /// Letters typed toward the next word.
@@ -20,8 +23,9 @@ nonisolated struct PangramGame: Sendable {
 
   /// Starts a board, restoring `foundWords` from saved progress. Saved words the board doesn't
   /// have (the bank was rebuilt since) are dropped.
-  init(puzzle: PangramPuzzle, foundWords: [String] = []) {
+  init(puzzle: PangramPuzzle, foundWords: [String] = [], hardMode: Bool = false) {
     self.puzzle = puzzle
+    self.hardMode = hardMode
     let words = Dictionary(
       puzzle.words.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.words = words
@@ -84,6 +88,9 @@ nonisolated struct PangramGame: Sendable {
     }
     if found.contains(word) {
       return .alreadyFound(word)
+    }
+    if hardMode, found.isEmpty, !puzzle.isPangram(text) {
+      return .needsPangram
     }
     found.append(word)
     return .found(word)

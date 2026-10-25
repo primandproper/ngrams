@@ -9,6 +9,7 @@ struct PangramScreen: View {
 
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
+  @AppStorage(SettingsKey.pangramHardMode) private var hardMode = false
   @State private var session: PangramSession?
 
   var body: some View {
@@ -25,7 +26,8 @@ struct PangramScreen: View {
       if session == nil {
         let observer = makeObserver("PangramSession", pillars)
         session = PangramSession(
-          puzzle: puzzle, day: day, store: ProgressStore(context: context, observer: observer),
+          puzzle: puzzle, day: day, hardMode: hardMode,
+          store: ProgressStore(context: context, observer: observer),
           observer: observer)
       }
     }
@@ -245,6 +247,7 @@ private struct FeedbackBanner: View {
     case .missingCenter: "Missing the center letter"
     case .blocked: "How dare you"
     case .notAWord(let text): "\(text.uppercased()) isn't on the list"
+    case .needsPangram: "Start with a pangram"
     case .saveFailed: "Couldn't save that word"
     case .loadFailed: "Couldn't load saved progress"
     }

@@ -19,7 +19,16 @@ nonisolated struct WordGame: Sendable {
     case tooShort
     case blocked(String)
     case notAWord(String)
+    case missingHint(Hint)
     case over
+  }
+
+  /// A revealed hint that hard mode makes every later guess use.
+  enum Hint: Equatable, Sendable {
+    /// A correct letter has to stay in its spot, counted from zero.
+    case position(Character, Int)
+    /// A found letter has to appear at least as often as an earlier guess showed it.
+    case letter(Character)
   }
 
   enum Status: Equatable, Sendable {
@@ -29,6 +38,8 @@ nonisolated struct WordGame: Sendable {
   }
 
   let puzzle: WordPuzzle
+  /// Whether each guess has to use every hint revealed so far.
+  let hardMode: Bool
   /// Submitted guesses, oldest first.
   private(set) var guesses: [String] = []
   /// Letters typed toward the next guess.
@@ -36,8 +47,9 @@ nonisolated struct WordGame: Sendable {
 
   /// Starts a puzzle, restoring `guesses` from saved progress. Saved guesses the puzzle can't
   /// hold (the wrong length, or past the end) are dropped.
-  init(puzzle: WordPuzzle, guesses: [String] = []) {
+  init(puzzle: WordPuzzle, guesses: [String] = [], hardMode: Bool = false) {
     self.puzzle = puzzle
+    self.hardMode = hardMode
     for guess in guesses where status == .playing && guess.count == puzzle.n {
       self.guesses.append(guess)
     }
@@ -96,9 +108,39 @@ nonisolated struct WordGame: Sendable {
     guard guess == puzzle.answer || list.accepted.contains(guess) else {
       return .notAWord(guess)
     }
+    if hardMode, let hint = missingHint(in: guess) {
+      return .missingHint(hint)
+    }
     current = ""
     guesses.append(guess)
     return .guessed(guess)
+  }
+
+  /// The first hint `guess` leaves out: correct letters out of their spot first, then found
+  /// letters it has too few copies of, both in the order they were revealed.
+  func missingHint(in guess: String) -> Hint? {
+    let letters = Array(guess)
+    let marks = self.marks
+    for (previous, marks) in zip(guesses, marks) {
+      for (i, (letter, mark)) in zip(previous, marks).enumerated()
+      where mark == .correct && letters[i] != letter {
+        return .position(letter, i)
+      }
+    }
+
+    var required: [Character: Int] = [:]
+    for (previous, marks) in zip(guesses, marks) {
+      var found: [Character: Int] = [:]
+      for (letter, mark) in zip(previous, marks) where mark != .absent {
+        found[letter, default: 0] += 1
+      }
+      required.merge(found, uniquingKeysWith: max)
+    }
+    for letter in guesses.joined()
+    where letters.count(where: { $0 == letter }) < required[letter, default: 0] {
+      return .letter(letter)
+    }
+    return nil
   }
 
   /// Marks `guess` against `answer`. Correct letters are marked first, then a misplaced letter

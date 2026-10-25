@@ -26,14 +26,20 @@ final class PuzzleProgress {
   var n: Int
   var day: String
   var entries: [String]
+  /// The mode the puzzle was started in, fixed by its first entry. Word and pangram puzzles
+  /// keep it; tiles reads its setting live and leaves this false.
+  var hardMode = false
   var updatedAt: Date
 
-  init(key: ProgressKey, entries: [String] = [], updatedAt: Date = .now) {
+  init(
+    key: ProgressKey, entries: [String] = [], hardMode: Bool = false, updatedAt: Date = .now
+  ) {
     self.language = key.language.rawValue
     self.kind = key.kind.rawValue
     self.n = key.n
     self.day = key.day.description
     self.entries = entries
+    self.hardMode = hardMode
     self.updatedAt = updatedAt
   }
 
@@ -68,14 +74,20 @@ final class ProgressStore {
     try fetch(key)?.entries ?? []
   }
 
+  /// The mode a started puzzle was started in, or nil if nothing's been saved for it yet.
+  func hardMode(for key: ProgressKey) throws -> Bool? {
+    try fetch(key)?.hardMode
+  }
+
   /// Appends one entry and saves. Appending rather than replacing means a failed read can never
-  /// turn into a write that drops earlier entries.
-  func append(_ entry: String, for key: ProgressKey) throws {
+  /// turn into a write that drops earlier entries. The first entry records `hardMode`; later
+  /// ones leave it alone, so a puzzle keeps the mode it started in.
+  func append(_ entry: String, for key: ProgressKey, hardMode: Bool = false) throws {
     if let progress = try fetch(key) {
       progress.entries.append(entry)
       progress.updatedAt = .now
     } else {
-      context.insert(PuzzleProgress(key: key, entries: [entry]))
+      context.insert(PuzzleProgress(key: key, entries: [entry], hardMode: hardMode))
     }
     try context.save()
     logger.withValue("day", key.day.description).withValue("n", key.n)

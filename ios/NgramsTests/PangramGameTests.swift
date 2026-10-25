@@ -58,6 +58,14 @@ struct PangramGameTests {
     #expect(submit("place", in: &easy) == .found(pangramPuzzle.words[2]))
   }
 
+  @Test("lists found words alphabetically or newest first")
+  func sortsFound() {
+    let game = PangramGame(puzzle: pangramPuzzle, foundWords: ["place", "pace", "plaice"])
+
+    #expect(game.found(sortedBy: .alphabetical).map(\.word) == ["pace", "place", "plaice"])
+    #expect(game.found(sortedBy: .recent).map(\.word) == ["plaice", "pace", "place"])
+  }
+
   @Test("deletes typed letters")
   func deletes() {
     var game = PangramGame(puzzle: pangramPuzzle)

@@ -1,3 +1,10 @@
+/// How a board lists the words found on it.
+nonisolated enum FoundWordOrder: String, Sendable {
+  case alphabetical
+  /// Newest first.
+  case recent
+}
+
 /// The rules of one pangram board: the letters typed so far, what's been found, and the score.
 nonisolated struct PangramGame: Sendable {
   enum Submission: Equatable, Sendable {
@@ -41,6 +48,13 @@ nonisolated struct PangramGame: Sendable {
   /// Folded spellings of the found words, oldest first, for saving.
   var foundWords: [String] {
     found.map(\.word)
+  }
+
+  func found(sortedBy order: FoundWordOrder) -> [PangramWord] {
+    switch order {
+    case .alphabetical: found.sorted { $0.word < $1.word }
+    case .recent: found.reversed()
+    }
   }
 
   var score: Int {

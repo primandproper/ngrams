@@ -5,6 +5,7 @@ enum SettingsKey {
   static let wordHardMode = "wordHardMode"
   static let solvedTilesLeave = "solvedTilesLeave"
   static let pangramHardMode = "pangramHardMode"
+  static let pangramFoundOrder = "pangramFoundOrder"
   static let languages = "languages"
   static let homeGrouping = "homeGrouping"
 }

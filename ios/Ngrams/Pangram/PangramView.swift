@@ -63,20 +63,31 @@ struct PangramView: View {
   }
 
   private var controls: some View {
-    HStack {
-      Button("Delete", systemImage: "delete.left") { session.deleteLetter() }
-        .disabled(session.game.current.isEmpty)
-      Spacer()
+    HStack(spacing: 12) {
+      Button {
+        session.deleteLetter()
+      } label: {
+        Label("Delete", systemImage: "delete.left")
+          .frame(maxWidth: .infinity)
+      }
+      .disabled(session.game.current.isEmpty)
       Button("Shuffle", systemImage: "shuffle") {
         withAnimation { session.shuffle() }
       }
       .labelStyle(.iconOnly)
-      Spacer()
-      Button("Enter") { session.submit() }
-        .buttonStyle(.borderedProminent)
-        .disabled(session.game.current.isEmpty)
+      .buttonBorderShape(.circle)
+      Button {
+        session.submit()
+      } label: {
+        Text("Enter")
+          .frame(maxWidth: .infinity)
+      }
+      .buttonStyle(.borderedProminent)
+      .disabled(session.game.current.isEmpty)
     }
     .buttonStyle(.bordered)
+    .controlSize(.extraLarge)
+    .font(.title3.weight(.semibold))
   }
 }
 
@@ -225,12 +236,25 @@ nonisolated private struct Wedge: Shape {
 private struct FoundWords: View {
   let game: PangramGame
 
+  @AppStorage(SettingsKey.pangramFoundOrder) private var order = FoundWordOrder.alphabetical
+
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(game.found.count) found")
-        .font(.headline)
+      HStack {
+        Text("\(game.found.count) found")
+          .font(.headline)
+        Spacer()
+        Button {
+          withAnimation { order = order == .alphabetical ? .recent : .alphabetical }
+        } label: {
+          Image(systemName: order == .alphabetical ? "textformat.abc" : "clock")
+            .frame(minWidth: 44, minHeight: 44)
+        }
+        .accessibilityLabel(order == .alphabetical ? "Sorted A to Z" : "Sorted newest first")
+        .accessibilityHint("Changes how found words are sorted")
+      }
       LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)], spacing: 6) {
-        ForEach(game.found.sorted { $0.word < $1.word }, id: \.word) { word in
+        ForEach(game.found(sortedBy: order), id: \.word) { word in
           HStack(spacing: 4) {
             Text(word.shown)
               .fontWeight(game.puzzle.isPangram(word.word) ? .bold : .regular)

@@ -49,6 +49,13 @@ struct PangramView: View {
       }
       .padding()
     }
+    .toolbar {
+      if !session.game.found.isEmpty {
+        ToolbarItem(placement: .topBarTrailing) {
+          ShareLink(item: ShareText.pangram(session.game, on: session.key.day))
+        }
+      }
+    }
     .overlay(alignment: .top) {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)

@@ -12,7 +12,9 @@ every day.
 Built to launch publicly on the App Store. What a launch still needs:
 
 - Final names for the app and the games (see [Open questions](#open-questions)).
-- Stats, streaks, and the emoji share.
+- Stats and streaks.
+- The App Store link at the end of every share (`ShareText.appStoreURL`), once the app has a
+  page.
 
 ## Non-goals (for now)
 
@@ -132,7 +134,13 @@ game under that name, is already on the App Store (checked 2026-10-24).
 - `word` and `pangram` hard modes lock per puzzle: the setting applies until a puzzle's first
   guess or word is saved, and the puzzle keeps that mode after, saved with its progress. `tiles`
   hard mode predates this and still reads the setting whenever a board opens.
-- Results can be shared as an emoji summary (no spoilers).
+- Results share as spoiler-free text: each puzzle from its own screen, and every puzzle started
+  on a day from home, a line per language and game. Shares carry the date ("Oct 25") rather
+  than a puzzle number, a flag even when only one language is on (the reader may play
+  another), `*` for hard mode, and ⭐ for a star. `word` shares its grid; `tiles` and `pangram`
+  a ten-segment bar toward the target. The grid avoids the original's colors: blue in place,
+  grey in the word, dark for absent (🟦⬜⬛), matching the board, where absent letters fade
+  rather than fill.
 - Stats and streaks are per `(lang, kind, n)`.
 
 ## Languages
@@ -412,11 +420,12 @@ bundled copy as fallback" changes nothing about the format.
 Whether boards are fun gets judged by playing them in the app, installed on my phone, not by
 reading printed output. So the order is:
 
-1. `tiles` playable on my phone with real generated boards, in both languages. A Debug-only
-   day picker steps through the whole bank, so a playtest isn't limited to one day's boards.
+1. `tiles` playable on my phone with real generated boards, in both languages. Debug builds' day
+   picker reaches the whole bank, so a playtest isn't limited to one day's boards.
 2. `word`.
 3. `pangram`.
 4. The app icon: three tiles reading N, GR, AMS, drawn by `make icon` (`ios/Tools/AppIcon.swift`)
    in light, dark, and tinted variants, so it's reproducible and diffs as code. Icon
    Composer's layered `.icon` format, which adds Liquid Glass, is left for a real design pass.
-5. Stats, streaks, and the emoji share.
+5. Sharing results as text.
+6. Stats and streaks.

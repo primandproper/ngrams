@@ -66,6 +66,13 @@ struct WordView: View {
         onLetter: session.type, onDelete: session.deleteLetter, onEnter: session.submit)
     }
     .padding()
+    .toolbar {
+      if session.game.isOver {
+        ToolbarItem(placement: .topBarTrailing) {
+          ShareLink(item: ShareText.word(session.game, on: session.key.day))
+        }
+      }
+    }
     .overlay(alignment: .top) {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)
@@ -116,11 +123,12 @@ private struct GuessGrid: View {
 }
 
 extension LetterMark {
-  var color: Color {
+  /// The fill behind a marked letter. Absent letters get none; they fade instead.
+  var fill: Color? {
     switch self {
-    case .correct: .green
-    case .present: .orange
-    case .absent: Color(.systemGray)
+    case .correct: .accentColor
+    case .present: Color(.systemGray)
+    case .absent: nil
     }
   }
 
@@ -145,17 +153,32 @@ private struct LetterCell: View {
     Text(letter.map { String($0).uppercased() } ?? " ")
       .font(.title.weight(.bold))
       .frame(width: Self.size, height: Self.size)
-      .foregroundStyle(mark == nil ? Color.primary : Color.white)
-      .background(mark?.color ?? .clear, in: .rect(cornerRadius: 8))
+      .foregroundStyle(foreground)
+      .background(mark?.fill ?? .clear, in: .rect(cornerRadius: 8))
       .overlay {
-        if mark == nil {
+        if mark?.fill == nil {
           RoundedRectangle(cornerRadius: 8)
-            .strokeBorder(letter == nil ? Color(.systemGray4) : Color(.systemGray), lineWidth: 2)
+            .strokeBorder(border, lineWidth: 2)
         }
       }
       .accessibilityLabel(
         letter.map { "\(String($0).uppercased())\(mark.map { ", \($0.accessibilityName)" } ?? "")" }
           ?? "empty")
+  }
+
+  private var foreground: Color {
+    switch mark {
+    case .absent: .secondary
+    case .correct, .present: .white
+    case nil: .primary
+    }
+  }
+
+  private var border: Color {
+    if mark == .absent || letter == nil {
+      return Color(.systemGray5)
+    }
+    return Color(.systemGray)
   }
 }
 
@@ -224,12 +247,24 @@ private struct LetterKey: View {
       Text(String(letter).uppercased())
         .font(.title3.weight(.semibold))
         .frame(maxWidth: .infinity, minHeight: 52)
-        .foregroundStyle(mark == nil ? Color.primary : Color.white)
-        .background(mark?.color ?? Color(.systemGray5), in: .rect(cornerRadius: 6))
+        .foregroundStyle(foreground)
+        .background(background, in: .rect(cornerRadius: 6))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(
       "\(String(letter).uppercased())\(mark.map { ", \($0.accessibilityName)" } ?? "")")
+  }
+
+  private var foreground: Color {
+    switch mark {
+    case .absent: Color(.tertiaryLabel)
+    case .correct, .present: .white
+    case nil: .primary
+    }
+  }
+
+  private var background: Color {
+    mark?.fill ?? Color(mark == .absent ? .systemGray6 : .systemGray5)
   }
 }
 

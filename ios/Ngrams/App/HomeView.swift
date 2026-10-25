@@ -188,6 +188,7 @@ private struct DayList: View {
   let grouping: HomeGrouping
 
   @Query private var progress: [PuzzleProgress]
+  @AppStorage(SettingsKey.solvedTilesLeave) private var solvedTilesLeave = false
 
   init(
     words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay,
@@ -203,22 +204,31 @@ private struct DayList: View {
 
   /// Every puzzle with its saved progress, in the grouping's order.
   private var all: [Entry] {
-    let saved = Dictionary(
-      progress.map { ("\($0.kind)-\($0.language)-\($0.n)", $0.entries) },
+    let byKey = Dictionary(
+      progress.map { ("\($0.kind)-\($0.language)-\($0.n)", $0) },
       uniquingKeysWith: { first, _ in first })
-    func entries(_ kind: PuzzleKind, _ language: Language, _ n: Int) -> [String] {
-      saved["\(kind.rawValue)-\(language.rawValue)-\(n)"] ?? []
+    func saved(_ kind: PuzzleKind, _ language: Language, _ n: Int) -> PuzzleProgress? {
+      byKey["\(kind.rawValue)-\(language.rawValue)-\(n)"]
     }
-    let all =
-      words.map {
-        Entry.word(WordGame(puzzle: $0, guesses: entries(.word, $0.language, $0.n)))
-      }
-      + tiles.map {
-        Entry.tiles(TilesGame(puzzle: $0, foundWords: entries(.tiles, $0.language, $0.n)))
-      }
-      + pangrams.map {
-        Entry.pangram(PangramGame(puzzle: $0, foundWords: entries(.pangram, $0.language, $0.n)))
-      }
+    let wordEntries: [Entry] = words.map { puzzle in
+      let record = saved(.word, puzzle.language, puzzle.n)
+      return .word(
+        WordGame(
+          puzzle: puzzle, guesses: record?.entries ?? [], hardMode: record?.hardMode ?? false))
+    }
+    let tilesEntries: [Entry] = tiles.map { puzzle in
+      .tiles(
+        TilesGame(
+          puzzle: puzzle, foundWords: saved(.tiles, puzzle.language, puzzle.n)?.entries ?? [],
+          solvedTilesLeave: solvedTilesLeave))
+    }
+    let pangramEntries: [Entry] = pangrams.map { puzzle in
+      let record = saved(.pangram, puzzle.language, puzzle.n)
+      return .pangram(
+        PangramGame(
+          puzzle: puzzle, foundWords: record?.entries ?? [], hardMode: record?.hardMode ?? false))
+    }
+    let all = wordEntries + tilesEntries + pangramEntries
     return all.sorted { $0.precedes($1, groupedBy: grouping) }
   }
 
@@ -275,6 +285,27 @@ private struct DayList: View {
     }
     .animation(.default, value: completed.map(\.id))
     .animation(.default, value: grouping)
+    .toolbar {
+      if let text = shareText(all) {
+        ToolbarItem(placement: .topBarTrailing) {
+          ShareLink(item: text)
+        }
+      }
+    }
+  }
+
+  private func shareText(_ entries: [Entry]) -> String? {
+    var words: [WordGame] = []
+    var tiles: [TilesGame] = []
+    var pangrams: [PangramGame] = []
+    for entry in entries {
+      switch entry {
+      case .word(let game): words.append(game)
+      case .tiles(let game): tiles.append(game)
+      case .pangram(let game): pangrams.append(game)
+      }
+    }
+    return ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: day)
   }
 
   private func rows(_ entries: [Entry], labeled labeling: RowLabeling) -> some View {
@@ -423,12 +454,7 @@ private struct DayPicker: View {
   private var later: PuzzleDay? { days.first { $0 > current } }
 
   private var title: String {
-    guard current != today, let start = current.start() else {
-      return "Today"
-    }
-    return current.year == today.year
-      ? start.formatted(.dateTime.month(.abbreviated).day())
-      : start.formatted(.dateTime.month(.abbreviated).day().year())
+    current == today ? "Today" : current.name(includingYear: current.year != today.year)
   }
 
   var body: some View {

@@ -31,6 +31,19 @@ nonisolated struct PuzzleDay: Hashable, Comparable, Sendable, CustomStringConver
     self.init(year: parts.year ?? 0, month: parts.month ?? 0, day: parts.day ?? 0)
   }
 
+  private static let monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ]
+
+  /// "Oct 25", or "Oct 25, 2026" with the year. Always English, like the rest of the app's text.
+  func name(includingYear: Bool) -> String {
+    guard Self.monthNames.indices.contains(month - 1) else {
+      return description
+    }
+    let name = "\(Self.monthNames[month - 1]) \(day)"
+    return includingYear ? "\(name), \(year)" : name
+  }
+
   /// The midnight that starts the day on `calendar`, or nil if the calendar has no such date.
   func start(in calendar: Calendar = .current) -> Date? {
     calendar.date(from: DateComponents(year: year, month: month, day: day))

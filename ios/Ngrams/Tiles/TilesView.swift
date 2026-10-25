@@ -55,6 +55,13 @@ struct TilesView: View {
       }
       .padding()
     }
+    .toolbar {
+      if !session.game.found.isEmpty {
+        ToolbarItem(placement: .topBarTrailing) {
+          ShareLink(item: ShareText.tiles(session.game, on: session.key.day))
+        }
+      }
+    }
     .overlay(alignment: .top) {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)

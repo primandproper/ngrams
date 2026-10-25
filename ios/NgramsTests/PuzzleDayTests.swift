@@ -39,6 +39,12 @@ struct PuzzleDayTests {
     #expect(PuzzleDay(containing: start, calendar: calendar) == testDay)
   }
 
+  @Test("names the day in English, with or without the year")
+  func names() {
+    #expect(testDay.name(includingYear: false) == "Jan 1")
+    #expect(PuzzleDay(year: 2026, month: 10, day: 25).name(includingYear: true) == "Oct 25, 2026")
+  }
+
   @Test("orders by date")
   func orders() {
     let days = [

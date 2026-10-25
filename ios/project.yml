@@ -37,6 +37,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: software.primandproper.ngrams
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Ngrams/Info.plist
       properties:

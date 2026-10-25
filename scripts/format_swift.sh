@@ -7,4 +7,4 @@ set -euo pipefail
 IOS_DIR="${1:-ios}"
 
 cd "${IOS_DIR}"
-swift format --recursive --in-place Ngrams NgramsTests
+swift format --recursive --in-place Ngrams NgramsTests Tools

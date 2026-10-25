@@ -11,7 +11,6 @@ every day.
 
 Built to launch publicly on the App Store. What a launch still needs:
 
-- An app icon.
 - Final names for the app and the games (see [Open questions](#open-questions)).
 - Stats, streaks, and the emoji share.
 
@@ -399,5 +398,7 @@ reading printed output. So the order is:
    day picker steps through the whole bank, so a playtest isn't limited to one day's boards.
 2. `word`.
 3. `pangram`.
-4. The app icon.
+4. The app icon: three tiles reading N, GR, AMS, drawn by `make icon` (`ios/Tools/AppIcon.swift`)
+   in light, dark, and tinted variants, so it's reproducible and diffs as code. Icon
+   Composer's layered `.icon` format, which adds Liquid Glass, is left for a real design pass.
 5. Stats, streaks, and the emoji share.

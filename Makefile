@@ -83,6 +83,11 @@ test: test_golang test_ios
 ios_install:
 	$(SCRIPTS_DIR)/install_ios.sh $(IOS_DIR)
 
+# Redraws the app icon's variants into the asset catalog.
+.PHONY: icon
+icon:
+	$(SCRIPTS_DIR)/make_icon.sh $(IOS_DIR)
+
 # Pass generator flags through ARGS, e.g. make bank ARGS="-print -langs es".
 .PHONY: bank
 bank: data

@@ -80,7 +80,7 @@ final class WordSession {
       feedback = Feedback(kind: .blocked)
     case .guessed(let guess):
       do {
-        try store.append(guess, for: key, hardMode: game.hardMode)
+        try store.append(guess, for: key, hardMode: game.hardMode, completes: game.isOver)
       } catch {
         logger.error("saving a guess", error)
         feedback = Feedback(kind: .saveFailed)

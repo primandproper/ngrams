@@ -94,7 +94,8 @@ final class PangramSession {
     case .found(let word):
       feedback = Feedback(kind: .found(word, pangram: game.puzzle.isPangram(word.word)))
       do {
-        try store.append(word.word, for: key, hardMode: game.hardMode)
+        try store.append(
+          word.word, for: key, hardMode: game.hardMode, completes: game.earnedStar)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

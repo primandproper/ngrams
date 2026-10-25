@@ -19,6 +19,7 @@ struct RootView: View {
         .task { await load() }
     case .loaded(let bank):
       HomeView(bank: bank)
+        .environment(\.puzzleBank, bank)
     case .failed(let message):
       ContentUnavailableView(
         "No puzzles", systemImage: "exclamationmark.triangle", description: Text(message))

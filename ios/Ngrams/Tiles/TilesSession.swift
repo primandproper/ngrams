@@ -104,7 +104,7 @@ final class TilesSession {
     case .found(let word):
       feedback = Feedback(kind: .found(word))
       do {
-        try store.append(word.word, for: key)
+        try store.append(word.word, for: key, completes: game.earnedStar)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

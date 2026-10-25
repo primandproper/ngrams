@@ -36,6 +36,8 @@ struct TilesScreen: View {
 struct TilesView: View {
   @Bindable var session: TilesSession
 
+  @State private var showingStats = false
+
   /// One column per tile in a target, so every board is a full rectangle and a solved target
   /// fills exactly one row.
   private var columns: [GridItem] {
@@ -54,6 +56,18 @@ struct TilesView: View {
         FoundWords(words: session.game.found)
       }
       .padding()
+    }
+    .onChange(of: session.game.earnedStar) { hadStar, hasStar in
+      if !hadStar, hasStar {
+        Task {
+          try? await Task.sleep(for: .seconds(1))
+          showingStats = true
+        }
+      }
+    }
+    .sheet(isPresented: $showingStats) {
+      let puzzle = session.game.puzzle
+      LineStatsSheet(line: PuzzleLine(language: puzzle.language, kind: .tiles, n: puzzle.n))
     }
     .toolbar {
       if !session.game.found.isEmpty {

@@ -11,6 +11,9 @@ struct HomeView: View {
   @State private var pickedDay: PuzzleDay?
   @State private var choosingDay = false
   @State private var showingSettings = false
+  @State private var showingStats = false
+  /// Every saved puzzle, for the streaks on each row.
+  @Query private var allProgress: [PuzzleProgress]
   @AppStorage(SettingsKey.languages) private var languages: LanguageSelection?
   @AppStorage(SettingsKey.homeGrouping) private var grouping = HomeGrouping.game
 
@@ -41,7 +44,8 @@ struct HomeView: View {
         tiles: bank.tilesPuzzles(on: day).filter { plays($0.language) },
         pangrams: bank.pangramPuzzles(on: day).filter { plays($0.language) },
         day: day,
-        grouping: grouping
+        grouping: grouping,
+        streaks: StatsBook.current(allProgress, bank: bank).mapValues(\.currentStreak)
       )
       .navigationTitle("n-grams")
       .navigationSubtitle(day == today ? "Today" : day.description)
@@ -56,6 +60,9 @@ struct HomeView: View {
       }
       .sheet(isPresented: $showingSettings) {
         SettingsView()
+      }
+      .sheet(isPresented: $showingStats) {
+        StatsView(bank: bank)
       }
       .sheet(isPresented: $choosingDay) {
         DayCalendar(days: days, today: today, picked: $pickedDay)
@@ -75,6 +82,9 @@ struct HomeView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
           Button("Settings", systemImage: "gearshape") { showingSettings = true }
+        }
+        ToolbarItem(placement: .topBarLeading) {
+          Button("Stats", systemImage: "chart.bar") { showingStats = true }
         }
         ToolbarItemGroup(placement: .bottomBar) {
           DayPicker(days: days, today: today, picked: $pickedDay, choosing: $choosingDay)
@@ -128,6 +138,8 @@ private enum Entry: Identifiable {
   case pangram(PangramGame)
 
   var id: String { "\(kind.rawValue)-\(language.rawValue)-\(n)" }
+
+  var line: PuzzleLine { PuzzleLine(language: language, kind: kind, n: n) }
 
   var kind: PuzzleKind {
     switch self {
@@ -186,19 +198,22 @@ private struct DayList: View {
   let pangrams: [PangramPuzzle]
   let day: PuzzleDay
   let grouping: HomeGrouping
+  /// Each line's current streak, as of today rather than the day shown.
+  let streaks: [PuzzleLine: Int]
 
   @Query private var progress: [PuzzleProgress]
   @AppStorage(SettingsKey.solvedTilesLeave) private var solvedTilesLeave = false
 
   init(
     words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay,
-    grouping: HomeGrouping
+    grouping: HomeGrouping, streaks: [PuzzleLine: Int]
   ) {
     self.words = words
     self.tiles = tiles
     self.pangrams = pangrams
     self.day = day
     self.grouping = grouping
+    self.streaks = streaks
     _progress = Query(filter: PuzzleProgress.matching(day: day))
   }
 
@@ -313,15 +328,15 @@ private struct DayList: View {
       switch entry {
       case .word(let game):
         NavigationLink(value: WordRoute(puzzle: game.puzzle, day: day)) {
-          WordRow(game: game, labeling: labeling)
+          WordRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
         }
       case .tiles(let game):
         NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
-          TilesRow(game: game, labeling: labeling)
+          TilesRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
         }
       case .pangram(let game):
         NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
-          PangramRow(game: game, labeling: labeling)
+          PangramRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
         }
       }
     }
@@ -351,6 +366,7 @@ private struct RowLabeling {
 private struct WordRow: View {
   let game: WordGame
   let labeling: RowLabeling
+  let streak: Int
 
   var body: some View {
     let puzzle = game.puzzle
@@ -358,9 +374,12 @@ private struct WordRow: View {
       VStack(alignment: .leading) {
         Text(labeling.title(.word, puzzle.language, puzzle.n))
           .font(.headline)
-        Text("\(puzzle.n) letters")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+          Text("\(puzzle.n) letters")
+            .foregroundStyle(.secondary)
+          StreakBadge(streak: streak)
+        }
+        .font(.subheadline)
       }
       Spacer()
       switch game.status {
@@ -388,6 +407,7 @@ private struct WordRow: View {
 private struct PangramRow: View {
   let game: PangramGame
   let labeling: RowLabeling
+  let streak: Int
 
   var body: some View {
     let puzzle = game.puzzle
@@ -395,9 +415,12 @@ private struct PangramRow: View {
       VStack(alignment: .leading) {
         Text(labeling.title(.pangram, puzzle.language, puzzle.n))
           .font(.headline)
-        Text("\(puzzle.n) letters")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+          Text("\(puzzle.n) letters")
+            .foregroundStyle(.secondary)
+          StreakBadge(streak: streak)
+        }
+        .font(.subheadline)
       }
       Spacer()
       if game.earnedStar {
@@ -414,6 +437,7 @@ private struct PangramRow: View {
 private struct TilesRow: View {
   let game: TilesGame
   let labeling: RowLabeling
+  let streak: Int
 
   var body: some View {
     let puzzle = game.puzzle
@@ -421,9 +445,12 @@ private struct TilesRow: View {
       VStack(alignment: .leading) {
         Text(labeling.title(.tiles, puzzle.language, puzzle.n))
           .font(.headline)
-        Text("\(puzzle.targets.count) targets")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
+          Text("\(puzzle.targets.count) targets")
+            .foregroundStyle(.secondary)
+          StreakBadge(streak: streak)
+        }
+        .font(.subheadline)
       }
       Spacer()
       if game.earnedStar {

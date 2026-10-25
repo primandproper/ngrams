@@ -37,6 +37,8 @@ struct PangramScreen: View {
 struct PangramView: View {
   @Bindable var session: PangramSession
 
+  @State private var showingStats = false
+
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
@@ -48,6 +50,18 @@ struct PangramView: View {
         FoundWords(game: session.game)
       }
       .padding()
+    }
+    .onChange(of: session.game.earnedStar) { hadStar, hasStar in
+      if !hadStar, hasStar {
+        Task {
+          try? await Task.sleep(for: .seconds(1))
+          showingStats = true
+        }
+      }
+    }
+    .sheet(isPresented: $showingStats) {
+      let puzzle = session.game.puzzle
+      LineStatsSheet(line: PuzzleLine(language: puzzle.language, kind: .pangram, n: puzzle.n))
     }
     .toolbar {
       if !session.game.found.isEmpty {

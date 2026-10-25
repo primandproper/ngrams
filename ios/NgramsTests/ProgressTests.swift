@@ -39,6 +39,21 @@ struct ProgressStoreTests {
     #expect(try store.entries(for: otherLanguage).isEmpty)
   }
 
+  @Test("records when a puzzle is first completed")
+  func recordsCompletion() throws {
+    let context = try inMemoryContext()
+    let store = ProgressStore(context: context, observer: recordingObserver("test"))
+
+    try store.append("ab", for: key)
+    #expect(try context.fetch(FetchDescriptor<PuzzleProgress>()).first?.completedAt == nil)
+    try store.append("abcd", for: key, completes: true)
+    let completedAt = try context.fetch(FetchDescriptor<PuzzleProgress>()).first?.completedAt
+    try store.append("ef", for: key, completes: true)
+
+    #expect(completedAt != nil)
+    #expect(try context.fetch(FetchDescriptor<PuzzleProgress>()).first?.completedAt == completedAt)
+  }
+
   @Test("keeps the mode a puzzle's first entry recorded")
   func keepsMode() throws {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
@@ -164,6 +179,18 @@ struct WordSessionTests {
 
     #expect(session.feedback?.kind == .blocked)
     #expect(try store.entries(for: wordKey).isEmpty)
+  }
+
+  @Test("records when the puzzle ends")
+  func recordsCompletion() throws {
+    let context = try inMemoryContext()
+    let session = self.session(ProgressStore(context: context, observer: recordingObserver("test")))
+
+    guess("plaza", in: session)
+    #expect(try context.fetch(FetchDescriptor<PuzzleProgress>()).first?.completedAt == nil)
+    guess("llama", in: session)
+
+    #expect(try context.fetch(FetchDescriptor<PuzzleProgress>()).first?.completedAt != nil)
   }
 
   @Test("takes the setting until the first guess, then keeps the puzzle's mode")

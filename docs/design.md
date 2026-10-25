@@ -12,7 +12,6 @@ every day.
 Built to launch publicly on the App Store. What a launch still needs:
 
 - Final names for the app and the games (see [Open questions](#open-questions)).
-- Stats and streaks.
 - The App Store link at the end of every share (`ShareText.appStoreURL`), once the app has a
   page.
 
@@ -141,7 +140,15 @@ game under that name, is already on the App Store (checked 2026-10-24).
   a ten-segment bar toward the target. The grid avoids the original's colors: blue in place,
   grey in the word, dark for absent (🟦⬜⬛), matching the board, where absent letters fade
   rather than fill.
-- Stats and streaks are per `(lang, kind, n)`.
+- Stats and streaks are per `(lang, kind, n)`: played, the share won (`word`) or starred
+  (boards), current and best streak, and for `word` how many guesses each solve took. They
+  show on a stats screen from home, after finishing a puzzle, and as a flame on each home row.
+- A streak counts a `word` solve or a board's star, on the puzzle's own day. Playing earlier
+  days from the calendar counts toward the totals but not the streak, as in the original's
+  archive. An unfinished puzzle today leaves the streak alone until midnight; a lost one ends
+  it.
+- Stats are worked out from saved progress each time, never stored, so they can't drift from
+  what was played. Progress keeps when each puzzle was completed for the on-day rule.
 
 ## Languages
 
@@ -183,7 +190,7 @@ flowchart LR
     D[Today's date + selected language] --> P[Look up today's puzzles]
     P --> WG[word: N=4,5,6]
     P --> TG[tiles: N=3,4,5]
-    WG & TG --> S[(SwiftData: progress, stats)]
+    WG & TG --> S[(SwiftData: progress)]
   end
 ```
 
@@ -389,7 +396,7 @@ Revisit if the bank grows to tens of MB (a many-year archive); split per year or
 | Store         | Contents                       | Written by        | Lives in      |
 | ------------- | ------------------------------ | ----------------- | ------------- |
 | Puzzle bank   | Puzzles, accepted words        | Generator (build) | App bundle    |
-| User progress | Guesses, scores, streaks       | App (runtime)     | SwiftData     |
+| User progress | Guesses, words, completion     | App (runtime)     | SwiftData     |
 
 The only link is the key `(lang, kind, n, date)`. Shipping a new bank never touches user data, and
 moving the bank from "bundled" to "fetched from a static URL behind Caddy, cached on device,

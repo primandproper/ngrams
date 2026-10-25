@@ -55,6 +55,8 @@ struct WordScreen: View {
 struct WordView: View {
   @Bindable var session: WordSession
 
+  @State private var showingStats = false
+
   var body: some View {
     VStack(spacing: 16) {
       GuessGrid(game: session.game)
@@ -66,6 +68,20 @@ struct WordView: View {
         onLetter: session.type, onDelete: session.deleteLetter, onEnter: session.submit)
     }
     .padding()
+    .onChange(of: session.game.isOver) { wasOver, isOver in
+      if !wasOver, isOver {
+        Task {
+          try? await Task.sleep(for: .seconds(1))
+          showingStats = true
+        }
+      }
+    }
+    .sheet(isPresented: $showingStats) {
+      let puzzle = session.game.puzzle
+      LineStatsSheet(
+        line: PuzzleLine(language: puzzle.language, kind: .word, n: puzzle.n),
+        highlight: solvedIn)
+    }
     .toolbar {
       if session.game.isOver {
         ToolbarItem(placement: .topBarTrailing) {
@@ -84,6 +100,13 @@ struct WordView: View {
       }
     }
     .animation(.default, value: session.feedback)
+  }
+
+  private var solvedIn: Int? {
+    if case .won(let guesses) = session.game.status {
+      return guesses
+    }
+    return nil
   }
 }
 

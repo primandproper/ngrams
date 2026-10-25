@@ -17,4 +17,6 @@ struct NgramsApp: App {
 
 extension EnvironmentValues {
   @Entry var pillars: Pillars = .noop
+  /// The loaded bank, for screens below home that need more than their own puzzle.
+  @Entry var puzzleBank: PuzzleBank?
 }

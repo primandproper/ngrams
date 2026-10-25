@@ -29,10 +29,14 @@ final class PuzzleProgress {
   /// The mode the puzzle was started in, fixed by its first entry. Word and pangram puzzles
   /// keep it; tiles reads its setting live and leaves this false.
   var hardMode = false
+  /// When a word puzzle ended or a board earned its star, which decides whether it counts
+  /// toward a streak. Nil for puzzles finished before it was saved.
+  var completedAt: Date?
   var updatedAt: Date
 
   init(
-    key: ProgressKey, entries: [String] = [], hardMode: Bool = false, updatedAt: Date = .now
+    key: ProgressKey, entries: [String] = [], hardMode: Bool = false, completedAt: Date? = nil,
+    updatedAt: Date = .now
   ) {
     self.language = key.language.rawValue
     self.kind = key.kind.rawValue
@@ -40,7 +44,21 @@ final class PuzzleProgress {
     self.day = key.day.description
     self.entries = entries
     self.hardMode = hardMode
+    self.completedAt = completedAt
     self.updatedAt = updatedAt
+  }
+
+  /// The plain values stats read, or nil if a field doesn't parse (saved by a build that knew a
+  /// language or game this one doesn't).
+  var record: PlayRecord? {
+    guard let language = Language(rawValue: language), let kind = PuzzleKind(rawValue: kind),
+      let day = PuzzleDay(day)
+    else {
+      return nil
+    }
+    return PlayRecord(
+      key: ProgressKey(language: language, kind: kind, n: n, day: day), entries: entries,
+      completedAt: completedAt ?? updatedAt)
   }
 
   static func matching(_ key: ProgressKey) -> Predicate<PuzzleProgress> {
@@ -81,13 +99,23 @@ final class ProgressStore {
 
   /// Appends one entry and saves. Appending rather than replacing means a failed read can never
   /// turn into a write that drops earlier entries. The first entry records `hardMode`; later
-  /// ones leave it alone, so a puzzle keeps the mode it started in.
-  func append(_ entry: String, for key: ProgressKey, hardMode: Bool = false) throws {
+  /// ones leave it alone, so a puzzle keeps the mode it started in. The first entry that
+  /// `completes` the puzzle records when.
+  func append(
+    _ entry: String, for key: ProgressKey, hardMode: Bool = false, completes: Bool = false
+  ) throws {
+    let now = Date.now
     if let progress = try fetch(key) {
       progress.entries.append(entry)
-      progress.updatedAt = .now
+      progress.updatedAt = now
+      if completes, progress.completedAt == nil {
+        progress.completedAt = now
+      }
     } else {
-      context.insert(PuzzleProgress(key: key, entries: [entry], hardMode: hardMode))
+      context.insert(
+        PuzzleProgress(
+          key: key, entries: [entry], hardMode: hardMode, completedAt: completes ? now : nil,
+          updatedAt: now))
     }
     try context.save()
     logger.withValue("day", key.day.description).withValue("n", key.n)

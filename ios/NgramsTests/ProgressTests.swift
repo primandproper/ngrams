@@ -155,3 +155,56 @@ struct WordSessionTests {
     #expect(try store.entries(for: wordKey).isEmpty)
   }
 }
+
+@Suite("PangramSession")
+struct PangramSessionTests {
+  private let pangramKey = ProgressKey(language: .en, kind: .pangram, n: 6, day: testDay)
+
+  private func session(_ store: ProgressStore) -> PangramSession {
+    PangramSession(
+      puzzle: pangramPuzzle, day: testDay, store: store, observer: recordingObserver("test"))
+  }
+
+  private func spell(_ text: String, in session: PangramSession) {
+    for letter in text {
+      session.type(letter)
+    }
+    session.submit()
+  }
+
+  @Test("saves each found word and restores it")
+  func savesAndRestores() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    spell("plaice", in: session)
+
+    #expect(session.feedback?.kind == .found(pangramPuzzle.words[3], pangram: true))
+    #expect(try store.entries(for: pangramKey) == ["plaice"])
+    #expect(self.session(store).game.foundWords == ["plaice"])
+  }
+
+  @Test("doesn't save rejected words")
+  func skipsRejected() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    spell("clip", in: session)
+    #expect(session.feedback?.kind == .blocked)
+    spell("lace", in: session)
+
+    #expect(session.feedback?.kind == .missingCenter)
+    #expect(try store.entries(for: pangramKey).isEmpty)
+  }
+
+  @Test("shuffles only the outer letters, starting from a stable order")
+  func shuffles() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    #expect(session.outer == self.session(store).outer)
+    session.shuffle()
+
+    #expect(session.outer.sorted() == Array("aceil"))
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/pangram"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 
@@ -202,6 +203,72 @@ func TestBuild_words(T *testing.T) {
 
 		_, err := Build(cfg)
 		must.ErrorIs(t, err, word.ErrNoAnswer)
+	})
+}
+
+func TestBuild_pangrams(T *testing.T) {
+	T.Parallel()
+
+	// At 4 letters with exactly 2 common words, only efgh (efgh, egfh) and abcd (abcd,
+	// bdac, and the blocked cdab) are in range.
+	pangramConfig := func() *BuildConfig {
+		cfg := testBuildConfig()
+		cfg.PangramSizes = []PangramSize{{N: 4, MinCommon: 2, MaxCommon: 2}}
+		return cfg
+	}
+
+	T.Run("prefers clean boards and never repeats a letter set", func(t *testing.T) {
+		t.Parallel()
+
+		b, err := Build(pangramConfig())
+		must.NoError(t, err)
+
+		first, second := b.Days[0].Puzzles[2], b.Days[1].Puzzles[2]
+		must.Eq(t, KindPangram, first.Kind)
+		must.Eq(t, []string{"e", "f", "g", "h"}, first.Letters)
+		must.SliceEmpty(t, first.Blocked)
+		must.Eq(t, []string{"a", "b", "c", "d"}, second.Letters)
+		must.Eq(t, []string{"cdab"}, second.Blocked)
+	})
+
+	T.Run("lists every word with its points and the pangrams a star needs", func(t *testing.T) {
+		t.Parallel()
+
+		b, err := Build(pangramConfig())
+		must.NoError(t, err)
+
+		p := b.Days[0].Puzzles[2]
+		must.Eq(t, []string{"efgh", "egfh"}, p.Pangrams)
+		must.SliceLen(t, 2, p.Words)
+		for _, w := range p.Words {
+			must.Eq(t, 1+pangram.PangramBonus, w.Points)
+			must.StrContains(t, w.Word, p.Center)
+		}
+		must.Eq(t, 2*(1+pangram.PangramBonus)*70/100, p.TargetScore)
+	})
+
+	T.Run("leaves the tiles boards as they were", func(t *testing.T) {
+		t.Parallel()
+
+		withPangrams, err := Build(pangramConfig())
+		must.NoError(t, err)
+		without, err := Build(testBuildConfig())
+		must.NoError(t, err)
+
+		for d := range without.Days {
+			must.Eq(t, without.Days[d].Puzzles, withPangrams.Days[d].Puzzles[:2])
+		}
+	})
+
+	T.Run("fails once the letter sets run out", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := pangramConfig()
+		cfg.Days = 3
+		cfg.Sizes = nil
+
+		_, err := Build(cfg)
+		must.ErrorIs(t, err, pangram.ErrNoBoard)
 	})
 }
 

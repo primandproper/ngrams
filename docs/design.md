@@ -1,16 +1,16 @@
 # N-grams design
 
-Status: draft. The generator and the app cover `word` and `tiles` (2026-10-24)
+Status: draft. The generator and the app cover all three games (2026-10-24)
 
 ## Goal
 
-Daily word puzzles on iPhone without ads, accounts, energy meters, or upsells. Two game types
-modeled on games I already like (NYT Wordle and Apple News Quartiles), each offered at three
-sizes, so N varies, in English and Spanish. Six puzzles a day per language, every day.
+Daily word puzzles on iPhone without ads, accounts, energy meters, or upsells. Three game types
+modeled on games I already like (NYT Wordle, Apple News Quartiles, and NYT Spelling Bee), each
+offered at three sizes, so N varies, in English and Spanish. Nine puzzles a day per language,
+every day.
 
 Built to launch publicly on the App Store. What a launch still needs:
 
-- A third game modeled on NYT Spelling Bee (`pangram`).
 - An app icon.
 - Final names for the app and the games (see [Open questions](#open-questions)).
 - Stats, streaks, and the emoji share.
@@ -25,14 +25,19 @@ Built to launch publicly on the App Store. What a launch still needs:
 
 ## Games
 
-The originals' names are trademarks (WORDLE is NYT's, Quartiles is Apple's) and must not appear
-in the app. The in-app names are placeholders for now: "Word" and "Tiles", under the app name
-"N-grams". Internally the kinds are `word` and `tiles`.
+The originals' names are trademarks (WORDLE and SPELLING BEE are NYT's, Quartiles is Apple's)
+and must not appear in the app. The in-app names are "Word", "Tiles", and "Pangram", under the
+app name "N-grams"; the first two are placeholders. Internally the kinds are `word`, `tiles`,
+and `pangram`.
 
-| Kind    | Modeled on | Sizes (N)          | Daily puzzles |
-| ------- | ---------- | ------------------ | ------------- |
-| `word`  | Wordle     | 4, 5, 6 letters    | 3             |
-| `tiles` | Quartiles  | 3, 4, 5 tiles/word | 3             |
+| Kind      | Modeled on   | Sizes (N)          | Daily puzzles |
+| --------- | ------------ | ------------------ | ------------- |
+| `word`    | Wordle       | 4, 5, 6 letters    | 3             |
+| `tiles`   | Quartiles    | 3, 4, 5 tiles/word | 3             |
+| `pangram` | Spelling Bee | 6, 7, 8 letters    | 3             |
+
+"Spellbound" was considered for `pangram` and rejected: Spellbound: A Game of Letters, the same
+game under that name, is already on the App Store (checked 2026-10-24).
 
 ### `word`
 
@@ -80,14 +85,33 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
   each word's points, the bonus, and the target score into the bank, so retuning is a bank
   rebuild rather than an app release.
 
+### `pangram`
+
+- N letters, one of them the center. Spell words of at least 4 letters from them, always using
+  the center; letters repeat freely. A pangram uses every letter.
+- Scoring follows the original: a 4-letter word scores 1, a longer word a point a letter, and a
+  pangram 7 more.
+- Every dictionary word counts, Spanish verb forms included. The target score is 70% of the
+  points in the common words alone, so obscure words help but are never needed.
+- A board's star takes every common pangram and the target score, as a `tiles` star takes
+  every target. Obscure pangrams score but aren't required.
+- No S on any board in either language: plurals would double every board, and in Spanish S
+  also ends most second-person and plural verb forms.
+- Sizes are N=6, 7, and 8 letters. A 5-letter hive was measured at a median of 10 common words
+  in English, too thin to be a puzzle. Each size has its own range of common words, centered
+  near what a typical board reaches: 20 to 45, 30 to 70, and 50 to 110. Tune by playing.
+- The hive puts the center in the middle and the rest on a ring. Six outer letters tile as a
+  honeycomb; five or seven sit on the same ring, spaced so they don't overlap. Shuffle moves
+  only the outer letters, and the first order is seeded by board, as in `tiles`.
+
 ### Shared
 
 - The day rolls over at local midnight on the device.
 - Home lists every puzzle for the day on one screen, a section per game and size ("Tiles ·
   N=3"), each holding both languages marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word
   lists). Sections are per game as well as size because N counts tiles in one game and letters
-  in the other. Completed puzzles move to a "Completed" section at the bottom: a `tiles`
-  board once it has its star, a `word` puzzle once it's over.
+  in the other. Completed puzzles move to a "Completed" section at the bottom: a `tiles` or
+  `pangram` board once it has its star, a `word` puzzle once it's over.
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.
@@ -96,8 +120,8 @@ in the app. The in-app names are placeholders for now: "Word" and "Tiles", under
 
 ## Languages
 
-English and Spanish (`en`, `es`). Each language gets its own full daily set, so 12 puzzles a
-day, and a switch in the app moves between them.
+English and Spanish (`en`, `es`). Each language gets its own full daily set, so 18 puzzles a
+day.
 
 - **Region.** Spanish means `es_MX`: dictionary, commonness judgments, and blocklist.
 - **Accents fold.** For matching and scoring, á/é/í/ó/ú/ü count as their plain vowels in both
@@ -234,6 +258,15 @@ What makes a board good is the real question, and it is not "most words":
 - **Not trivially guessable.** Fragments should be ambiguous enough that targets aren't
   obvious at a glance.
 
+### `pangram` puzzles
+
+A board is seeded by a target word with exactly N distinct letters and no S. Every center
+among its letters is tried, and the first board whose common words land in range is kept,
+preferring one that can't spell a blocked word; one that can lists them apart from its
+scoring words, as in `tiles`. No letter set repeats within a language. Indexing every word by
+its letter set (a bitmask) means checking a board is one lookup per subset of its letters, at
+most 256.
+
 ### Search strategy: heuristic first, solver if needed
 
 Choosing segmentations to optimize the board can be stated as weighted MaxSAT or an integer
@@ -260,9 +293,9 @@ be stated precisely. Segmentation with targets already fixed is the part it suit
 ## Puzzle bank
 
 Plain JSON at `data/bank/puzzles.json`, committed, bundled in the app as a resource, and
-decoded with `Codable` at launch. 90 days in both languages is about 1.5 MB, so a year is
-roughly 3 MB per language, almost all of it the precomputed valid-word lists for `tiles`
-boards. The generator computes those lists so the app never has to work them out, and so the
+decoded with `Codable` at launch. 90 days in both languages is about 4.8 MB (1.5 MB before
+`pangram`), so a year is roughly 10 MB per language, almost all of it the precomputed
+valid-word lists for `tiles` and `pangram` boards. The generator computes those lists so the app never has to work them out, and so the
 review pass covers exactly what the app will accept.
 
 `make bank` rebuilds it from a fixed start date, length, and seed set in the Makefile; the same
@@ -299,6 +332,16 @@ any.
           "target_score": 88,
           "blocked": ["..."],
           "words": [{ "word": "staple", "tiles": [0, 1], "points": 2 }, "..."]
+        },
+        {
+          "lang": "en",
+          "kind": "pangram",
+          "n": 7,
+          "letters": ["a", "f", "g", "i", "n", "r", "t"],
+          "center": "r",
+          "pangrams": ["..."],
+          "target_score": 249,
+          "words": [{ "word": "grant", "points": 5 }, "..."]
         }
       ]
     }
@@ -340,7 +383,7 @@ bundled copy as fallback" changes nothing about the format.
 
 ## Open questions
 
-1. In-app names for the two game types. "Word" and "Tiles" are placeholders.
+1. In-app names for `word` and `tiles`. "Word" and "Tiles" are placeholders.
 2. Whether the `tiles` scoring curve and target scores above play well; tune by playing.
 3. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
    lemma source is needed. On the boards seen so far, stems as targets read like base forms

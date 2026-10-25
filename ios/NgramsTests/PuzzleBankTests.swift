@@ -60,6 +60,30 @@ struct PuzzleBankTests {
     }
   }
 
+  @Test("decodes pangram boards")
+  func decodesPangrams() throws {
+    let bank = try PuzzleBank.decode(bankJSON(puzzles: [pangramPuzzleJSON()]))
+
+    let puzzle = try #require(bank.pangramPuzzles(on: testDay).first)
+    #expect(puzzle.letters == Array("aceilp"))
+    #expect(puzzle.center == "p")
+    #expect(puzzle.pangrams == ["plaice"])
+    #expect(puzzle.words.map(\.word) == ["pace", "plaice"])
+    #expect(puzzle.blocked.isEmpty)
+  }
+
+  @Test("rejects a pangram word that breaks the board's rules")
+  func rejectsPangramWord() {
+    #expect(throws: BankError.badPangramWord("lace")) {
+      try PuzzleBank.decode(
+        bankJSON(puzzles: [pangramPuzzleJSON(words: #"[{"word":"lace","points":1}]"#)]))
+    }
+    #expect(throws: BankError.badPangramWord("pity")) {
+      try PuzzleBank.decode(
+        bankJSON(puzzles: [pangramPuzzleJSON(words: #"[{"word":"pity","points":1}]"#)]))
+    }
+  }
+
   @Test("skips kinds and languages it doesn't know")
   func skipsUnknown() throws {
     let bank = try PuzzleBank.decode(

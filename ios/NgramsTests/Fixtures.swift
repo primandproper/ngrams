@@ -48,3 +48,30 @@ let wordPuzzle = WordPuzzle(language: .en, n: 5, answer: "llama", display: nil)
 
 let wordList = GuessList(
   accepted: ["llama", "label", "allay", "lolls", "cramp", "plaza"], blocked: ["bitch"])
+
+/// A six-letter board centered on p, with one pangram, "plaice". "clip" is blocked.
+let pangramPuzzle = PangramPuzzle(
+  language: .en,
+  n: 6,
+  letters: Array("aceilp"),
+  center: "p",
+  targetScore: 13,
+  words: [
+    PangramWord(word: "pace", display: nil, points: 1),
+    PangramWord(word: "pail", display: nil, points: 1),
+    PangramWord(word: "place", display: nil, points: 5),
+    PangramWord(word: "plaice", display: nil, points: 13),
+  ],
+  pangrams: ["plaice"],
+  blocked: ["clip"])
+
+func pangramPuzzleJSON(
+  words: String = #"[{"word":"pace","points":1},{"word":"plaice","points":13}]"#
+)
+  -> String
+{
+  """
+  {"lang":"en","kind":"pangram","n":6,"letters":["a","c","e","i","l","p"],"center":"p",
+   "pangrams":["plaice"],"target_score":9,"words":\(words)}
+  """
+}

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/pangram"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 )
@@ -24,6 +25,8 @@ const (
 	KindTiles = "tiles"
 	// KindWord is the word game.
 	KindWord = "word"
+	// KindPangram is the pangram game.
+	KindPangram = "pangram"
 
 	dateLayout = time.DateOnly
 )
@@ -51,12 +54,17 @@ type (
 		Kind string   `json:"kind"`
 		// Answer is a word puzzle's folded answer, and Display its accented spelling,
 		// present only when it differs.
-		Answer  string   `json:"answer,omitempty"`
-		Display string   `json:"display,omitempty"`
-		Tiles   []string `json:"tiles,omitempty"`
-		Targets [][]int  `json:"targets,omitempty"`
-		// Blocked holds the folded spellings of offensive words the tiles can build. They
-		// score nothing, so they aren't in Words.
+		Answer  string `json:"answer,omitempty"`
+		Display string `json:"display,omitempty"`
+		// Letters are a pangram board's letters, sorted, Center among them. Pangrams are
+		// the folded spellings of the common pangrams, which a star needs.
+		Letters  []string `json:"letters,omitempty"`
+		Center   string   `json:"center,omitempty"`
+		Pangrams []string `json:"pangrams,omitempty"`
+		Tiles    []string `json:"tiles,omitempty"`
+		Targets  [][]int  `json:"targets,omitempty"`
+		// Blocked holds the folded spellings of offensive words the tiles or letters can
+		// build. They score nothing, so they aren't in Words.
 		Blocked     []string `json:"blocked,omitempty"`
 		Words       []Word   `json:"words,omitempty"`
 		N           int      `json:"n"`
@@ -64,15 +72,15 @@ type (
 		TargetScore int      `json:"target_score,omitempty"`
 	}
 
-	// Word is a valid word on a tiles board.
+	// Word is a valid word on a tiles or pangram board.
 	Word struct {
 		_ struct{} `json:"-"`
 		// Word is the folded spelling, the tiles joined in order.
 		Word string `json:"word"`
 		// Display is the accented spelling, present only when it differs from Word.
 		Display string `json:"display,omitempty"`
-		// Tiles index into the puzzle's tiles, the fewest that build the word.
-		Tiles  []int `json:"tiles"`
+		// Tiles index into a tiles puzzle's tiles, the fewest that build the word.
+		Tiles  []int `json:"tiles,omitempty"`
 		Points int   `json:"points"`
 	}
 
@@ -90,18 +98,28 @@ type (
 		Targets int
 	}
 
+	// PangramSize is one pangram board size: N letters, and the range of common words a
+	// good board has.
+	PangramSize struct {
+		_         struct{} `json:"-"`
+		N         int
+		MinCommon int
+		MaxCommon int
+	}
+
 	// BuildConfig is everything that shapes a bank.
 	BuildConfig struct {
-		_         struct{} `json:"-"`
-		Start     time.Time
-		Logger    *slog.Logger
-		Languages []Language
-		Sizes     []Size
-		WordSizes []int
-		Search    tiles.SearchConfig
-		WordPool  int
-		Days      int
-		Seed      uint64
+		_            struct{} `json:"-"`
+		Start        time.Time
+		Logger       *slog.Logger
+		Languages    []Language
+		Sizes        []Size
+		WordSizes    []int
+		PangramSizes []PangramSize
+		Search       tiles.SearchConfig
+		WordPool     int
+		Days         int
+		Seed         uint64
 	}
 )
 
@@ -157,6 +175,9 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 		if err := buildWords(cfg, lang, b, logger); err != nil {
 			return nil, err
 		}
+		if err := buildPangrams(cfg, lang, b, logger); err != nil {
+			return nil, err
+		}
 
 		logger.Info("built language", "lang", lang.Code, "boards", len(b.Days)*len(cfg.Sizes),
 			"took", time.Since(started).Round(time.Millisecond))
@@ -193,6 +214,61 @@ func buildWords(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) e
 	}
 
 	return nil
+}
+
+func buildPangrams(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) error {
+	rng := rand.New(rand.NewPCG(cfg.Seed, langSeed(lang.Code+"/"+KindPangram))) //nolint:gosec // banks must be reproducible from a seed, not secret
+
+	generators := make([]*pangram.Generator, len(cfg.PangramSizes))
+	for i, size := range cfg.PangramSizes {
+		generators[i] = pangram.NewGenerator(lang.Lexicon, size.N, size.MinCommon, size.MaxCommon)
+		logger.Info("indexed pangram seeds", "lang", lang.Code, "n", size.N, "pool", generators[i].PoolSize())
+	}
+
+	used := map[string]bool{}
+	for d := range b.Days {
+		day := &b.Days[d]
+		for i, size := range cfg.PangramSizes {
+			board, err := generators[i].Best(rng, used)
+			if err != nil {
+				return fmt.Errorf("%s pangram n=%d on %s: %w", lang.Code, size.N, day.Date, err)
+			}
+			used[pangram.Key(board.Letters)] = true
+
+			day.Puzzles = append(day.Puzzles, pangramPuzzle(lang, size.N, board))
+			logger.Debug("built pangram board", "lang", lang.Code, "n", size.N, "date", day.Date,
+				"letters", string(board.Letters), "center", string(board.Center), "common", board.Common,
+				"words", len(board.Words), "blocked", len(board.Blocked))
+		}
+	}
+
+	return nil
+}
+
+func pangramPuzzle(lang Language, n int, board *pangram.Board) Puzzle {
+	p := Puzzle{
+		Lang:        lang.Code,
+		Kind:        KindPangram,
+		N:           n,
+		Center:      string(board.Center),
+		Blocked:     board.Blocked,
+		TargetScore: pangram.TargetScore(board),
+	}
+	for _, letter := range board.Letters {
+		p.Letters = append(p.Letters, string(letter))
+	}
+	for i := range board.Words {
+		found := &board.Words[i]
+		if found.Pangram && found.Common {
+			p.Pangrams = append(p.Pangrams, found.Word)
+		}
+		w := Word{Word: found.Word, Points: found.Points}
+		if shown := lang.Lexicon.Display(found.Word); shown != found.Word {
+			w.Display = shown
+		}
+		p.Words = append(p.Words, w)
+	}
+	return p
 }
 
 func langSeed(code string) uint64 {

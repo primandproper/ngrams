@@ -27,6 +27,7 @@ struct HomeView: View {
       DayList(
         words: bank.wordPuzzles(on: day).filter { plays($0.language) },
         tiles: bank.tilesPuzzles(on: day).filter { plays($0.language) },
+        pangrams: bank.pangramPuzzles(on: day).filter { plays($0.language) },
         day: day
       )
       .navigationTitle("N-grams")
@@ -36,6 +37,9 @@ struct HomeView: View {
       }
       .navigationDestination(for: TilesRoute.self) { route in
         TilesScreen(puzzle: route.puzzle, day: route.day)
+      }
+      .navigationDestination(for: PangramRoute.self) { route in
+        PangramScreen(puzzle: route.puzzle, day: route.day)
       }
       .sheet(isPresented: $showingSettings) {
         SettingsView()
@@ -75,10 +79,16 @@ private struct TilesRoute: Hashable {
   let day: PuzzleDay
 }
 
+private struct PangramRoute: Hashable {
+  let puzzle: PangramPuzzle
+  let day: PuzzleDay
+}
+
 /// One puzzle on home, in its saved state.
 private enum Entry: Identifiable {
   case word(WordGame)
   case tiles(TilesGame)
+  case pangram(PangramGame)
 
   var id: String { "\(kind.rawValue)-\(language.rawValue)-\(n)" }
 
@@ -86,6 +96,7 @@ private enum Entry: Identifiable {
     switch self {
     case .word: .word
     case .tiles: .tiles
+    case .pangram: .pangram
     }
   }
 
@@ -93,6 +104,7 @@ private enum Entry: Identifiable {
     switch self {
     case .word(let game): game.puzzle.language
     case .tiles(let game): game.puzzle.language
+    case .pangram(let game): game.puzzle.language
     }
   }
 
@@ -100,14 +112,16 @@ private enum Entry: Identifiable {
     switch self {
     case .word(let game): game.puzzle.n
     case .tiles(let game): game.puzzle.n
+    case .pangram(let game): game.puzzle.n
     }
   }
 
-  /// A word puzzle is done once it's over, won or lost; a tiles board once it has its star.
+  /// A word puzzle is done once it's over, won or lost; a board once it has its star.
   var isCompleted: Bool {
     switch self {
     case .word(let game): game.isOver
     case .tiles(let game): game.earnedStar
+    case .pangram(let game): game.earnedStar
     }
   }
 }
@@ -117,18 +131,20 @@ private enum Entry: Identifiable {
 private struct DayList: View {
   let words: [WordPuzzle]
   let tiles: [TilesPuzzle]
+  let pangrams: [PangramPuzzle]
   let day: PuzzleDay
 
   @Query private var progress: [PuzzleProgress]
 
-  init(words: [WordPuzzle], tiles: [TilesPuzzle], day: PuzzleDay) {
+  init(words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay) {
     self.words = words
     self.tiles = tiles
+    self.pangrams = pangrams
     self.day = day
     _progress = Query(filter: PuzzleProgress.matching(day: day))
   }
 
-  /// Every puzzle with its saved progress, words first.
+  /// Every puzzle with its saved progress, in `PuzzleKind.allCases` order.
   private var all: [Entry] {
     let saved = Dictionary(
       progress.map { ("\($0.kind)-\($0.language)-\($0.n)", $0.entries) },
@@ -141,6 +157,9 @@ private struct DayList: View {
     }
       + tiles.map {
         Entry.tiles(TilesGame(puzzle: $0, foundWords: entries(.tiles, $0.language, $0.n)))
+      }
+      + pangrams.map {
+        Entry.pangram(PangramGame(puzzle: $0, foundWords: entries(.pangram, $0.language, $0.n)))
       }
   }
 
@@ -181,6 +200,10 @@ private struct DayList: View {
       case .tiles(let game):
         NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
           TilesRow(game: game, showsSize: showsSize)
+        }
+      case .pangram(let game):
+        NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
+          PangramRow(game: game, showsSize: showsSize)
         }
       }
     }
@@ -227,6 +250,32 @@ private struct WordRow: View {
             .foregroundStyle(.secondary)
         }
       }
+    }
+  }
+}
+
+private struct PangramRow: View {
+  let game: PangramGame
+  let showsSize: Bool
+
+  var body: some View {
+    let puzzle = game.puzzle
+    HStack {
+      VStack(alignment: .leading) {
+        Text(rowTitle(.pangram, puzzle.language, puzzle.n, showsSize: showsSize))
+          .font(.headline)
+        Text("\(puzzle.n) letters")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      }
+      Spacer()
+      if game.earnedStar {
+        Image(systemName: "star.fill")
+          .foregroundStyle(.orange)
+      }
+      Text("\(game.score) / \(puzzle.targetScore)")
+        .monospacedDigit()
+        .foregroundStyle(.secondary)
     }
   }
 }

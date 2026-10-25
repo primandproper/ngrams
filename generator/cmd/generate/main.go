@@ -16,6 +16,7 @@ import (
 
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/bank"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/pangram"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
 	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
 )
@@ -36,6 +37,7 @@ func run(args []string) error {
 	langs := fs.String("langs", "en,es", "comma-separated languages")
 	tilesNs := fs.String("tiles-ns", "3,4,5", "comma-separated tiles-per-word sizes")
 	wordNs := fs.String("word-ns", "4,5,6", "comma-separated word puzzle lengths")
+	pangramNs := fs.String("pangram-ns", "6,7,8", "comma-separated pangram board letter counts")
 	wordPool := fs.Int("word-pool", 1500, "how many of the most common answers of each length a word puzzle picks from")
 	start := fs.String("start", "", "first day of the bank, YYYY-MM-DD")
 	days := fs.Int("days", 90, "days of puzzles to build")
@@ -70,6 +72,10 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	pangramSizes, err := parseInts(*pangramNs)
+	if err != nil {
+		return err
+	}
 	banned := map[string]bool{}
 	for _, fragment := range splitList(*ban) {
 		banned[fragment] = true
@@ -92,6 +98,10 @@ func run(args []string) error {
 	}
 	for _, n := range sizes {
 		cfg.Sizes = append(cfg.Sizes, bank.Size{N: n, Targets: tiles.TargetsFor(n)})
+	}
+	for _, n := range pangramSizes {
+		minCommon, maxCommon := pangram.CommonRange(n)
+		cfg.PangramSizes = append(cfg.PangramSizes, bank.PangramSize{N: n, MinCommon: minCommon, MaxCommon: maxCommon})
 	}
 
 	lexicons := map[string]*lexicon.Lexicon{}

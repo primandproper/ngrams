@@ -45,6 +45,8 @@ func printBank(w io.Writer, b *bank.Bank, lexicons map[string]*lexicon.Lexicon) 
 			switch p.Kind {
 			case bank.KindWord:
 				out.printf("\n==== %s %s word n=%d: %s\n", day.Date, p.Lang, p.N, cmp.Or(p.Display, p.Answer))
+			case bank.KindPangram:
+				printPangram(out, day.Date, p, lexicons[p.Lang])
 			default:
 				printPuzzle(out, day.Date, p, lexicons[p.Lang])
 			}
@@ -111,6 +113,30 @@ func printPuzzle(out *reporter, date string, p *bank.Puzzle, lex *lexicon.Lexico
 		busiest = append(busiest, fmt.Sprintf("%s(%d)", fragment, fragmentUse[fragment]))
 	}
 	out.printf("busiest tiles: %s\n", strings.Join(busiest, " "))
+}
+
+func printPangram(out *reporter, date string, p *bank.Puzzle, lex *lexicon.Lexicon) {
+	var common, obscure []string
+	for i := range p.Words {
+		w := &p.Words[i]
+		label := cmp.Or(w.Display, w.Word)
+		if slices.Contains(p.Pangrams, w.Word) {
+			label = strings.ToUpper(label)
+		}
+		if _, isCommon := lex.Count(w.Word); isCommon {
+			common = append(common, label)
+		} else {
+			obscure = append(obscure, label)
+		}
+	}
+
+	out.printf("\n==== %s %s pangram n=%d: %s, center %s: %d words (%d common, %d blocked), target score %d\n",
+		date, p.Lang, p.N, strings.Join(p.Letters, ""), p.Center, len(p.Words), len(common), len(p.Blocked), p.TargetScore)
+	printWrapped(out, "  common:  ", common)
+	printWrapped(out, "  obscure: ", obscure)
+	if len(p.Blocked) > 0 {
+		printWrapped(out, "  blocked: ", p.Blocked)
+	}
 }
 
 func printWrapped(out *reporter, lead string, words []string) {

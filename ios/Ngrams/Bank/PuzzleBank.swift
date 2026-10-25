@@ -25,11 +25,13 @@ nonisolated enum Language: String, CaseIterable, Codable, Sendable {
 nonisolated enum PuzzleKind: String, CaseIterable, Codable, Sendable {
   case word
   case tiles
+  case pangram
 
   var name: String {
     switch self {
     case .word: "Word"
     case .tiles: "Tiles"
+    case .pangram: "Pangram"
     }
   }
 }
@@ -42,12 +44,17 @@ nonisolated struct PuzzleBank: Sendable {
   let days: [PuzzleDay]
   private let tiles: [PuzzleDay: [TilesPuzzle]]
   private let words: [PuzzleDay: [WordPuzzle]]
+  private let pangrams: [PuzzleDay: [PangramPuzzle]]
 
-  init(seed: UInt64, tiles: [PuzzleDay: [TilesPuzzle]], words: [PuzzleDay: [WordPuzzle]] = [:]) {
+  init(
+    seed: UInt64, tiles: [PuzzleDay: [TilesPuzzle]], words: [PuzzleDay: [WordPuzzle]] = [:],
+    pangrams: [PuzzleDay: [PangramPuzzle]] = [:]
+  ) {
     self.seed = seed
     self.tiles = tiles
     self.words = words
-    self.days = Set(tiles.keys).union(words.keys).sorted()
+    self.pangrams = pangrams
+    self.days = Set(tiles.keys).union(words.keys).union(pangrams.keys).sorted()
   }
 
   /// The day's tiles puzzles, by language in `Language.allCases` order, then smallest board first.
@@ -58,6 +65,12 @@ nonisolated struct PuzzleBank: Sendable {
   /// The day's word puzzles, by language in `Language.allCases` order, then shortest first.
   func wordPuzzles(on day: PuzzleDay) -> [WordPuzzle] {
     Self.sorted(words[day] ?? [], by: { ($0.language, $0.n) })
+  }
+
+  /// The day's pangram boards, by language in `Language.allCases` order, then fewest letters
+  /// first.
+  func pangramPuzzles(on day: PuzzleDay) -> [PangramPuzzle] {
+    Self.sorted(pangrams[day] ?? [], by: { ($0.language, $0.n) })
   }
 
   private static func sorted<Puzzle>(
@@ -81,14 +94,16 @@ nonisolated struct PuzzleBank: Sendable {
 
     var tiles: [PuzzleDay: [TilesPuzzle]] = [:]
     var words: [PuzzleDay: [WordPuzzle]] = [:]
+    var pangrams: [PuzzleDay: [PangramPuzzle]] = [:]
     for day in file.days {
       guard let date = PuzzleDay(day.date) else {
         throw BankError.badDate(day.date)
       }
       tiles[date] = day.puzzles.compactMap(\.tiles)
       words[date] = day.puzzles.compactMap(\.word)
+      pangrams[date] = day.puzzles.compactMap(\.pangram)
     }
-    return PuzzleBank(seed: file.seed, tiles: tiles, words: words)
+    return PuzzleBank(seed: file.seed, tiles: tiles, words: words, pangrams: pangrams)
   }
 
   /// Reads and decodes the bank bundled with the app, off the main actor.
@@ -107,6 +122,7 @@ nonisolated enum BankError: Error, Equatable, CustomStringConvertible {
   case badDate(String)
   case badTileIndex(Int, tiles: Int)
   case badAnswer(String, n: Int)
+  case badPangramWord(String)
 
   var description: String {
     switch self {
@@ -115,6 +131,7 @@ nonisolated enum BankError: Error, Equatable, CustomStringConvertible {
     case .badDate(let date): "bank date \(date) isn't YYYY-MM-DD"
     case .badTileIndex(let index, let tiles): "tile index \(index) is outside a \(tiles)-tile board"
     case .badAnswer(let answer, let n): "answer \(answer) isn't \(n) letters"
+    case .badPangramWord(let word): "\(word) doesn't fit its pangram board"
     }
   }
 }
@@ -143,6 +160,41 @@ nonisolated struct TilesWord: Sendable, Hashable, Decodable {
   /// Accented spelling, present only when it differs from `word`.
   let display: String?
   let tiles: [Int]
+  let points: Int
+
+  var shown: String { display ?? word }
+}
+
+/// A pangram board: spell words of at least four letters from `n` letters, always using the
+/// center.
+nonisolated struct PangramPuzzle: Sendable, Hashable, Identifiable {
+  static let minLength = 4
+
+  let language: Language
+  let n: Int
+  /// Accent-folded and sorted, the center among them.
+  let letters: [Character]
+  let center: Character
+  let targetScore: Int
+  let words: [PangramWord]
+  /// Folded spellings of the common pangrams, every one of which the star needs.
+  let pangrams: Set<String>
+  /// Folded spellings of offensive words the letters can build. They score nothing.
+  let blocked: Set<String>
+
+  var id: String { "\(language.rawValue)-\(n)" }
+
+  /// Whether `word` uses every letter.
+  func isPangram(_ word: String) -> Bool {
+    Set(word) == Set(letters)
+  }
+}
+
+/// A valid word on a pangram board.
+nonisolated struct PangramWord: Sendable, Hashable, Decodable {
+  let word: String
+  /// Accented spelling, present only when it differs from `word`.
+  let display: String?
   let points: Int
 
   var shown: String { display ?? word }
@@ -179,9 +231,11 @@ nonisolated private struct DayFile: Decodable {
 nonisolated private struct PuzzleFile: Decodable {
   var tiles: TilesPuzzle?
   var word: WordPuzzle?
+  var pangram: PangramPuzzle?
 
   private enum CodingKeys: String, CodingKey {
     case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked, answer, display
+    case letters, center, pangrams
   }
 
   init(from decoder: any Decoder) throws {
@@ -205,7 +259,36 @@ nonisolated private struct PuzzleFile: Decodable {
         display: try container.decodeIfPresent(String.self, forKey: .display))
     case .tiles:
       tiles = try Self.tiles(from: container, language: language, n: n)
+    case .pangram:
+      pangram = try Self.pangram(from: container, language: language, n: n)
     }
+  }
+
+  private static func pangram(
+    from container: KeyedDecodingContainer<CodingKeys>, language: Language, n: Int
+  ) throws -> PangramPuzzle {
+    let letters = try container.decode([String].self, forKey: .letters).compactMap(\.first)
+    let center = try container.decode(String.self, forKey: .center)
+    let words = try container.decode([PangramWord].self, forKey: .words)
+    let pangrams = try container.decode([String].self, forKey: .pangrams)
+    let allowed = Set(letters)
+    guard let centerLetter = center.first, allowed.contains(centerLetter) else {
+      throw BankError.badPangramWord(center)
+    }
+    for word in words.map(\.word)
+    where !word.contains(centerLetter) || !Set(word).isSubset(of: allowed) {
+      throw BankError.badPangramWord(word)
+    }
+
+    return PangramPuzzle(
+      language: language,
+      n: n,
+      letters: letters,
+      center: centerLetter,
+      targetScore: try container.decode(Int.self, forKey: .targetScore),
+      words: words,
+      pangrams: Set(pangrams),
+      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []))
   }
 
   private static func tiles(

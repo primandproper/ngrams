@@ -31,6 +31,11 @@ nonisolated struct PuzzleDay: Hashable, Comparable, Sendable, CustomStringConver
     self.init(year: parts.year ?? 0, month: parts.month ?? 0, day: parts.day ?? 0)
   }
 
+  /// The midnight that starts the day on `calendar`, or nil if the calendar has no such date.
+  func start(in calendar: Calendar = .current) -> Date? {
+    calendar.date(from: DateComponents(year: year, month: month, day: day))
+  }
+
   var description: String {
     String(format: "%04d-%02d-%02d", year, month, day)
   }

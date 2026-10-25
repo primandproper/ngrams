@@ -28,6 +28,17 @@ struct PuzzleDayTests {
     #expect(PuzzleDay(containing: instant, calendar: calendar) == testDay)
   }
 
+  @Test("starts at midnight in the calendar's time zone")
+  func start() throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = try #require(TimeZone(identifier: "America/Chicago"))
+    let start = try #require(testDay.start(in: calendar))
+
+    // 2027-01-01 00:00 in Chicago is 06:00 UTC.
+    #expect(start == Date(timeIntervalSince1970: 1_798_783_200))
+    #expect(PuzzleDay(containing: start, calendar: calendar) == testDay)
+  }
+
   @Test("orders by date")
   func orders() {
     let days = [

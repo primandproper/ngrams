@@ -17,7 +17,7 @@ Built to launch publicly on the App Store. What a launch still needs:
 ## Non-goals (for now)
 
 - Accounts, sync, leaderboards, notifications.
-- A puzzle archive or "play unlimited" mode.
+- A "play unlimited" mode.
 - Live puzzle generation on the device.
 - Monetization of any kind.
 - Translating the app's own text. Puzzles are bilingual; the app around them stays English.
@@ -114,6 +114,9 @@ game under that name, is already on the App Store (checked 2026-10-24).
 ### Shared
 
 - The day rolls over at local midnight on the device.
+- Every earlier day the bank holds stays playable: arrows at the bottom of home step a day at a
+  time, and the day between them opens a calendar. Days ahead stay hidden so nothing is spoiled,
+  except in debug builds, which open the whole bank for playtesting.
 - Home lists every puzzle for the day on one screen, grouped by game ("Tiles") or by N ("n=4")
   from a toolbar menu, and remembers the choice. By game, each language gets its own group in
   the section, its puzzles running by N; by N, rows run by game, then language. Languages are

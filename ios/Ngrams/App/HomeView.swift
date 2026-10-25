@@ -7,13 +7,24 @@ struct HomeView: View {
 
   @Environment(\.scenePhase) private var scenePhase
   @State private var today = PuzzleDay(containing: .now)
-  /// Debug builds can step through the whole bank, so a playtest isn't limited to today.
+  /// An earlier day the player went back to, or nil for today.
   @State private var pickedDay: PuzzleDay?
+  @State private var choosingDay = false
   @State private var showingSettings = false
   @AppStorage(SettingsKey.languages) private var languages: LanguageSelection?
   @AppStorage(SettingsKey.homeGrouping) private var grouping = HomeGrouping.game
 
   private var day: PuzzleDay { pickedDay ?? today }
+
+  /// The days a player can open: today and every day before it. Debug builds open the days ahead
+  /// too, so a playtest isn't limited to what's out.
+  private var days: [PuzzleDay] {
+    #if DEBUG
+      bank.days
+    #else
+      bank.days.filter { $0 <= today }
+    #endif
+  }
 
   private var needsLanguages: Bool {
     languages?.languages.isEmpty ?? true
@@ -46,6 +57,9 @@ struct HomeView: View {
       .sheet(isPresented: $showingSettings) {
         SettingsView()
       }
+      .sheet(isPresented: $choosingDay) {
+        DayCalendar(days: days, today: today, picked: $pickedDay)
+      }
       .sheet(isPresented: .constant(needsLanguages)) {
         LanguagePrompt { languages = $0 }
       }
@@ -62,11 +76,9 @@ struct HomeView: View {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Settings", systemImage: "gearshape") { showingSettings = true }
         }
-        #if DEBUG
-          ToolbarItemGroup(placement: .bottomBar) {
-            DayPicker(days: bank.days, today: today, picked: $pickedDay)
-          }
-        #endif
+        ToolbarItemGroup(placement: .bottomBar) {
+          DayPicker(days: days, today: today, picked: $pickedDay, choosing: $choosingDay)
+        }
       }
     }
     .onChange(of: scenePhase) {
@@ -394,25 +406,95 @@ private struct TilesRow: View {
   }
 }
 
-#if DEBUG
-  private struct DayPicker: View {
-    let days: [PuzzleDay]
-    let today: PuzzleDay
-    @Binding var picked: PuzzleDay?
+/// Today's day stored as nil, so the list follows the date when midnight passes.
+private func pick(_ day: PuzzleDay?, today: PuzzleDay) -> PuzzleDay? {
+  day == today ? nil : day
+}
 
-    private var current: PuzzleDay { picked ?? today }
-    private var earlier: PuzzleDay? { days.last { $0 < current } }
-    private var later: PuzzleDay? { days.first { $0 > current } }
+/// Steps a day at a time, with the day shown between the arrows opening a calendar.
+private struct DayPicker: View {
+  let days: [PuzzleDay]
+  let today: PuzzleDay
+  @Binding var picked: PuzzleDay?
+  @Binding var choosing: Bool
 
-    var body: some View {
-      Button("Earlier", systemImage: "chevron.left") { picked = earlier }
-        .disabled(earlier == nil)
-      Spacer()
-      Button("Today") { picked = nil }
-        .disabled(picked == nil)
-      Spacer()
-      Button("Later", systemImage: "chevron.right") { picked = later }
-        .disabled(later == nil)
+  private var current: PuzzleDay { picked ?? today }
+  private var earlier: PuzzleDay? { days.last { $0 < current } }
+  private var later: PuzzleDay? { days.first { $0 > current } }
+
+  private var title: String {
+    guard current != today, let start = current.start() else {
+      return "Today"
     }
+    return current.year == today.year
+      ? start.formatted(.dateTime.month(.abbreviated).day())
+      : start.formatted(.dateTime.month(.abbreviated).day().year())
   }
-#endif
+
+  var body: some View {
+    Button("Earlier", systemImage: "chevron.left") { picked = pick(earlier, today: today) }
+      .disabled(earlier == nil)
+    Spacer()
+    // A bar button with an icon shows only the icon, so the label is drawn by hand.
+    Button {
+      choosing = true
+    } label: {
+      HStack(spacing: 6) {
+        Image(systemName: "calendar")
+        Text(title)
+      }
+    }
+    .accessibilityLabel("Choose a day, \(title)")
+    Spacer()
+    Button("Later", systemImage: "chevron.right") { picked = pick(later, today: today) }
+      .disabled(later == nil)
+  }
+}
+
+/// A month calendar of the days a player can open. Choosing one closes it.
+private struct DayCalendar: View {
+  let days: [PuzzleDay]
+  let today: PuzzleDay
+  @Binding var picked: PuzzleDay?
+
+  @Environment(\.dismiss) private var dismiss
+
+  private var range: ClosedRange<Date> {
+    guard let first = days.first?.start(), let last = days.last?.start() else {
+      return Date.now...Date.now
+    }
+    return first...last
+  }
+
+  private var selection: Binding<Date> {
+    Binding(
+      get: { (picked ?? today).start() ?? .now },
+      set: {
+        picked = pick(PuzzleDay(containing: $0), today: today)
+        dismiss()
+      })
+  }
+
+  var body: some View {
+    NavigationStack {
+      DatePicker("Day", selection: selection, in: range, displayedComponents: .date)
+        .datePickerStyle(.graphical)
+        .padding(.horizontal)
+        .navigationTitle("Choose a day")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button("Today") {
+              picked = nil
+              dismiss()
+            }
+            .disabled(picked == nil)
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Done") { dismiss() }
+          }
+        }
+    }
+    .presentationDetents([.medium, .large])
+  }
+}

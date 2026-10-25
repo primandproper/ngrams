@@ -32,7 +32,7 @@ struct HomeView: View {
         day: day,
         grouping: grouping
       )
-      .navigationTitle("N-grams")
+      .navigationTitle("n-grams")
       .navigationSubtitle(day == today ? "Today" : day.description)
       .navigationDestination(for: WordRoute.self) { route in
         WordScreen(puzzle: route.puzzle, day: route.day)
@@ -89,7 +89,7 @@ enum HomeGrouping: String, CaseIterable {
   var name: String {
     switch self {
     case .game: "Game"
-    case .n: "N"
+    case .n: "n"
     }
   }
 }
@@ -249,7 +249,7 @@ private struct DayList: View {
         }
       case .n:
         ForEach(Set(open.map(\.n)).sorted(), id: \.self) { n in
-          Section("N=\(n)") {
+          Section("n=\(n)") {
             rows(
               open.filter { $0.n == n }, labeled: RowLabeling(section: .n, showsFlag: multilingual))
           }
@@ -297,9 +297,9 @@ private struct RowLabeling {
   func title(_ kind: PuzzleKind, _ language: Language, _ n: Int) -> String {
     let title =
       switch section {
-      case .game: "N=\(n)"
+      case .game: "n=\(n)"
       case .n: kind.name
-      case nil: "\(kind.name) · N=\(n)"
+      case nil: "\(kind.name) · n=\(n)"
       }
     return showsFlag ? "\(language.flag) \(title)" : title
   }

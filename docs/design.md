@@ -1,4 +1,4 @@
-# N-grams design
+# n-grams design
 
 Status: draft. The generator and the app cover all three games (2026-10-24)
 
@@ -26,8 +26,8 @@ Built to launch publicly on the App Store. What a launch still needs:
 
 The originals' names are trademarks (WORDLE and SPELLING BEE are NYT's, Quartiles is Apple's)
 and must not appear in the app. The in-app names are "Word", "Tiles", and "Pangram", under the
-app name "N-grams"; the first two are placeholders. Internally the kinds are `word`, `tiles`,
-and `pangram`.
+app name "n-grams"; the first two are placeholders. The app's name and the n in its own text
+("n=4") are always lowercase. Internally the kinds are `word`, `tiles`, and `pangram`.
 
 | Kind      | Modeled on   | Sizes (N)          | Daily puzzles |
 | --------- | ------------ | ------------------ | ------------- |
@@ -114,7 +114,7 @@ game under that name, is already on the App Store (checked 2026-10-24).
 ### Shared
 
 - The day rolls over at local midnight on the device.
-- Home lists every puzzle for the day on one screen, grouped by game ("Tiles") or by N ("N=4")
+- Home lists every puzzle for the day on one screen, grouped by game ("Tiles") or by N ("n=4")
   from a toolbar menu, and remembers the choice. By game, each language gets its own group in
   the section, its puzzles running by N; by N, rows run by game, then language. Languages are
   marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word lists), and only when more than
@@ -392,7 +392,7 @@ bundled copy as fallback" changes nothing about the format.
 - Going public means no use of any original's name, and a visual design that is
   clearly its own. App Review guideline 4.1 (copycats) can reject apps that look too much like
   an existing game, and NYT pursued Wordle clones in 2022.
-- "N-grams" is not taken on the US App Store (checked 2026-10-19), but App Store search for
+- "n-grams" is not taken on the US App Store (checked 2026-10-19), but App Store search for
   "n-grams" returns kitchen scales, so the name helps nobody find it.
 
 ## Open questions

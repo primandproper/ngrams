@@ -41,7 +41,7 @@ targets:
     info:
       path: Ngrams/Info.plist
       properties:
-        CFBundleDisplayName: N-grams
+        CFBundleDisplayName: n-grams
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

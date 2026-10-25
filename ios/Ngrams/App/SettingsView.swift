@@ -4,6 +4,7 @@ import SwiftUI
 enum SettingsKey {
   static let solvedTilesLeave = "solvedTilesLeave"
   static let languages = "languages"
+  static let homeGrouping = "homeGrouping"
 }
 
 struct SettingsView: View {

@@ -11,6 +11,7 @@ struct HomeView: View {
   @State private var pickedDay: PuzzleDay?
   @State private var showingSettings = false
   @AppStorage(SettingsKey.languages) private var languages: LanguageSelection?
+  @AppStorage(SettingsKey.homeGrouping) private var grouping = HomeGrouping.game
 
   private var day: PuzzleDay { pickedDay ?? today }
 
@@ -28,7 +29,8 @@ struct HomeView: View {
         words: bank.wordPuzzles(on: day).filter { plays($0.language) },
         tiles: bank.tilesPuzzles(on: day).filter { plays($0.language) },
         pangrams: bank.pangramPuzzles(on: day).filter { plays($0.language) },
-        day: day
+        day: day,
+        grouping: grouping
       )
       .navigationTitle("N-grams")
       .navigationSubtitle(day == today ? "Today" : day.description)
@@ -49,6 +51,15 @@ struct HomeView: View {
       }
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
+          Menu("Group by", systemImage: "list.bullet.indent") {
+            Section("Group by") {
+              Picker("Group by", selection: $grouping) {
+                ForEach(HomeGrouping.allCases, id: \.self) { Text($0.name) }
+              }
+            }
+          }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
           Button("Settings", systemImage: "gearshape") { showingSettings = true }
         }
         #if DEBUG
@@ -65,6 +76,20 @@ struct HomeView: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
       today = PuzzleDay(containing: .now)
+    }
+  }
+}
+
+/// How home sections the day's open puzzles. By N puts every game's puzzles of one size together,
+/// though N counts tiles in one game and letters in the others.
+enum HomeGrouping: String, CaseIterable {
+  case game
+  case n
+
+  var name: String {
+    switch self {
+    case .game: "Game"
+    case .n: "N"
     }
   }
 }
@@ -124,27 +149,46 @@ private enum Entry: Identifiable {
     case .pangram(let game): game.earnedStar
     }
   }
+
+  /// Orders by the grouping's section first, then the other of game and size, then language.
+  /// Games and languages go in `allCases` order.
+  func precedes(_ other: Entry, groupedBy grouping: HomeGrouping) -> Bool {
+    func key(_ entry: Entry) -> (Int, Int, Int) {
+      let kind = PuzzleKind.allCases.firstIndex(of: entry.kind) ?? 0
+      let language = Language.allCases.firstIndex(of: entry.language) ?? 0
+      return switch grouping {
+      case .game: (kind, entry.n, language)
+      case .n: (entry.n, kind, language)
+      }
+    }
+    return key(self) < key(other)
+  }
 }
 
-/// One day's puzzles, a section per game and size. Completed puzzles leave their section for a
+/// One day's puzzles, a section per game or per N. Completed puzzles leave their section for a
 /// "Completed" section at the bottom.
 private struct DayList: View {
   let words: [WordPuzzle]
   let tiles: [TilesPuzzle]
   let pangrams: [PangramPuzzle]
   let day: PuzzleDay
+  let grouping: HomeGrouping
 
   @Query private var progress: [PuzzleProgress]
 
-  init(words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay) {
+  init(
+    words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay,
+    grouping: HomeGrouping
+  ) {
     self.words = words
     self.tiles = tiles
     self.pangrams = pangrams
     self.day = day
+    self.grouping = grouping
     _progress = Query(filter: PuzzleProgress.matching(day: day))
   }
 
-  /// Every puzzle with its saved progress, in `PuzzleKind.allCases` order.
+  /// Every puzzle with its saved progress, in the grouping's order.
   private var all: [Entry] {
     let saved = Dictionary(
       progress.map { ("\($0.kind)-\($0.language)-\($0.n)", $0.entries) },
@@ -152,15 +196,17 @@ private struct DayList: View {
     func entries(_ kind: PuzzleKind, _ language: Language, _ n: Int) -> [String] {
       saved["\(kind.rawValue)-\(language.rawValue)-\(n)"] ?? []
     }
-    return words.map {
-      Entry.word(WordGame(puzzle: $0, guesses: entries(.word, $0.language, $0.n)))
-    }
+    let all =
+      words.map {
+        Entry.word(WordGame(puzzle: $0, guesses: entries(.word, $0.language, $0.n)))
+      }
       + tiles.map {
         Entry.tiles(TilesGame(puzzle: $0, foundWords: entries(.tiles, $0.language, $0.n)))
       }
       + pangrams.map {
         Entry.pangram(PangramGame(puzzle: $0, foundWords: entries(.pangram, $0.language, $0.n)))
       }
+    return all.sorted { $0.precedes($1, groupedBy: grouping) }
   }
 
   var body: some View {
@@ -173,59 +219,75 @@ private struct DayList: View {
         Text("No puzzles for \(day.description).")
           .foregroundStyle(.secondary)
       }
-      ForEach(PuzzleKind.allCases, id: \.self) { kind in
-        let ofKind = open.filter { $0.kind == kind }
-        ForEach(Set(ofKind.map(\.n)).sorted(), id: \.self) { n in
-          Section("\(kind.name) · N=\(n)") {
-            rows(ofKind.filter { $0.n == n }, showsSize: false)
+      switch grouping {
+      case .game:
+        ForEach(PuzzleKind.allCases, id: \.self) { kind in
+          let ofKind = open.filter { $0.kind == kind }
+          if !ofKind.isEmpty {
+            Section(kind.name) {
+              rows(ofKind, in: .game)
+            }
+          }
+        }
+      case .n:
+        ForEach(Set(open.map(\.n)).sorted(), id: \.self) { n in
+          Section("N=\(n)") {
+            rows(open.filter { $0.n == n }, in: .n)
           }
         }
       }
       if !completed.isEmpty {
         Section("Completed") {
-          rows(completed, showsSize: true)
+          rows(completed, in: nil)
         }
       }
     }
     .animation(.default, value: completed.map(\.id))
+    .animation(.default, value: grouping)
   }
 
-  private func rows(_ entries: [Entry], showsSize: Bool) -> some View {
+  /// `section` is the grouping whose section the rows sit in, or nil in Completed.
+  private func rows(_ entries: [Entry], in section: HomeGrouping?) -> some View {
     ForEach(entries) { entry in
       switch entry {
       case .word(let game):
         NavigationLink(value: WordRoute(puzzle: game.puzzle, day: day)) {
-          WordRow(game: game, showsSize: showsSize)
+          WordRow(game: game, section: section)
         }
       case .tiles(let game):
         NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
-          TilesRow(game: game, showsSize: showsSize)
+          TilesRow(game: game, section: section)
         }
       case .pangram(let game):
         NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
-          PangramRow(game: game, showsSize: showsSize)
+          PangramRow(game: game, section: section)
         }
       }
     }
   }
 }
 
-/// A row's headline: the language, or the game and size too when the section doesn't say.
-private func rowTitle(_ kind: PuzzleKind, _ language: Language, _ n: Int, showsSize: Bool)
-  -> String
-{
-  showsSize ? "\(language.flag) \(kind.name) · N=\(n)" : "\(language.flag) \(language.name)"
+/// A row's headline: the language's flag, then whichever of the game and N its section header
+/// doesn't already say.
+private func rowTitle(
+  _ kind: PuzzleKind, _ language: Language, _ n: Int, section: HomeGrouping?
+) -> String {
+  switch section {
+  case .game: "\(language.flag) N=\(n)"
+  case .n: "\(language.flag) \(kind.name)"
+  case nil: "\(language.flag) \(kind.name) · N=\(n)"
+  }
 }
 
 private struct WordRow: View {
   let game: WordGame
-  let showsSize: Bool
+  let section: HomeGrouping?
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.word, puzzle.language, puzzle.n, showsSize: showsSize))
+        Text(rowTitle(.word, puzzle.language, puzzle.n, section: section))
           .font(.headline)
         Text("\(puzzle.n) letters")
           .font(.subheadline)
@@ -256,13 +318,13 @@ private struct WordRow: View {
 
 private struct PangramRow: View {
   let game: PangramGame
-  let showsSize: Bool
+  let section: HomeGrouping?
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.pangram, puzzle.language, puzzle.n, showsSize: showsSize))
+        Text(rowTitle(.pangram, puzzle.language, puzzle.n, section: section))
           .font(.headline)
         Text("\(puzzle.n) letters")
           .font(.subheadline)
@@ -282,14 +344,13 @@ private struct PangramRow: View {
 
 private struct TilesRow: View {
   let game: TilesGame
-  /// Whether the row names its game and size, which a size's own section already does.
-  let showsSize: Bool
+  let section: HomeGrouping?
 
   var body: some View {
     let puzzle = game.puzzle
     HStack {
       VStack(alignment: .leading) {
-        Text(rowTitle(.tiles, puzzle.language, puzzle.n, showsSize: showsSize))
+        Text(rowTitle(.tiles, puzzle.language, puzzle.n, section: section))
           .font(.headline)
         Text("\(puzzle.targets.count) targets")
           .font(.subheadline)

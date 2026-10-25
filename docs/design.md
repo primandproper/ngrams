@@ -106,11 +106,13 @@ game under that name, is already on the App Store (checked 2026-10-24).
 ### Shared
 
 - The day rolls over at local midnight on the device.
-- Home lists every puzzle for the day on one screen, a section per game and size ("Tiles ·
-  N=3"), each holding both languages marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word
-  lists). Sections are per game as well as size because N counts tiles in one game and letters
-  in the other. Completed puzzles move to a "Completed" section at the bottom: a `tiles` or
-  `pangram` board once it has its star, a `word` puzzle once it's over.
+- Home lists every puzzle for the day on one screen, grouped by game ("Tiles") or by N ("N=4")
+  from a toolbar menu, and remembers the choice. Within a section rows run by the other of game
+  and N, then by language, marked by flag (🇺🇸, 🇲🇽 for the American and Mexican word lists).
+  Grouping by N mixes games whose N means different things (tiles per word, letters per answer,
+  letters per board); that's accepted, since it's the player's choice. Completed puzzles move
+  to a "Completed" section at the bottom: a `tiles` or `pangram` board once it has its star, a
+  `word` puzzle once it's over.
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.

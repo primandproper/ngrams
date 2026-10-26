@@ -25,15 +25,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,13 +41,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import software.primandproper.ngrams.AppContainer
@@ -55,18 +59,15 @@ import software.primandproper.ngrams.core.GuessList
 import software.primandproper.ngrams.core.Hint
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LetterMark
+import software.primandproper.ngrams.core.LineStats
+import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
+import software.primandproper.ngrams.core.PuzzleLine
+import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.Status
 import software.primandproper.ngrams.core.Submission
 import software.primandproper.ngrams.core.WordGame
-import software.primandproper.ngrams.progress.ProgressKey
-
-/** Something to tell the player about their last move. [id] tells two identical messages apart. */
-data class Feedback(
-    val message: String,
-    val id: Long = System.nanoTime(),
-)
 
 sealed interface PasswordState {
     data object Loading : PasswordState
@@ -76,14 +77,16 @@ sealed interface PasswordState {
     data class Playing(
         val game: WordGame,
         val feedback: Feedback? = null,
+        /** Set by the guess that ends the puzzle, so its stats open once. */
+        val justFinished: Boolean = false,
     ) : PasswordState
 }
 
 /** One Password puzzle in play: the game, feedback for the last move, and saving each guess. */
 class PasswordViewModel(
     private val container: AppContainer,
-    private val language: Language,
-    private val n: Int,
+    language: Language,
+    n: Int,
     private val day: PuzzleDay,
 ) : ViewModel() {
     private val key = ProgressKey(language, PuzzleKind.WORD, n, day)
@@ -97,21 +100,27 @@ class PasswordViewModel(
     val state: StateFlow<PasswordState> = _state
     private var list: GuessList? = null
 
+    val stats: StateFlow<LineStats?> =
+        container.stats(container.today()).map { it[key.line] }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     init {
         viewModelScope.launch { load() }
     }
 
     private suspend fun load() {
         try {
-            val puzzle = container.bank().wordPuzzles(day).first { it.language == language && it.n == n }
-            list = container.guessList(language, n)
+            val puzzle = container.bank().wordPuzzles(day).first { it.language == key.language && it.n == key.n }
+            list = container.guessList(key.language, key.n)
+            // The setting applies only until the first guess is saved; after that the puzzle keeps
+            // the mode it was saved with.
+            val hardMode = container.settings.settings.first().wordHardMode
             _state.value =
                 try {
                     val saved = container.progress.find(key)
-                    PasswordState.Playing(WordGame(puzzle, saved?.entries.orEmpty(), saved?.hardMode ?: false))
+                    PasswordState.Playing(WordGame(puzzle, saved?.entries.orEmpty(), saved?.hardMode ?: hardMode))
                 } catch (e: Exception) {
                     logger.error("loading Password progress", e)
-                    PasswordState.Playing(WordGame(puzzle), Feedback("Couldn't load saved progress"))
+                    PasswordState.Playing(WordGame(puzzle, hardMode = hardMode), Feedback("Couldn't load saved progress"))
                 }
         } catch (e: Exception) {
             logger.error("loading the puzzle", e)
@@ -131,7 +140,7 @@ class PasswordViewModel(
         val playing = _state.value as? PasswordState.Playing ?: return
         val list = list ?: return
         val (game, submission) = playing.game.submit(list)
-        _state.value = PasswordState.Playing(game, feedback(submission))
+        _state.value = PasswordState.Playing(game, feedback(submission), justFinished = !playing.game.isOver && game.isOver)
         if (submission is Submission.Guessed) {
             viewModelScope.launch {
                 try {
@@ -150,6 +159,10 @@ class PasswordViewModel(
 
     fun feedbackShown(shown: Feedback) {
         _state.update { if (it is PasswordState.Playing && it.feedback == shown) it.copy(feedback = null) else it }
+    }
+
+    fun finishShown() {
+        _state.update { if (it is PasswordState.Playing) it.copy(justFinished = false) else it }
     }
 
     private fun feedback(submission: Submission): Feedback? =
@@ -186,14 +199,17 @@ fun PasswordScreen(
 ) {
     val model: PasswordViewModel = viewModel { PasswordViewModel(container, language, n, day) }
     val state by model.state.collectAsStateWithLifecycle()
-    val snackbars = remember { SnackbarHostState() }
+    val stats by model.stats.collectAsStateWithLifecycle()
+    val playing = state as? PasswordState.Playing
+    var showingStats by rememberSaveable { mutableStateOf(false) }
 
-    val feedback = (state as? PasswordState.Playing)?.feedback
-    LaunchedEffect(feedback) {
-        if (feedback != null) {
-            snackbars.currentSnackbarData?.dismiss()
-            snackbars.showSnackbar(feedback.message)
-            model.feedbackShown(feedback)
+    LaunchedEffect(playing?.justFinished) {
+        if (playing?.justFinished == true) {
+            // Cleared only after the sheet opens: clearing it changes this effect's key, which
+            // would cancel the wait.
+            delay(1_000)
+            showingStats = true
+            model.finishShown()
         }
     }
 
@@ -202,25 +218,23 @@ fun PasswordScreen(
             TopAppBar(
                 title = { Text("${language.flag} ${PuzzleKind.WORD.displayName} · $n") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                },
+                actions = {
+                    if (playing != null && playing.game.isOver) {
+                        ShareAction(ShareText.word(playing.game, day))
                     }
                 },
             )
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-            // Messages show at the top rather than in Scaffold's bottom slot, which would cover the
-            // keyboard's Enter and Delete while they're up.
-            SnackbarHost(snackbars, Modifier.align(Alignment.TopCenter).zIndex(1f))
+            FeedbackHost(playing?.feedback, model::feedbackShown)
             when (val current = state) {
                 PasswordState.Loading -> CircularProgressIndicator()
                 PasswordState.Failed -> Text("Couldn't load this puzzle.")
                 is PasswordState.Playing ->
-                    Column(
-                        Modifier.fillMaxSize().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
+                    Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         GuessGrid(current.game)
                         Spacer(Modifier.weight(1f))
                         ResultLine(current.game)
@@ -236,6 +250,15 @@ fun PasswordScreen(
                     }
             }
         }
+    }
+
+    if (showingStats && playing != null) {
+        LineStatsSheet(
+            line = PuzzleLine(language, PuzzleKind.WORD, n),
+            stats = stats,
+            highlight = (playing.game.status as? Status.Won)?.guesses,
+            onDismiss = { showingStats = false },
+        )
     }
 }
 
@@ -321,7 +344,7 @@ private fun ResultLine(game: WordGame) {
             )
         is Status.Won ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(Icons.Filled.Star, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                Icon(Icons.Filled.Star, contentDescription = null, tint = StarColor)
                 Text(
                     if (status.guesses == 1) "Solved in 1 guess" else "Solved in ${status.guesses} guesses",
                     style = MaterialTheme.typography.titleMedium,

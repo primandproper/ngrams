@@ -2,6 +2,7 @@
 GENERATOR_DIR := generator
 GENERATOR_PKG := github.com/primandproper/ngrams/$(GENERATOR_DIR)
 IOS_DIR       := ios
+ANDROID_DIR   := android
 SCRIPTS_DIR   := scripts
 RAW_DATA_DIR  := data/raw
 BLOCKLIST_DIR := data/blocklists
@@ -50,8 +51,12 @@ format_golang: format_imports
 format_swift:
 	$(SCRIPTS_DIR)/format_swift.sh $(IOS_DIR)
 
+.PHONY: format_kotlin
+format_kotlin:
+	$(SCRIPTS_DIR)/format_kotlin.sh $(ANDROID_DIR)
+
 .PHONY: format
-format: format_golang format_swift
+format: format_golang format_swift format_kotlin
 
 .PHONY: fmt
 fmt: format
@@ -70,8 +75,12 @@ shellcheck:
 swift_lint:
 	@$(SCRIPTS_DIR)/lint_swift.sh $(IOS_DIR)
 
+.PHONY: kotlin_lint
+kotlin_lint:
+	@$(SCRIPTS_DIR)/lint_kotlin.sh $(ANDROID_DIR)
+
 .PHONY: lint
-lint: golang_lint shellcheck swift_lint
+lint: golang_lint shellcheck swift_lint kotlin_lint
 
 ## EXECUTION
 
@@ -84,8 +93,12 @@ test_golang:
 test_ios:
 	$(SCRIPTS_DIR)/test_ios.sh $(IOS_DIR)
 
+.PHONY: test_android
+test_android:
+	$(SCRIPTS_DIR)/test_android.sh $(ANDROID_DIR)
+
 .PHONY: test
-test: test_golang test_ios
+test: test_golang test_ios test_android
 
 # Installs a Debug build on the paired iPhone. Pick one with IOS_DEVICE="Jeffrey’s iPhone".
 .PHONY: ios_install

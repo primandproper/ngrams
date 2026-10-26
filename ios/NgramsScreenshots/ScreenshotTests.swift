@@ -15,8 +15,13 @@ final class ScreenshotTests: XCTestCase {
     app.launchArguments = [
       "-screenshotSeed", "YES",
       "-pinnedToday", Self.today,
+      // Every setting, so whatever a simulator saved from earlier play can't show through.
       "-languages", "en,es",
+      "-homeGrouping", "game",
       "-wordHardMode", "YES",
+      "-solvedTilesLeave", "NO",
+      "-pangramHardMode", "NO",
+      "-pangramFoundOrder", "alphabetical",
       "-AppleLanguages", "(en)",
       "-AppleLocale", "en_US",
     ]
@@ -50,14 +55,24 @@ final class ScreenshotTests: XCTestCase {
     try snap("06-settings")
   }
 
-  /// A home row by its puzzle's id, scrolling down to it if the list hasn't drawn it yet.
+  /// A home row by its puzzle's id, scrolled clear of the floating bottom toolbar. A row under the
+  /// toolbar still counts as hittable, but a tap on it lands on the toolbar.
   @MainActor
   private func row(_ id: String, in app: XCUIApplication) -> XCUIElement {
     let row = app.buttons[id]
-    for _ in 0..<5 where !(row.waitForExistence(timeout: 5) && row.isHittable) {
-      app.swipeUp()
+    let window = app.windows.firstMatch
+    let clear = window.frame.maxY * 0.8
+    func reachable() -> Bool {
+      row.waitForExistence(timeout: 5) && row.isHittable && row.frame.maxY < clear
     }
-    XCTAssertTrue(row.isHittable, "no home row \(id)")
+    for _ in 0..<10 where !reachable() {
+      // A short drag rather than swipeUp, which can fling the row off the top.
+      window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+        .press(
+          forDuration: 0.05,
+          thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)))
+    }
+    XCTAssertTrue(reachable(), "no reachable home row \(id)")
     return row
   }
 

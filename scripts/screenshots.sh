@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Capture the App Store screenshots on a simulator, from a seeded, pinned day
-# Usage: screenshots.sh <ios_dir> <out_dir>
+# Capture the App Store screenshots on one simulator, from a seeded, pinned day. Each display
+# size App Store Connect asks for is a run on a simulator of that size.
+# Usage: screenshots.sh <ios_dir> <out_dir> <simulator>
 
 IOS_DIR="${1:-ios}"
 OUT_DIR="${2:-ios/build/screenshots}"
+IOS_SIM="${3:?simulator name}"
 
 # shellcheck source=scripts/simulator.sh
 source "$(dirname "${BASH_SOURCE[0]}")/simulator.sh"
 
-# An iPhone-only app needs only the large Dynamic Island size (1320x2868 on the Pro Max); App
-# Store Connect scales it down for every smaller iPhone.
-IOS_SIM="${IOS_SIM:-iPhone 18 Pro Max}"
 udid="$(resolve_simulator)"
 echo "capturing on ${IOS_SIM} (${udid})"
 boot_simulator "${udid}"

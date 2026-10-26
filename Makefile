@@ -104,10 +104,12 @@ bank: data
 
 ## RELEASE
 
-# Captures the App Store screenshots into SCREENSHOTS. Override the simulator with IOS_SIM.
+# Captures the App Store screenshots into a folder per display size under SCREENSHOTS. Medium
+# (1206x2622) is the size App Store Connect requires; large (1320x2868) is optional.
 .PHONY: screenshots
 screenshots:
-	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)
+	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/medium "iPhone 18 Pro"
+	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/large "iPhone 18 Pro Max"
 
 # Uploads a Release build to App Store Connect and tags it. Submit and release it there by hand.
 .PHONY: release

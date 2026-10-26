@@ -30,15 +30,13 @@ app_privacy:
   privacy_policy_url: https://primandproper.software/ngrams/privacy/
 
 version:
-  # iPhone with Dynamic Island (large display), labeled 6.9" in the form: 1320x2868 PNGs from
-  # make screenshots, uploaded in this order. App Store Connect scales them for smaller iPhones.
+  # From make screenshots, uploaded in file-name order. Up to 10 per size.
   screenshots:
-    - ios/build/screenshots/01-home.png
-    - ios/build/screenshots/02-password.png
-    - ios/build/screenshots/03-tiles.png
-    - ios/build/screenshots/04-pangram.png
-    - ios/build/screenshots/05-stats.png
-    - ios/build/screenshots/06-settings.png
+    # Required: iPhone with Dynamic Island (medium display), 1206x2622.
+    medium: ios/build/screenshots/medium/
+    # Optional: iPhone with Dynamic Island (large display), 1320x2868. Without it, App Store
+    # Connect scales the medium set.
+    large: ios/build/screenshots/large/
 
   # 170 characters. Editable any time, without a new version.
   promotional_text: >-

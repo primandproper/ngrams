@@ -1,0 +1,48 @@
+{
+  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. Only the lines listed are checked.",
+  "timeZone": "America/Chicago",
+  "bank": {"version": 1, "seed": 1, "days": [
+    {"date": "2027-01-01", "puzzles": [
+      {"lang": "en", "kind": "word", "n": 5, "answer": "llama"},
+      {"lang": "en", "kind": "pangram", "n": 6, "letters": ["a", "c", "e", "i", "l", "p"], "center": "p", "target_score": 13, "pangrams": ["plaice"], "words": [{"word": "pace", "points": 1}, {"word": "plaice", "points": 13}]}]},
+    {"date": "2027-01-02", "puzzles": [{"lang": "en", "kind": "word", "n": 5, "answer": "llama"}]},
+    {"date": "2027-01-03", "puzzles": [{"lang": "en", "kind": "word", "n": 5, "answer": "llama"}]},
+    {"date": "2027-01-04", "puzzles": [{"lang": "en", "kind": "word", "n": 5, "answer": "llama"}]},
+    {"date": "2027-01-05", "puzzles": [{"lang": "en", "kind": "word", "n": 5, "answer": "llama"}]}
+  ]},
+  "scenarios": [
+    {"name": "counts plays, wins, guesses, and streaks, with today still to play", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-01", "entries": ["llama"], "completedAt": "2027-01-01T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-02", "entries": ["plaza", "llama"], "completedAt": "2027-01-02T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-03", "entries": ["cramp", "cramp", "cramp", "cramp", "cramp", "cramp"], "completedAt": "2027-01-03T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 3, "currentStreak": 1, "bestStreak": 2, "guessCounts": [2, 1, 0, 0, 0, 0]}]},
+    {"name": "extends the streak with today's solve", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-05", "entries": ["llama"], "completedAt": "2027-01-05T18:00:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 2, "successes": 2, "currentStreak": 2, "bestStreak": 2, "guessCounts": [2, 0, 0, 0, 0, 0]}]},
+    {"name": "keeps the streak while today is unfinished", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-05", "entries": ["plaza"], "completedAt": null}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [1, 0, 0, 0, 0, 0]}]},
+    {"name": "ends the streak when today is lost", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-05", "entries": ["cramp", "cramp", "cramp", "cramp", "cramp", "cramp"], "completedAt": "2027-01-05T18:00:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 2, "successes": 1, "currentStreak": 0, "bestStreak": 1, "guessCounts": [1, 0, 0, 0, 0, 0]}]},
+    {"name": "counts a solve from an earlier day, but not toward the streak", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-03", "entries": ["llama"], "completedAt": "2027-01-03T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-05T18:00:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 2, "successes": 2, "currentStreak": 0, "bestStreak": 1, "guessCounts": [2, 0, 0, 0, 0, 0]}]},
+    {"name": "places a late-night finish in the player's own time zone", "today": "2027-01-02", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-01", "entries": ["llama"], "completedAt": "2027-01-02T05:30:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [1, 0, 0, 0, 0, 0]}]},
+    {"name": "ignores days after today", "today": "2027-01-02", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-01", "entries": ["llama"], "completedAt": "2027-01-01T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-02", "entries": ["plaza", "llama"], "completedAt": "2027-01-02T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-03", "entries": ["llama"], "completedAt": "2027-01-03T18:00:00Z"}],
+     "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 2, "successes": 2, "currentStreak": 2, "bestStreak": 2, "guessCounts": [1, 1, 0, 0, 0, 0]}]},
+    {"name": "counts a board's star as its success", "today": "2027-01-02", "records": [
+      {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["plaice"], "completedAt": "2027-01-01T06:00:00Z"}],
+     "lines": [{"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0]}]}
+  ]
+}

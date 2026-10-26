@@ -1,0 +1,30 @@
+{
+  "description": "Tiles rules. states: a board restored from found words, and what it scores. submissions: tiles tapped in order on a restored board, the selection that leaves, and what submitting it does. The en board needs 50 for its star, the es one 46.",
+  "bank": {"version": 1, "seed": 1, "days": [{"date": "2027-01-01", "puzzles": [
+    {"lang": "en", "kind": "tiles", "n": 2, "tiles": ["ab", "cd", "ef", "gh"], "targets": [[0, 1], [2, 3]], "bonus": 40, "target_score": 50, "blocked": ["efab"], "words": [
+      {"word": "ab", "tiles": [0], "points": 1}, {"word": "ef", "display": "éf", "tiles": [2], "points": 1},
+      {"word": "abcd", "tiles": [0, 1], "points": 2}, {"word": "efgh", "tiles": [2, 3], "points": 2}]},
+    {"lang": "es", "kind": "tiles", "n": 2, "tiles": ["ab", "cd", "ef", "gh"], "targets": [[0, 1], [2, 3]], "bonus": 40, "target_score": 46, "blocked": ["efab"], "words": [
+      {"word": "ab", "tiles": [0], "points": 1}, {"word": "ef", "display": "éf", "tiles": [2], "points": 1},
+      {"word": "abcd", "tiles": [0, 1], "points": 2}, {"word": "efgh", "tiles": [2, 3], "points": 2}]}
+  ]}]},
+  "states": [
+    {"lang": "en", "found": [], "foundWords": [], "score": 0, "solvedTargets": [], "allTargetsFound": false, "earnedStar": false},
+    {"lang": "en", "found": ["abcd", "efgh"], "foundWords": ["abcd", "efgh"], "score": 44, "solvedTargets": [0, 1], "allTargetsFound": true, "earnedStar": false},
+    {"lang": "en", "found": ["abcd", "efgh", "ab", "ef"], "foundWords": ["abcd", "efgh", "ab", "ef"], "score": 46, "solvedTargets": [0, 1], "allTargetsFound": true, "earnedStar": false},
+    {"lang": "es", "found": ["abcd", "efgh", "ab", "ef"], "foundWords": ["abcd", "efgh", "ab", "ef"], "score": 46, "solvedTargets": [0, 1], "allTargetsFound": true, "earnedStar": true},
+    {"lang": "es", "found": ["abcd", "ab", "ef"], "foundWords": ["abcd", "ab", "ef"], "score": 4, "solvedTargets": [0], "allTargetsFound": false, "earnedStar": false},
+    {"lang": "en", "found": ["ef", "zz", "ef", "abcd"], "foundWords": ["ef", "abcd"], "score": 3, "solvedTargets": [0], "allTargetsFound": false, "earnedStar": false}
+  ],
+  "submissions": [
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [0, 1], "selection": [0, 1], "result": "found", "text": "abcd", "foundAfter": ["abcd"]},
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [0, 1, 0], "selection": [1], "result": "notAWord", "text": "cd", "foundAfter": []},
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [0, 1, 2], "selection": [0, 1], "result": "found", "text": "abcd", "foundAfter": ["abcd"]},
+    {"lang": "en", "found": ["ab"], "solvedTilesLeave": false, "taps": [0], "selection": [0], "result": "alreadyFound", "text": "ab", "foundAfter": ["ab"]},
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [1, 0], "selection": [1, 0], "result": "notAWord", "text": "cdab", "foundAfter": []},
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [2, 0], "selection": [2, 0], "result": "blocked", "text": "efab", "foundAfter": []},
+    {"lang": "en", "found": [], "solvedTilesLeave": false, "taps": [], "selection": [], "result": "empty", "text": "", "foundAfter": []},
+    {"lang": "en", "found": ["efgh"], "solvedTilesLeave": true, "taps": [2, 0], "selection": [0], "result": "found", "text": "ab", "foundAfter": ["efgh", "ab"]},
+    {"lang": "en", "found": ["efgh"], "solvedTilesLeave": false, "taps": [2], "selection": [2], "result": "found", "text": "ef", "foundAfter": ["efgh", "ef"]}
+  ]
+}

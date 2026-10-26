@@ -35,3 +35,11 @@ data class PuzzleDay(
         fun today(clock: Clock = Clock.systemDefaultZone()): PuzzleDay = PuzzleDay(LocalDate.now(clock))
     }
 }
+
+private val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+/** "Oct 25", or "Oct 25, 2026" with the year. Always English, like the rest of the app's text. */
+fun PuzzleDay.name(includingYear: Boolean): String {
+    val name = "${monthNames[date.monthValue - 1]} ${date.dayOfMonth}"
+    return if (includingYear) "$name, ${date.year}" else name
+}

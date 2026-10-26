@@ -1,0 +1,28 @@
+{
+  "description": "Pangram rules. states: a board restored from found words, what it scores, and its found words in each order. submissions: letters typed on a restored board and what submitting them does. plaice is the board's common pangram; epical is a bonus pangram.",
+  "bank": {"version": 1, "seed": 1, "days": [{"date": "2027-01-01", "puzzles": [
+    {"lang": "en", "kind": "pangram", "n": 6, "letters": ["a", "c", "e", "i", "l", "p"], "center": "p", "target_score": 13, "pangrams": ["plaice"], "blocked": ["clip"], "words": [
+      {"word": "pace", "points": 1}, {"word": "pail", "points": 1}, {"word": "place", "points": 5},
+      {"word": "plaice", "points": 13}, {"word": "epical", "points": 13}]}
+  ]}]},
+  "states": [
+    {"found": [], "foundWords": [], "score": 0, "foundPangrams": 0, "foundBonusPangrams": 0, "earnedStar": false, "alphabetical": [], "recent": []},
+    {"found": ["pace", "pail", "place"], "foundWords": ["pace", "pail", "place"], "score": 7, "foundPangrams": 0, "foundBonusPangrams": 0, "earnedStar": false, "alphabetical": ["pace", "pail", "place"], "recent": ["place", "pail", "pace"]},
+    {"found": ["pace", "pail", "place", "plaice"], "foundWords": ["pace", "pail", "place", "plaice"], "score": 20, "foundPangrams": 1, "foundBonusPangrams": 0, "earnedStar": true, "alphabetical": ["pace", "pail", "place", "plaice"], "recent": ["plaice", "place", "pail", "pace"]},
+    {"found": ["pace", "pail", "place", "epical"], "foundWords": ["pace", "pail", "place", "epical"], "score": 20, "foundPangrams": 0, "foundBonusPangrams": 1, "earnedStar": false, "alphabetical": ["epical", "pace", "pail", "place"], "recent": ["epical", "place", "pail", "pace"]},
+    {"found": ["plaice"], "foundWords": ["plaice"], "score": 13, "foundPangrams": 1, "foundBonusPangrams": 0, "earnedStar": true, "alphabetical": ["plaice"], "recent": ["plaice"]},
+    {"found": ["pace", "zzzz", "pace"], "foundWords": ["pace"], "score": 1, "foundPangrams": 0, "foundBonusPangrams": 0, "earnedStar": false, "alphabetical": ["pace"], "recent": ["pace"]}
+  ],
+  "submissions": [
+    {"found": [], "hardMode": false, "typed": "place", "result": "found", "text": "place"},
+    {"found": ["pace"], "hardMode": false, "typed": "pal", "result": "tooShort", "text": ""},
+    {"found": ["pace"], "hardMode": false, "typed": "lace", "result": "missingCenter", "text": ""},
+    {"found": ["pace"], "hardMode": false, "typed": "clip", "result": "blocked", "text": "clip"},
+    {"found": ["pace"], "hardMode": false, "typed": "pple", "result": "notAWord", "text": "pple"},
+    {"found": ["pace"], "hardMode": false, "typed": "pace", "result": "alreadyFound", "text": "pace"},
+    {"found": [], "hardMode": false, "typed": "", "result": "empty", "text": ""},
+    {"found": [], "hardMode": true, "typed": "place", "result": "needsPangram", "text": ""},
+    {"found": [], "hardMode": true, "typed": "epical", "result": "found", "text": "epical"},
+    {"found": ["plaice"], "hardMode": true, "typed": "place", "result": "found", "text": "place"}
+  ]
+}

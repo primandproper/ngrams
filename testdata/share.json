@@ -1,0 +1,34 @@
+{
+  "description": "Share text. puzzles: one puzzle's share, restored from saved entries (hardMode is solved-tiles-leave for tiles). days: a whole day's share from every game given, or null when none was started.",
+  "day": "2027-01-01",
+  "bank": {"version": 1, "seed": 1, "days": [{"date": "2027-01-01", "puzzles": [
+    {"lang": "en", "kind": "word", "n": 5, "answer": "llama"},
+    {"lang": "es", "kind": "word", "n": 4, "answer": "casa"},
+    {"lang": "en", "kind": "tiles", "n": 2, "tiles": ["ab", "cd", "ef", "gh"], "targets": [[0, 1], [2, 3]], "bonus": 40, "target_score": 50, "words": [
+      {"word": "ab", "tiles": [0], "points": 1}, {"word": "abcd", "tiles": [0, 1], "points": 2}, {"word": "efgh", "tiles": [2, 3], "points": 2}]},
+    {"lang": "en", "kind": "pangram", "n": 6, "letters": ["a", "c", "e", "i", "l", "p"], "center": "p", "target_score": 13, "pangrams": ["plaice"], "words": [
+      {"word": "pace", "points": 1}, {"word": "plaice", "points": 13}]}
+  ]}]},
+  "puzzles": [
+    {"kind": "word", "lang": "en", "n": 5, "entries": ["plaza", "llama"], "hardMode": true,
+     "text": "n-grams · Password 🇺🇸 n=5 · Jan 1 · 2/6* ⭐\n⬛🟦🟦⬛🟦\n🟦🟦🟦🟦🟦\nhttps://primandproper.software/ngrams/"},
+    {"kind": "word", "lang": "en", "n": 5, "entries": ["cramp", "cramp", "cramp", "cramp", "cramp", "cramp"], "hardMode": false,
+     "text": "n-grams · Password 🇺🇸 n=5 · Jan 1 · X/6\n⬛⬛🟦🟦⬛\n⬛⬛🟦🟦⬛\n⬛⬛🟦🟦⬛\n⬛⬛🟦🟦⬛\n⬛⬛🟦🟦⬛\n⬛⬛🟦🟦⬛\nhttps://primandproper.software/ngrams/"},
+    {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false,
+     "text": "n-grams · Tiles 🇺🇸 n=2 · Jan 1 · 3/50\n▱▱▱▱▱▱▱▱▱▱ 1/2 targets\nhttps://primandproper.software/ngrams/"},
+    {"kind": "pangram", "lang": "en", "n": 6, "entries": ["plaice"], "hardMode": true,
+     "text": "n-grams · Pangram 🇺🇸 n=6 · Jan 1 · 13/13* ⭐\n▰▰▰▰▰▰▰▰▰▰ 1/1 pangram\nhttps://primandproper.software/ngrams/"}
+  ],
+  "days": [
+    {"games": [
+      {"kind": "word", "lang": "en", "n": 5, "entries": ["plaza", "llama"], "hardMode": true},
+      {"kind": "word", "lang": "es", "n": 4, "entries": [], "hardMode": false},
+      {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false},
+      {"kind": "pangram", "lang": "en", "n": 6, "entries": [], "hardMode": false}],
+     "text": "n-grams · Jan 1\n🇺🇸 Password · n=5 2/6* ⭐\n🇺🇸 Tiles · n=2 3/50\nhttps://primandproper.software/ngrams/"},
+    {"games": [
+      {"kind": "word", "lang": "es", "n": 4, "entries": [], "hardMode": false},
+      {"kind": "pangram", "lang": "en", "n": 6, "entries": [], "hardMode": false}],
+     "text": null}
+  ]
+}

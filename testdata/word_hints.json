@@ -1,0 +1,11 @@
+{
+  "description": "Password hard mode: the first hint a guess leaves out after earlier guesses, or null when it uses them all. Correct letters out of their spot come first, then found letters with too few copies, both in the order revealed.",
+  "answer": "llama",
+  "cases": [
+    {"guesses": ["plaza"], "guess": "label", "hint": {"kind": "position", "letter": "l", "index": 1}},
+    {"guesses": ["label"], "guess": "lolls", "hint": {"kind": "letter", "letter": "a"}},
+    {"guesses": ["lolls"], "guess": "loamy", "hint": {"kind": "letter", "letter": "l"}},
+    {"guesses": ["label"], "guess": "llama", "hint": null},
+    {"guesses": ["plaza"], "guess": "llama", "hint": null}
+  ]
+}

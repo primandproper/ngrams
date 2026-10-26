@@ -77,7 +77,7 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   as in the original.
 - A board's star takes every target and the target score.
 - As in the original, a found target's tiles lock into a row at the top of the board and stay
-  usable in other words. A global "hard mode" setting takes them off the board instead. Since
+  usable in other words. A "hard mode" setting takes them off the board instead. Since
   every tile belongs to a target, finishing the last target empties the board, so in hard mode
   the 20 points beyond the targets and bonus have to come before the last target.
 - Scoring borrows the original's curve. Quartiles (per Apple's help page, checked 2026-10-23)
@@ -135,6 +135,12 @@ games; the risk was accepted for an in-app label, since only the app's name is s
 - `word` and `pangram` hard modes lock per puzzle: the setting applies until a puzzle's first
   guess or word is saved, and the puzzle keeps that mode after, saved with its progress. `tiles`
   hard mode predates this and still reads the setting whenever a board opens.
+- Each hard mode is set per language, since a player can be fluent in one and learning another.
+  Settings shows a section per game with one language on, and a section per language with more.
+  Each hard mode is stored as the languages it's on for (`pangramHardModeLanguages = "en"`), in
+  the same comma-separated codes as the language choice, which keeps the keys fixed for
+  `@AppStorage`. The single switches from before move over on first launch, to every language if
+  they were on; a language turned on later starts with its hard modes off.
 - Results share as spoiler-free text: each puzzle from its own screen, and every puzzle started
   on a day from home, a line per language and game. Shares carry the date ("Oct 25") rather
   than a puzzle number, a flag even when only one language is on (the reader may play
@@ -218,8 +224,8 @@ would put the iOS app on its toolchain for a UI it may not cover (the wheel, the
 calling Swift from Kotlin costs more than porting 1,400 lines of pure logic.
 
 What keeps the two from drifting is `testdata/`: rules and scoring for every game, hard-mode
-hints, stats and streaks, share text, and seeded layouts, as JSON cases both test suites run. The
-layouts reproduce Swift's SplitMix64, `next(upperBound:)`, and `shuffle(using:)` bit for bit, so
+hints, stats and streaks, share text, seeded layouts, and the hard-mode settings keys and their
+migration, as JSON cases both test suites run. The layouts reproduce Swift's SplitMix64, `next(upperBound:)`, and `shuffle(using:)` bit for bit, so
 a day's board starts in the same order on both platforms. Each app otherwise follows its own
 platform's design language. Shares end with one link for both stores,
 `https://primandproper.software/ngrams/`.

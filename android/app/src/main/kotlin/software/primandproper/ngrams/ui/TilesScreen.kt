@@ -129,7 +129,7 @@ class TilesViewModel(
         try {
             val puzzle = container.bank().tilesPuzzles(day).first { it.language == key.language && it.n == key.n }
             // Tiles reads its hard mode live, like the iOS app, rather than fixing it per board.
-            val solvedTilesLeave = container.settings.settings.first().solvedTilesLeave
+            val solvedTilesLeave = container.settings.settings.first().hardMode(PuzzleKind.TILES, key.language)
             val (game, feedback) =
                 try {
                     TilesGame(puzzle, container.progress.find(key)?.entries.orEmpty(), solvedTilesLeave) to null

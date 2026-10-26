@@ -71,9 +71,11 @@ private class ScreenshotSeed(
         val settings = container.settings
         settings.setLanguages(Language.entries.toSet())
         settings.setGrouping(HomeGrouping.GAME)
-        settings.setWordHardMode(true)
-        settings.setSolvedTilesLeave(false)
-        settings.setPangramHardMode(false)
+        for (language in Language.entries) {
+            settings.setHardMode(PuzzleKind.WORD, language, true)
+            settings.setHardMode(PuzzleKind.TILES, language, false)
+            settings.setHardMode(PuzzleKind.PANGRAM, language, false)
+        }
         settings.setPangramFoundOrder(FoundWordOrder.ALPHABETICAL)
 
         val bank = container.bank()

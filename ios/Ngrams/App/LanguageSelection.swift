@@ -1,8 +1,9 @@
 import Foundation
 import SwiftUI
 
-/// The languages a player wants puzzles in. Stored under `SettingsKey.languages`, and absent until
-/// they first choose.
+/// A set of languages, stored as comma-separated codes: the languages a player wants puzzles in,
+/// under `SettingsKey.languages` and absent until they first choose, and the languages each hard
+/// mode is on for, under `SettingsKey.hardMode(_:)`.
 nonisolated struct LanguageSelection: RawRepresentable, Equatable, Sendable {
   var languages: Set<Language>
 

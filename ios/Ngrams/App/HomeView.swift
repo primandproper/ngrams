@@ -202,7 +202,7 @@ private struct DayList: View {
   let streaks: [PuzzleLine: Int]
 
   @Query private var progress: [PuzzleProgress]
-  @AppStorage(SettingsKey.solvedTilesLeave) private var solvedTilesLeave = false
+  @AppStorage(SettingsKey.hardMode(.tiles)) private var tilesHardModes = LanguageSelection([])
 
   init(
     words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay,
@@ -235,7 +235,7 @@ private struct DayList: View {
       .tiles(
         TilesGame(
           puzzle: puzzle, foundWords: saved(.tiles, puzzle.language, puzzle.n)?.entries ?? [],
-          solvedTilesLeave: solvedTilesLeave))
+          solvedTilesLeave: tilesHardModes.languages.contains(puzzle.language)))
     }
     let pangramEntries: [Entry] = pangrams.map { puzzle in
       let record = saved(.pangram, puzzle.language, puzzle.n)

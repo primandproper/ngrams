@@ -113,7 +113,7 @@ class PasswordViewModel(
             list = container.guessList(key.language, key.n)
             // The setting applies only until the first guess is saved; after that the puzzle keeps
             // the mode it was saved with.
-            val hardMode = container.settings.settings.first().wordHardMode
+            val hardMode = container.settings.settings.first().hardMode(PuzzleKind.WORD, key.language)
             _state.value =
                 try {
                     val saved = container.progress.find(key)

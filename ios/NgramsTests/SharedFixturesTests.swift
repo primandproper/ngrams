@@ -265,6 +265,36 @@ struct SharedFixturesTests {
       #expect(text == testCase["text"] as? String)
     }
   }
+
+  @Test("stores and moves hard modes the way the Android app does")
+  func settings() throws {
+    let fixture = try fixture("settings")
+    func byKind<Value>(_ object: Any?, _ value: (Any) -> Value?) throws -> [PuzzleKind: Value] {
+      let object = try #require(object as? Object)
+      return try Dictionary(
+        uniqueKeysWithValues: object.map { code, raw in
+          (try #require(PuzzleKind(rawValue: code)), try #require(value(raw)))
+        })
+    }
+    func languages(_ raw: Any) -> LanguageSelection? {
+      (raw as? String).flatMap(LanguageSelection.init(rawValue:))
+    }
+
+    let keys = try byKind(fixture["keys"]) { $0 as? String }
+    let legacyKeys = try byKind(fixture["legacyKeys"]) { $0 as? String }
+    for kind in PuzzleKind.allCases {
+      #expect(SettingsKey.hardMode(kind) == keys[kind])
+      #expect(SettingsKey.legacyHardMode(kind) == legacyKeys[kind])
+    }
+
+    for testCase in try cases(fixture, "migrations") {
+      let after = HardModeMigration.migrated(
+        legacy: try byKind(testCase["legacy"]) { $0 as? Bool },
+        current: try byKind(testCase["current"], languages))
+      let expected = try byKind(testCase["after"]) { $0 as? String }
+      #expect(after.mapValues(\.rawValue) == expected, "\(testCase["name"] ?? "")")
+    }
+  }
 }
 
 /// Finds the test bundle, which carries testdata/.

@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -207,9 +208,11 @@ fun PasswordScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbars) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            // Messages show at the top rather than in Scaffold's bottom slot, which would cover the
+            // keyboard's Enter and Delete while they're up.
+            SnackbarHost(snackbars, Modifier.align(Alignment.TopCenter).zIndex(1f))
             when (val current = state) {
                 PasswordState.Loading -> CircularProgressIndicator()
                 PasswordState.Failed -> Text("Couldn't load this puzzle.")

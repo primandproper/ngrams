@@ -9,7 +9,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 )
 
 // ErrNoAnswer means every answer in the pool has been used.

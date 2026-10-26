@@ -186,8 +186,8 @@ formatters:
     gci:
       sections:
         - standard
-        - prefix(github.com/verygoodsoftwarenotvirus/ngrams/generator)
-        - prefix(github.com/verygoodsoftwarenotvirus)
+        - prefix(github.com/primandproper/ngrams/generator)
+        - prefix(github.com/primandproper)
         - default
       custom-order: true
     gofmt:

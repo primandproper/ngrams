@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/bank"
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/bank"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 )
 
 const (

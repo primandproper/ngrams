@@ -1,6 +1,6 @@
 # PATHS
 GENERATOR_DIR := generator
-GENERATOR_PKG := github.com/verygoodsoftwarenotvirus/ngrams/$(GENERATOR_DIR)
+GENERATOR_PKG := github.com/primandproper/ngrams/$(GENERATOR_DIR)
 IOS_DIR       := ios
 SCRIPTS_DIR   := scripts
 RAW_DATA_DIR  := data/raw

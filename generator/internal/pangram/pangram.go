@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 )
 
 const (

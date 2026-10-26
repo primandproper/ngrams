@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage: format_imports.sh <module_dir> <package_prefix>
 
 MODULE_DIR="${1:-generator}"
-PACKAGE_PREFIX="${2:-github.com/verygoodsoftwarenotvirus/ngrams/generator}"
+PACKAGE_PREFIX="${2:-github.com/primandproper/ngrams/generator}"
 
 cd "${MODULE_DIR}"
 
@@ -18,7 +18,7 @@ if [ ${#go_files[@]} -gt 0 ]; then
   go tool gci write \
     --section standard \
     --section "prefix(${PACKAGE_PREFIX})" \
-    --section "prefix(github.com/verygoodsoftwarenotvirus)" \
+    --section "prefix(github.com/primandproper)" \
     --section default \
     --custom-order \
     "${go_files[@]}"

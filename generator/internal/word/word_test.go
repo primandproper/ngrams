@@ -4,7 +4,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 
 	"github.com/shoenig/test/must"
 )

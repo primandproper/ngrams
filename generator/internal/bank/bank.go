@@ -11,10 +11,10 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/pangram"
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/tiles"
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/word"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/pangram"
+	"github.com/primandproper/ngrams/generator/internal/tiles"
+	"github.com/primandproper/ngrams/generator/internal/word"
 )
 
 const (

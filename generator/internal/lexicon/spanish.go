@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/hunspell"
+	"github.com/primandproper/ngrams/generator/internal/hunspell"
 )
 
 // Mexican Spanish uses neither voseo nor vosotros. es_MX's affix rules mostly leave

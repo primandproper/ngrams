@@ -1,4 +1,4 @@
-module github.com/verygoodsoftwarenotvirus/ngrams/generator
+module github.com/primandproper/ngrams/generator
 
 go 1.27.0
 

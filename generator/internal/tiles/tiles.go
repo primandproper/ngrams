@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 )
 
 const (

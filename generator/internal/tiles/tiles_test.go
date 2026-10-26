@@ -3,7 +3,7 @@ package tiles
 import (
 	"testing"
 
-	"github.com/verygoodsoftwarenotvirus/ngrams/generator/internal/lexicon"
+	"github.com/primandproper/ngrams/generator/internal/lexicon"
 
 	"github.com/shoenig/test/must"
 )

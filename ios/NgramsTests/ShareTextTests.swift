@@ -13,7 +13,7 @@ struct ShareTextTests {
         n-grams · Password 🇺🇸 n=5 · Jan 1 · 2/6* ⭐
         ⬛🟦🟦⬛🟦
         🟦🟦🟦🟦🟦
-        https://apps.apple.com/app/id6826954747
+        https://primandproper.software/ngrams/
         """)
   }
 
@@ -32,7 +32,7 @@ struct ShareTextTests {
       ShareText.tiles(game, on: testDay) == """
         n-grams · Tiles 🇺🇸 n=2 · Jan 1 · 3/50
         ▱▱▱▱▱▱▱▱▱▱ 1/2 targets
-        https://apps.apple.com/app/id6826954747
+        https://primandproper.software/ngrams/
         """)
   }
 
@@ -44,7 +44,7 @@ struct ShareTextTests {
       ShareText.pangram(game, on: testDay) == """
         n-grams · Pangram 🇺🇸 n=6 · Jan 1 · 13/13* ⭐
         ▰▰▰▰▰▰▰▰▰▰ 1/1 pangram
-        https://apps.apple.com/app/id6826954747
+        https://primandproper.software/ngrams/
         """)
   }
 
@@ -62,7 +62,7 @@ struct ShareTextTests {
         n-grams · Jan 1
         🇺🇸 Password · n=5 2/6* ⭐
         🇺🇸 Tiles · n=2 3/50
-        https://apps.apple.com/app/id6826954747
+        https://primandproper.software/ngrams/
         """)
     #expect(
       ShareText.day(words: [words[1]], tiles: [], pangrams: pangrams, on: testDay) == nil)

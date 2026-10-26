@@ -1,0 +1,21 @@
+{
+  "description": "Seeded layouts, so a board starts in the same order on iOS and Android. generator: SplitMix64 seeded by FNV-1a over the seed string's UTF-8, its first outputs as decimal strings (they overflow JSON numbers). shuffles: 0..<count shuffled with Swift's shuffle(using:). tiles: a board of `targets` targets of n tiles each, target i on tiles i*n through i*n+n-1, spread by TilesLayout. wheels: a pangram board's outer letters, everything but the center, shuffled.",
+  "generator": [
+    {"seed": "en-tiles-3-2027-01-01", "outputs": ["13615264121930007964", "7019750085447774118", "632191076828703970", "14934052348426907062", "2071023075086865338"]},
+    {"seed": "", "outputs": ["14087677454934409008", "1156539639830188822", "6107907394010225435", "3199123669689638002", "7288325018142838421"]}
+  ],
+  "shuffles": [
+    {"seed": "es-pangram-7-2026-11-12", "count": 20, "order": [3, 0, 17, 2, 4, 5, 19, 18, 7, 16, 13, 10, 14, 12, 9, 6, 1, 8, 15, 11]},
+    {"seed": "two", "count": 2, "order": [1, 0]},
+    {"seed": "one", "count": 1, "order": [0]}
+  ],
+  "tiles": [
+    {"seed": "en-tiles-3-2026-11-12", "n": 3, "targets": 7, "order": [8, 2, 10, 4, 11, 18, 1, 5, 9, 12, 16, 7, 3, 0, 19, 20, 14, 17, 15, 13, 6]},
+    {"seed": "en-tiles-4-2026-11-12", "n": 4, "targets": 5, "order": [11, 1, 19, 7, 18, 15, 2, 6, 9, 5, 0, 12, 10, 17, 13, 3, 16, 14, 8, 4]},
+    {"seed": "en-tiles-5-2026-11-12", "n": 5, "targets": 4, "order": [6, 4, 3, 19, 9, 1, 12, 5, 8, 17, 14, 13, 18, 7, 2, 0, 16, 15, 11, 10]}
+  ],
+  "wheels": [
+    {"seed": "en-pangram-7-2026-11-12", "letters": "deinopw", "center": "w", "outer": "nodepi"},
+    {"seed": "es-pangram-8-2027-01-01", "letters": "acdeinñr", "center": "ñ", "outer": "eradnic"}
+  ]
+}

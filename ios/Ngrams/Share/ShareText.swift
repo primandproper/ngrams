@@ -3,8 +3,8 @@ import Foundation
 /// Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
 /// marks a result played in hard mode, and a ⭐ one that earned its star.
 nonisolated enum ShareText {
-  /// Appended to every share.
-  static let appStoreURL: URL? = URL(string: "https://apps.apple.com/app/id6826954747")
+  /// Appended to every share: one page for both stores, so a share works whoever receives it.
+  static let link = "https://primandproper.software/ngrams/"
 
   /// The headline and the guess grid.
   static func word(_ game: WordGame, on day: PuzzleDay) -> String {
@@ -108,7 +108,7 @@ nonisolated enum ShareText {
   }
 
   private static func finished(_ lines: [String]) -> String {
-    (lines + [appStoreURL?.absoluteString].compactMap { $0 }).joined(separator: "\n")
+    (lines + [link]).joined(separator: "\n")
   }
 }
 

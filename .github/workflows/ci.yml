@@ -53,3 +53,27 @@ jobs:
 
       - name: Test
         run: make test_ios
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The toolchain android/mise.toml pins, which the scripts run Gradle through.
+      - uses: jdx/mise-action@v5
+        with:
+          working_directory: android
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Format
+        run: |
+          make format_kotlin
+          git diff --exit-code
+
+      - name: Lint
+        run: make kotlin_lint
+
+      - name: Test
+        run: make test_android

@@ -80,6 +80,9 @@ interface ProgressDao {
 
     @Update
     suspend fun update(progress: PuzzleProgress)
+
+    @Query("DELETE FROM puzzle_progress")
+    suspend fun deleteAll()
 }
 
 class Converters {

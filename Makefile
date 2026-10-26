@@ -9,6 +9,7 @@ BLOCKLIST_DIR := data/blocklists
 BANK_FILE     := data/bank/puzzles.json
 GUESS_DIR     := data/bank/guesses
 SCREENSHOTS   := ios/build/screenshots
+PLAY_ASSETS   := android/build/play
 HEADER        := ios/build/app-store/header.png
 
 # BANK
@@ -118,17 +119,26 @@ bank: data
 
 ## RELEASE
 
+.PHONY: screenshots
+screenshots: screenshots_ios screenshots_android
+
 # Captures the App Store screenshots into a folder per display size under SCREENSHOTS. Medium
 # (1206x2622) is the size App Store Connect requires; large (1320x2868) is optional.
-.PHONY: screenshots
-screenshots:
+.PHONY: screenshots_ios
+screenshots_ios:
 	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/medium "iPhone 18 Pro"
 	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/large "iPhone 18 Pro Max"
 
-# Draws the App Store product page header image into HEADER.
+# Captures the Play Store phone screenshots (1080x1920) into PLAY_ASSETS.
+.PHONY: screenshots_android
+screenshots_android:
+	$(SCRIPTS_DIR)/screenshots_android.sh $(ANDROID_DIR) $(PLAY_ASSETS)/screenshots
+
+# Draws the store banners: the App Store header into HEADER and the Play feature graphic into
+# PLAY_ASSETS.
 .PHONY: header
 header:
-	$(SCRIPTS_DIR)/make_header.sh $(IOS_DIR) $(HEADER)
+	$(SCRIPTS_DIR)/make_header.sh $(IOS_DIR) $(HEADER) $(PLAY_ASSETS)/feature-graphic.png
 
 # Uploads a Release build to App Store Connect and tags it. Submit and release it there by hand.
 .PHONY: release

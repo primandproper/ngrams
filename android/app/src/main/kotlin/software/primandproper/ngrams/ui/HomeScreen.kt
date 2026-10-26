@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -342,10 +343,11 @@ private fun DayList(
         entries: List<HomeEntry>,
         labeling: RowLabeling,
     ) = items(entries, key = { "${labeling.section}-${it.id}" }) { entry ->
-        EntryRow(entry, labeling, state.streaks[entry.line] ?: 0, Modifier.clickable { onOpen(entry) })
+        // The screenshot test finds rows by tag, since their titles repeat across sections.
+        EntryRow(entry, labeling, state.streaks[entry.line] ?: 0, Modifier.testTag(entry.id).clickable { onOpen(entry) })
     }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+    LazyColumn(Modifier.fillMaxSize().testTag("home"), contentPadding = padding) {
         if (state.entries.isEmpty()) {
             item { Text("No puzzles for ${state.day.name(includingYear = true)}.", modifier = Modifier.padding(16.dp)) }
         }

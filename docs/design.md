@@ -410,9 +410,15 @@ bundled copy as fallback" changes nothing about the format.
 
 ## Distribution and legal
 
-- Personal install via Xcode for now, signed with my existing paid developer team, so a
-  development build keeps launching for the year its provisioning profile lasts rather than
-  the 7 days a free account allows. TestFlight builds expire after 90 days.
+- `make ios_install` puts a Debug build on my phone, signed with my paid developer team, so it
+  keeps launching for the year its provisioning profile lasts. TestFlight builds expire after
+  90 days.
+- `make release` uploads a Release build to App Store Connect with the API key from 1Password,
+  numbered by commit count, and tags the commit `v<version>+<build>`. It refuses a dirty tree,
+  anything but `origin/main`, and a bank with under 60 days left. Submitting for review and
+  releasing stay manual in App Store Connect, with "manually release this version" chosen.
+- The word lists keep their own licenses (`NOTICE`); the app credits them under Settings,
+  Acknowledgements.
 - Going public means no use of any original's name, and a visual design that is
   clearly its own. App Review guideline 4.1 (copycats) can reject apps that look too much like
   an existing game, and NYT pursued Wordle clones in 2022.

@@ -14,6 +14,13 @@ BANK_START := 2026-10-23
 BANK_DAYS  := 90
 BANK_SEED  := 1
 
+# RELEASE
+# App Store Connect API key; the .p8 itself lives in 1Password under ASC_KEY_ITEM.
+ASC_KEY_ID     := 9ZW28F2324
+ASC_ISSUER_ID  := ddeb2389-f4e3-4804-a04e-4b5fd77b1a4e
+ASC_KEY_ITEM   := hd444byt2soiz5hivq2rx6twqy
+MIN_BANK_DAYS  := 60
+
 # CONTAINER VERSIONS
 LINTER_IMAGE     := golangci/golangci-lint:v2.14.0
 SHELLCHECK_IMAGE := koalaman/shellcheck:stable
@@ -93,3 +100,10 @@ icon:
 bank: data
 	@$(SCRIPTS_DIR)/generate_bank.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(BANK_FILE) $(GUESS_DIR) \
 		-start $(BANK_START) -days $(BANK_DAYS) -seed $(BANK_SEED) $(ARGS)
+
+## RELEASE
+
+# Uploads a Release build to App Store Connect and tags it. Submit and release it there by hand.
+.PHONY: release
+release:
+	@$(SCRIPTS_DIR)/release.sh $(IOS_DIR) $(BANK_FILE) $(ASC_KEY_ID) $(ASC_ISSUER_ID) $(ASC_KEY_ITEM) $(MIN_BANK_DAYS)

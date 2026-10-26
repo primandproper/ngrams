@@ -1,99 +1,170 @@
-# What goes in each part of the App Store Connect submission form, in the order the form asks.
-# This is a reference to copy from by hand; nothing reads it. Limits are Apple's.
+# What goes in each store's submission forms, in the order each asks. This is a reference to copy
+# from by hand; nothing reads it.
 
-app_information:
-  # 2-30 characters. Localizable.
-  name: n-grams
-  # 30 characters. Localizable.
-  subtitle: Daily word puzzles, no ads
-  bundle_id: software.primandproper.ngrams
-  # Also in the App Store link ShareText appends to every share.
-  apple_id: "6826954747"
-  primary_language: English (U.S.)
-  category:
-    primary: Games
-    subcategories: [Word, Puzzle]
-  # The word lists in NOTICE are third-party content, used under their licenses.
-  content_rights: Yes, it contains third-party content, and I have the necessary rights
-  # Answer every questionnaire item none or no: no ads, no web access, no user-generated content,
-  # no messaging. Offensive words are blocked from every puzzle (data/blocklists/).
-  age_rating: 4+
-  privacy_policy_url: https://primandproper.software/ngrams/privacy/
+# App Store Connect's forms. Limits are Apple's.
+app_store:
+  app_information:
+    # 2-30 characters. Localizable.
+    name: n-grams
+    # 30 characters. Localizable.
+    subtitle: Daily word puzzles, no ads
+    bundle_id: software.primandproper.ngrams
+    # The App Store link is https://apps.apple.com/app/id6826954747.
+    apple_id: "6826954747"
+    primary_language: English (U.S.)
+    category:
+      primary: Games
+      subcategories: [Word, Puzzle]
+    # The word lists in NOTICE are third-party content, used under their licenses.
+    content_rights: Yes, it contains third-party content, and I have the necessary rights
+    # Answer every questionnaire item none or no: no ads, no web access, no user-generated content,
+    # no messaging. Offensive words are blocked from every puzzle (data/blocklists/).
+    age_rating: 4+
+    privacy_policy_url: https://primandproper.software/ngrams/privacy/
 
-pricing_and_availability:
-  price: Free
-  availability: All countries and regions
+  pricing_and_availability:
+    price: Free
+    availability: All countries and regions
 
-app_privacy:
-  # Progress and settings stay on the device; the app makes no network requests.
-  data_collection: Data Not Collected
-  privacy_policy_url: https://primandproper.software/ngrams/privacy/
+  app_privacy:
+    # Progress and settings stay on the device; the app makes no network requests.
+    data_collection: Data Not Collected
+    privacy_policy_url: https://primandproper.software/ngrams/privacy/
 
-product_page_information:
-  # Header and search results: from make header. 21:9, 3840x1646, no alpha. Apple reviews it.
-  header: ios/build/app-store/header.png
+  product_page_information:
+    # Header and search results: from make header. 21:9, 3840x1646, no alpha. Apple reviews it.
+    header: ios/build/app-store/header.png
 
-version:
-  # From make screenshots, uploaded in file-name order. Up to 10 per size.
-  screenshots:
-    # Required: iPhone with Dynamic Island (medium display), 1206x2622.
-    medium: ios/build/screenshots/medium/
-    # Optional: iPhone with Dynamic Island (large display), 1320x2868. Without it, App Store
-    # Connect scales the medium set.
-    large: ios/build/screenshots/large/
+  version:
+    # From make screenshots, uploaded in file-name order. Up to 10 per size.
+    screenshots:
+      # Required: iPhone with Dynamic Island (medium display), 1206x2622.
+      medium: ios/build/screenshots/medium/
+      # Optional: iPhone with Dynamic Island (large display), 1320x2868. Without it, App Store
+      # Connect scales the medium set.
+      large: ios/build/screenshots/large/
 
-  # 170 characters. Editable any time, without a new version.
-  promotional_text: >-
-    Nine new puzzles every day, in English and Spanish: crack the password, rebuild words from
-    tiles, and find the pangram. No ads, no accounts, no upsells.
+    # 170 characters. Editable any time, without a new version.
+    promotional_text: >-
+      Nine new puzzles every day, in English and Spanish: crack the password, rebuild words from
+      tiles, and find the pangram. No ads, no accounts, no upsells.
 
-  # 4000 characters, plain text.
-  description: |-
-    n-grams is a daily set of word puzzles with nothing else attached: no ads, no accounts, no energy meters, and nothing to buy.
+    # 4000 characters, plain text.
+    description: |-
+      n-grams is a daily set of word puzzles with nothing else attached: no ads, no accounts, no energy meters, and nothing to buy.
 
-    Three games, each at three sizes, so n varies:
+      Three games, each at three sizes, so n varies:
 
-    PASSWORD
-    Guess the hidden word in six tries. Each guess shows which letters are in the right spot and which are in the word somewhere else. Play it at 4, 5, or 6 letters.
+      PASSWORD
+      Guess the hidden word in six tries. Each guess shows which letters are in the right spot and which are in the word somewhere else. Play it at 4, 5, or 6 letters.
 
-    TILES
-    A board of word fragments hides long words that use every tile. Build any word you can from the tiles, find every hidden word, and reach the target score for a star. Hidden words run 3, 4, or 5 tiles long.
+      TILES
+      A board of word fragments hides long words that use every tile. Build any word you can from the tiles, find every hidden word, and reach the target score for a star. Hidden words run 3, 4, or 5 tiles long.
 
-    PANGRAM
-    Spell words from a wheel of letters, always using the one in the middle. Find the pangrams, the words that use every letter, and reach the target score for a star. Boards have 6, 7, or 8 letters.
+      PANGRAM
+      Spell words from a wheel of letters, always using the one in the middle. Find the pangrams, the words that use every letter, and reach the target score for a star. Boards have 6, 7, or 8 letters.
 
-    ENGLISH AND SPANISH
-    Every game comes in English and in Mexican Spanish, with its own word lists and a keyboard with Ñ. Play one language or both.
+      ENGLISH AND SPANISH
+      Every game comes in English and in Mexican Spanish, with its own word lists and a keyboard with Ñ. Play one language or both.
 
-    EVERY DAY
-    New puzzles arrive at midnight wherever you are, the same for everyone. Missed a day? Go back and play it. Streaks and stats track every game, size, and language on its own, and sharing your results never spoils the answers.
+      EVERY DAY
+      New puzzles arrive at midnight wherever you are, the same for everyone. Missed a day? Go back and play it. Streaks and stats track every game, size, and language on its own, and sharing your results never spoils the answers.
 
-    HARD MODES
-    Each game has an optional hard mode, for when the regular rules start to feel easy.
+      HARD MODES
+      Each game has an optional hard mode, for when the regular rules start to feel easy.
 
-    PRIVATE BY DESIGN
-    Every puzzle ships inside the app, so it works offline. Your progress stays on your iPhone, and the app collects nothing about you.
+      PRIVATE BY DESIGN
+      Every puzzle ships inside the app, so it works offline. Your progress stays on your iPhone, and the app collects nothing about you.
 
-  # 100 bytes, comma-separated. Don't repeat the app's name or use other apps' names. Each
-  # keyword must be longer than two characters.
-  keywords: word,puzzle,daily,guess,anagram,spelling,letters,tiles,pangram,vocabulary,spanish,español,offline
+    # 100 bytes, comma-separated. Don't repeat the app's name or use other apps' names. Each
+    # keyword must be longer than two characters.
+    keywords: word,puzzle,daily,guess,anagram,spelling,letters,tiles,pangram,vocabulary,spanish,español,offline
 
-  # Must lead to real contact information.
-  support_url: https://primandproper.software/ngrams/
-  marketing_url: ""
-  # "Year plus owner"; the form adds the ©.
-  copyright: 2026 Jeffrey D
-  # Not asked on the first version. 4000 characters.
-  whats_new: ""
-  version_release: Manually release this version
-  # ITSAppUsesNonExemptEncryption is false in the Info.plist, so the form doesn't ask.
-  export_compliance: No non-exempt encryption
+    # Must lead to real contact information.
+    support_url: https://primandproper.software/ngrams/
+    marketing_url: ""
+    # "Year plus owner"; the form adds the ©.
+    copyright: 2026 Jeffrey D
+    # Not asked on the first version. 4000 characters.
+    whats_new: ""
+    version_release: Manually release this version
+    # ITSAppUsesNonExemptEncryption is false in the Info.plist, so the form doesn't ask.
+    export_compliance: No non-exempt encryption
 
-app_review:
-  # Name, email, and phone (international format, leading +) go in the form, not this public
-  # file. They carry over to later versions.
-  contact: Entered in App Store Connect
-  sign_in_required: false
-  # 4000 bytes.
-  notes: |-
-    No account or sign-in. Every puzzle is bundled with the app, so it works offline and makes no network requests. Home lists today's puzzles; the arrows and calendar at the bottom open earlier days. Settings turns each language and each game's hard mode on or off.
+  app_review:
+    # Name, email, and phone (international format, leading +) go in the form, not this public
+    # file. They carry over to later versions.
+    contact: Entered in App Store Connect
+    sign_in_required: false
+    # 4000 bytes.
+    notes: |-
+      No account or sign-in. Every puzzle is bundled with the app, so it works offline and makes no network requests. Home lists today's puzzles; the arrows and calendar at the bottom open earlier days. Settings turns each language and each game's hard mode on or off.
+
+# The Play Console's forms, in the order it asks. Limits are Google's.
+google_play:
+  package_name: software.primandproper.ngrams
+
+  main_store_listing:
+    # 30 characters.
+    app_name: n-grams
+    # 80 characters.
+    short_description: Daily word puzzles in English and Spanish. No ads, no accounts.
+    # 4000 characters, plain text.
+    full_description: |-
+      n-grams is a daily set of word puzzles with nothing else attached: no ads, no accounts, no energy meters, and nothing to buy.
+
+      Three games, each at three sizes, so n varies:
+
+      PASSWORD
+      Guess the hidden word in six tries. Each guess shows which letters are in the right spot and which are in the word somewhere else. Play it at 4, 5, or 6 letters.
+
+      TILES
+      A board of word fragments hides long words that use every tile. Build any word you can from the tiles, find every hidden word, and reach the target score for a star. Hidden words run 3, 4, or 5 tiles long.
+
+      PANGRAM
+      Spell words from a wheel of letters, always using the one in the middle. Find the pangrams, the words that use every letter, and reach the target score for a star. Boards have 6, 7, or 8 letters.
+
+      ENGLISH AND SPANISH
+      Every game comes in English and in Mexican Spanish, with its own word lists and a keyboard with Ñ. Play one language or both.
+
+      EVERY DAY
+      New puzzles arrive at midnight wherever you are, the same for everyone. Missed a day? Go back and play it. Streaks and stats track every game, size, and language on its own, and sharing your results never spoils the answers.
+
+      HARD MODES
+      Each game has an optional hard mode, for when the regular rules start to feel easy.
+
+      PRIVATE BY DESIGN
+      Every puzzle ships inside the app, so it works offline. Your progress stays on your phone, and the app collects nothing about you.
+    # 512x512 32-bit PNG with alpha, from make icon.
+    app_icon: android/app/src/main/ic_launcher-playstore.png
+    # 1024x500 PNG, no alpha, from make header.
+    feature_graphic: android/build/play/feature-graphic.png
+    # 2-8 phone screenshots, from make screenshots, uploaded in file-name order. 1080x1920 (9:16):
+    # neither side may be more than twice the other.
+    phone_screenshots: android/build/play/screenshots/
+
+  store_settings:
+    category: Game › Word
+    # Up to 5, chosen from Play's list.
+    tags: [Word, Puzzle, Casual, Offline, Brain games]
+    email: contact@primandproper.software
+    website: https://primandproper.software/ngrams/
+
+  app_content:
+    privacy_policy_url: https://primandproper.software/ngrams/privacy/
+    # No sign-in, so every feature is open to review.
+    app_access: All functionality is available without any access restrictions
+    ads: No, my app does not contain ads
+    # The IARC questionnaire: answer no to violence, fear, sexuality, gambling, language, drugs,
+    # user interaction, sharing location, and digital purchases. Offensive words are blocked from
+    # every puzzle (data/blocklists/). Expect Everyone / PEGI 3.
+    content_rating: Everyone
+    # Ages under 13 would bring the app under Play's Families policy and its extra review.
+    target_audience: 13-15, 16-17, 18 and over
+    data_safety:
+      # Progress and settings stay on the device; the app makes no network requests.
+      collects_or_shares_data: No
+    news_app: No
+    government_app: No
+    financial_features: None
+    health_features: None

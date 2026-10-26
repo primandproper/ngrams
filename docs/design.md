@@ -201,11 +201,28 @@ flowchart LR
 ```text
 generator/   Go module: word list processing, puzzle generation, bank output
 ios/         Xcode project
+android/     Gradle project: :core (rules, plain Kotlin) and :app (Compose)
+testdata/    cases the iOS and Android tests both run
 data/        per-language source word lists and blocklists, generated bank
 docs/        this file
 ```
 
 `make format lint test` covers every part of the repo. `make bank` rebuilds the bank.
+
+### Android
+
+A native Kotlin and Jetpack Compose port, not a shared codebase (2026-10-26). The bank and guess
+lists are already platform-neutral, so Android reads `data/bank` as assets, and the rules are a
+small, stable port. Skip (SwiftUI to Compose) and the Swift SDK for Android were considered: Skip
+would put the iOS app on its toolchain for a UI it may not cover (the wheel, the keyboards), and
+calling Swift from Kotlin costs more than porting 1,400 lines of pure logic.
+
+What keeps the two from drifting is `testdata/`: rules and scoring for every game, hard-mode
+hints, stats and streaks, share text, and seeded layouts, as JSON cases both test suites run. The
+layouts reproduce Swift's SplitMix64, `next(upperBound:)`, and `shuffle(using:)` bit for bit, so
+a day's board starts in the same order on both platforms. Each app otherwise follows its own
+platform's design language. Shares end with one link for both stores,
+`https://primandproper.software/ngrams/`.
 
 ## Generator
 

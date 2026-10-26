@@ -334,6 +334,13 @@ seed and source data rebuild the same bank. No target repeats within a language.
 shuffled, though the app lays them out itself. Each day sits in its own block with one word
 per line, so a rebuilt bank diffs by eye; `make bank ARGS=-print` prints every board for review.
 
+A rebuild never changes a day a player may have reached: saved progress is keyed by date, so a changed
+board would sit under someone's old guesses. Every day through today in the earliest time zone
+(UTC+14) is frozen, copied as it was from the committed bank, and the days after it repeat
+nothing the frozen days used. Each kind draws from its own random stream per day, so freezing
+leaves the later days as a full rebuild would make them, and a rebuild with nothing changed
+diffs clean.
+
 Accepted `word` guesses ship as one newline-separated text file per `(lang, n)` in
 `data/bank/guesses/` (`en-5.txt`), with that length's blocked words beside it
 (`en-5-blocked.txt`), loaded into a `Set<String>` when a puzzle opens.

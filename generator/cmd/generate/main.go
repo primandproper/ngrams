@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -41,6 +42,8 @@ func run(args []string) error {
 	wordPool := fs.Int("word-pool", 1500, "how many of the most common answers of each length a word puzzle picks from")
 	start := fs.String("start", "", "first day of the bank, YYYY-MM-DD")
 	days := fs.Int("days", 90, "days of puzzles to build")
+	freezeThrough := fs.String("freeze-through", latestDate(),
+		"keep -out's days through this date, YYYY-MM-DD, as players may have played them; empty keeps none")
 	seed := fs.Uint64("seed", 1, "random seed; the same seed and data rebuild the same bank")
 	tries := fs.Int("tries", 40, "independent hill climbs per board")
 	steps := fs.Int("steps", 150, "moves per hill climb")
@@ -81,9 +84,18 @@ func run(args []string) error {
 		banned[fragment] = true
 	}
 
+	frozen, err := loadFrozen(*out, *freezeThrough)
+	if err != nil {
+		return err
+	}
+	if len(frozen) > 0 {
+		logger.Info("froze days", "through", frozen[len(frozen)-1].Date, "days", len(frozen))
+	}
+
 	cfg := &bank.BuildConfig{
 		Start:  startDate,
 		Logger: logger,
+		Frozen: frozen,
 		Search: tiles.SearchConfig{
 			Banned:    banned,
 			MinCommon: *minCommon,
@@ -144,6 +156,41 @@ func run(args []string) error {
 	}
 
 	return nil
+}
+
+// latestDate is the date in the earliest time zone, UTC+14: the last day any player could
+// have reached.
+func latestDate() string {
+	return time.Now().In(time.FixedZone("UTC+14", 14*60*60)).Format(time.DateOnly)
+}
+
+// loadFrozen reads the bank at path and returns its days through the date through. A
+// missing bank or an empty through freezes nothing.
+func loadFrozen(path, through string) ([]bank.Day, error) {
+	if through == "" {
+		return nil, nil
+	}
+	if _, err := time.Parse(time.DateOnly, through); err != nil {
+		return nil, fmt.Errorf("parsing -freeze-through %q: %w", through, err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	var existing bank.Bank
+	if err = json.Unmarshal(raw, &existing); err != nil {
+		return nil, fmt.Errorf("decoding %s: %w", path, err)
+	}
+
+	kept := 0
+	for kept < len(existing.Days) && existing.Days[kept].Date <= through {
+		kept++
+	}
+	return existing.Days[:kept], nil
 }
 
 // writeGuesses writes one word size's accepted guesses as <lang>-<n>.txt and its blocked

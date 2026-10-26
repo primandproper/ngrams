@@ -4,11 +4,13 @@ package bank
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
 	"log/slog"
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/primandproper/ngrams/generator/internal/lexicon"
@@ -109,9 +111,13 @@ type (
 
 	// BuildConfig is everything that shapes a bank.
 	BuildConfig struct {
-		_            struct{} `json:"-"`
-		Start        time.Time
-		Logger       *slog.Logger
+		_      struct{} `json:"-"`
+		Start  time.Time
+		Logger *slog.Logger
+		// Frozen are the first days of an earlier bank, kept as they were because players
+		// may already have played them. Only puzzles of the configured languages, kinds, and
+		// sizes are kept, and no later puzzle repeats what they used.
+		Frozen       []Day
 		Languages    []Language
 		Sizes        []Size
 		WordSizes    []int
@@ -123,24 +129,34 @@ type (
 	}
 )
 
+// ErrFrozenDays means the frozen days don't fit the bank being built.
+var ErrFrozenDays = errors.New("frozen days don't fit the bank")
+
 // Build generates cfg.Days days of puzzles from cfg.Start, for every language, kind, and
-// size. No target or answer repeats within a language. The bank depends only on the
-// config and the word data, so the same seed rebuilds the same bank, and each kind draws
-// from its own random stream, so adding a kind leaves the others' puzzles as they were.
+// size, after any frozen days. No target or answer repeats within a language. The bank
+// depends only on the config and the word data, so the same seed rebuilds the same bank.
+// Each kind draws from its own random stream each day, so adding a kind leaves the others'
+// puzzles as they were, and freezing days leaves the days after them as they were.
 func Build(cfg *BuildConfig) (*Bank, error) {
 	logger := cfg.Logger
 	if logger == nil {
 		logger = slog.New(slog.DiscardHandler)
 	}
 
+	if len(cfg.Frozen) > cfg.Days {
+		return nil, fmt.Errorf("%w: %d frozen days in a %d-day bank", ErrFrozenDays, len(cfg.Frozen), cfg.Days)
+	}
 	b := &Bank{Version: Version, Seed: cfg.Seed, Days: make([]Day, cfg.Days)}
 	for d := range b.Days {
 		b.Days[d].Date = cfg.Start.AddDate(0, 0, d).Format(dateLayout)
+		if d < len(cfg.Frozen) && cfg.Frozen[d].Date != b.Days[d].Date {
+			return nil, fmt.Errorf("%w: frozen day %d is %s, not %s", ErrFrozenDays, d, cfg.Frozen[d].Date, b.Days[d].Date)
+		}
 	}
 
 	for _, lang := range cfg.Languages {
 		started := time.Now()
-		rng := rand.New(rand.NewPCG(cfg.Seed, langSeed(lang.Code))) //nolint:gosec // banks must be reproducible from a seed, not secret
+		used := keepFrozen(cfg, lang.Code, b)
 
 		generators := make([]*tiles.Generator, len(cfg.Sizes))
 		for i, size := range cfg.Sizes {
@@ -150,16 +166,16 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 			logger.Info("indexed targets", "lang", lang.Code, "n", size.N, "pool", generators[i].PoolSize())
 		}
 
-		used := map[string]bool{}
-		for d := range b.Days {
+		for d := len(cfg.Frozen); d < len(b.Days); d++ {
 			day := &b.Days[d]
+			rng := dayRand(cfg.Seed, lang.Code, day.Date)
 			for i, size := range cfg.Sizes {
-				board, err := generators[i].Best(rng.Uint64(), used)
+				board, err := generators[i].Best(rng.Uint64(), used.tiles)
 				if err != nil {
 					return nil, fmt.Errorf("%s n=%d on %s: %w", lang.Code, size.N, day.Date, err)
 				}
 				for _, target := range board.Targets {
-					used[target] = true
+					used.tiles[target] = true
 				}
 
 				day.Puzzles = append(day.Puzzles, tilesPuzzle(lang, size.N, board, rng))
@@ -172,10 +188,10 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 			}
 		}
 
-		if err := buildWords(cfg, lang, b, logger); err != nil {
+		if err := buildWords(cfg, lang, b, used.words, logger); err != nil {
 			return nil, err
 		}
-		if err := buildPangrams(cfg, lang, b, logger); err != nil {
+		if err := buildPangrams(cfg, lang, b, used.pangrams, logger); err != nil {
 			return nil, err
 		}
 
@@ -186,18 +202,16 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 	return b, nil
 }
 
-func buildWords(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) error {
-	rng := rand.New(rand.NewPCG(cfg.Seed, langSeed(lang.Code+"/"+KindWord))) //nolint:gosec // banks must be reproducible from a seed, not secret
-
+func buildWords(cfg *BuildConfig, lang Language, b *Bank, used map[string]bool, logger *slog.Logger) error {
 	generators := make([]*word.Generator, len(cfg.WordSizes))
 	for i, n := range cfg.WordSizes {
 		generators[i] = word.NewGenerator(lang.Lexicon, n, cfg.WordPool)
 		logger.Info("pooled answers", "lang", lang.Code, "n", n, "pool", generators[i].PoolSize())
 	}
 
-	used := map[string]bool{}
-	for d := range b.Days {
+	for d := len(cfg.Frozen); d < len(b.Days); d++ {
 		day := &b.Days[d]
+		rng := dayRand(cfg.Seed, lang.Code+"/"+KindWord, day.Date)
 		for i, n := range cfg.WordSizes {
 			answer, err := generators[i].Pick(rng, used)
 			if err != nil {
@@ -216,18 +230,16 @@ func buildWords(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) e
 	return nil
 }
 
-func buildPangrams(cfg *BuildConfig, lang Language, b *Bank, logger *slog.Logger) error {
-	rng := rand.New(rand.NewPCG(cfg.Seed, langSeed(lang.Code+"/"+KindPangram))) //nolint:gosec // banks must be reproducible from a seed, not secret
-
+func buildPangrams(cfg *BuildConfig, lang Language, b *Bank, used map[string]bool, logger *slog.Logger) error {
 	generators := make([]*pangram.Generator, len(cfg.PangramSizes))
 	for i, size := range cfg.PangramSizes {
 		generators[i] = pangram.NewGenerator(lang.Lexicon, size.N, size.MinCommon, size.MaxCommon)
 		logger.Info("indexed pangram seeds", "lang", lang.Code, "n", size.N, "pool", generators[i].PoolSize())
 	}
 
-	used := map[string]bool{}
-	for d := range b.Days {
+	for d := len(cfg.Frozen); d < len(b.Days); d++ {
 		day := &b.Days[d]
+		rng := dayRand(cfg.Seed, lang.Code+"/"+KindPangram, day.Date)
 		for i, size := range cfg.PangramSizes {
 			board, err := generators[i].Best(rng, used)
 			if err != nil {
@@ -271,10 +283,63 @@ func pangramPuzzle(lang Language, n int, board *pangram.Board) Puzzle {
 	return p
 }
 
-func langSeed(code string) uint64 {
+// usedSets are what a language's puzzles have used so far, per kind: tiles targets, word
+// answers, and pangram letter sets.
+type usedSets struct {
+	tiles    map[string]bool
+	words    map[string]bool
+	pangrams map[string]bool
+}
+
+// keepFrozen copies lang's configured puzzles from the frozen days into b and returns
+// what they used.
+func keepFrozen(cfg *BuildConfig, lang string, b *Bank) usedSets {
+	used := usedSets{tiles: map[string]bool{}, words: map[string]bool{}, pangrams: map[string]bool{}}
+	configured := map[string]map[int]bool{KindTiles: {}, KindWord: {}, KindPangram: {}}
+	for _, size := range cfg.Sizes {
+		configured[KindTiles][size.N] = true
+	}
+	for _, n := range cfg.WordSizes {
+		configured[KindWord][n] = true
+	}
+	for _, size := range cfg.PangramSizes {
+		configured[KindPangram][size.N] = true
+	}
+
+	for d := range cfg.Frozen {
+		for i := range cfg.Frozen[d].Puzzles {
+			p := &cfg.Frozen[d].Puzzles[i]
+			if p.Lang != lang || !configured[p.Kind][p.N] {
+				continue
+			}
+			b.Days[d].Puzzles = append(b.Days[d].Puzzles, *p)
+
+			switch p.Kind {
+			case KindTiles:
+				for _, target := range p.Targets {
+					var spelled strings.Builder
+					for _, tile := range target {
+						spelled.WriteString(p.Tiles[tile])
+					}
+					used.tiles[spelled.String()] = true
+				}
+			case KindWord:
+				used.words[p.Answer] = true
+			case KindPangram:
+				used.pangrams[pangram.Key([]rune(strings.Join(p.Letters, "")))] = true
+			}
+		}
+	}
+
+	return used
+}
+
+// dayRand is one stream's random source for one day, so no day's puzzles depend on how
+// much randomness the days before it drew.
+func dayRand(seed uint64, stream, date string) *rand.Rand {
 	h := fnv.New64a()
-	_, _ = h.Write([]byte(code)) // a hash.Hash never returns an error
-	return h.Sum64()
+	_, _ = h.Write([]byte(stream + "@" + date))   // a hash.Hash never returns an error
+	return rand.New(rand.NewPCG(seed, h.Sum64())) //nolint:gosec // banks must be reproducible from a seed, not secret
 }
 
 // tilesPuzzle converts a board, shuffling its tiles so their order gives no target away.

@@ -272,6 +272,104 @@ func TestBuild_pangrams(T *testing.T) {
 	})
 }
 
+func TestBuild_frozen(T *testing.T) {
+	T.Parallel()
+
+	everyKind := func() *BuildConfig {
+		cfg := testBuildConfig()
+		cfg.WordSizes = []int{4, 5}
+		cfg.WordPool = 10
+		cfg.PangramSizes = []PangramSize{{N: 4, MinCommon: 2, MaxCommon: 2}}
+		return cfg
+	}
+
+	T.Run("keeps frozen days and builds the rest as a full rebuild would", func(t *testing.T) {
+		t.Parallel()
+
+		full, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := everyKind()
+		cfg.Frozen = full.Days[:1]
+		rebuilt, err := Build(cfg)
+		must.NoError(t, err)
+
+		must.Eq(t, full, rebuilt)
+	})
+
+	T.Run("keeps frozen days through a change and repeats nothing a kind used", func(t *testing.T) {
+		t.Parallel()
+
+		before, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := everyKind()
+		cfg.Seed = 8
+		cfg.Frozen = before.Days[:1]
+		after, err := Build(cfg)
+		must.NoError(t, err)
+
+		must.Eq(t, before.Days[0], after.Days[0])
+		seen := map[string]bool{}
+		for _, day := range after.Days {
+			for i := range day.Puzzles {
+				p := &day.Puzzles[i]
+				used := []string{p.Answer, strings.Join(p.Letters, "")}
+				for _, target := range p.Targets {
+					used = append(used, joinTiles(p, target))
+				}
+				for _, u := range used {
+					if u == "" {
+						continue
+					}
+					key := p.Kind + ":" + u
+					must.False(t, seen[key], must.Sprintf("%s repeated", key))
+					seen[key] = true
+				}
+			}
+		}
+	})
+
+	T.Run("drops frozen puzzles of kinds no longer built", func(t *testing.T) {
+		t.Parallel()
+
+		full, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := testBuildConfig()
+		cfg.Frozen = full.Days[:1]
+		tilesOnly, err := Build(cfg)
+		must.NoError(t, err)
+
+		must.Eq(t, full.Days[0].Puzzles[:2], tilesOnly.Days[0].Puzzles)
+	})
+
+	T.Run("fails when the frozen days don't start the bank", func(t *testing.T) {
+		t.Parallel()
+
+		full, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := everyKind()
+		cfg.Frozen = full.Days[1:]
+		_, err = Build(cfg)
+		must.ErrorIs(t, err, ErrFrozenDays)
+	})
+
+	T.Run("fails with more frozen days than the bank holds", func(t *testing.T) {
+		t.Parallel()
+
+		full, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := everyKind()
+		cfg.Days = 1
+		cfg.Frozen = full.Days
+		_, err = Build(cfg)
+		must.ErrorIs(t, err, ErrFrozenDays)
+	})
+}
+
 func TestTilesPuzzle(T *testing.T) {
 	T.Parallel()
 

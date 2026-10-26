@@ -1,0 +1,11 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# Composables are named like types, as Compose's own API is.
+ktlint_function_naming_ignore_when_annotated_with = Composable

@@ -1,0 +1,6 @@
+# The same toolchain as primandproper/primitives-kt. Scripts run Gradle through `mise exec`, which
+# also sets JAVA_HOME and ANDROID_HOME.
+[tools]
+android-sdk = "21.0"
+gradle = "8.11"
+java = "temurin-17"

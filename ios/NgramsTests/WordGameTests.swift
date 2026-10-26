@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import Ngrams
@@ -33,6 +34,20 @@ struct WordGameTests {
     typed("llama", into: &game)
     #expect(game.current.isEmpty)
     #expect(game.submit(against: wordList) == .over)
+  }
+
+  @Test("marks every shared case the way the Android app does")
+  func sharedMarks() throws {
+    let url = try #require(
+      Bundle(for: BundleToken.self).url(
+        forResource: "word_marks", withExtension: "json", subdirectory: "testdata"))
+    let fixture = try JSONDecoder().decode(WordMarksFixture.self, from: Data(contentsOf: url))
+
+    #expect(!fixture.cases.isEmpty)
+    for testCase in fixture.cases {
+      let marks = WordGame.marks(for: testCase.guess, answer: testCase.answer).map(\.fixtureName)
+      #expect(marks == testCase.marks, "\(testCase.guess) against \(testCase.answer)")
+    }
   }
 
   @Test("marks a repeated letter only as often as the answer has it")
@@ -146,6 +161,31 @@ struct GuessListTests {
         #expect(list.accepted.count > 1000)
         #expect(list.accepted.allSatisfy { $0.count == n })
       }
+    }
+  }
+}
+
+/// testdata/word_marks.json, the Password marking cases the Android tests run too.
+private struct WordMarksFixture: Decodable {
+  struct Case: Decodable {
+    let answer: String
+    let guess: String
+    let marks: [String]
+  }
+
+  let cases: [Case]
+}
+
+/// Finds the test bundle, which carries testdata/.
+private final class BundleToken {}
+
+extension LetterMark {
+  /// The mark's name in the shared fixtures.
+  fileprivate var fixtureName: String {
+    switch self {
+    case .correct: "correct"
+    case .present: "present"
+    case .absent: "absent"
     }
   }
 }

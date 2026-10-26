@@ -1,0 +1,16 @@
+{
+  "description": "Password marks: each guess against its answer, one mark per letter. Correct letters are marked first; a misplaced letter is present only while the answer has copies of it left over. The iOS and Android tests both run every case.",
+  "cases": [
+    {"answer": "llama", "guess": "llama", "marks": ["correct", "correct", "correct", "correct", "correct"]},
+    {"answer": "llama", "guess": "cramp", "marks": ["absent", "absent", "correct", "correct", "absent"]},
+    {"answer": "llama", "guess": "lolls", "marks": ["correct", "absent", "present", "absent", "absent"]},
+    {"answer": "llama", "guess": "label", "marks": ["correct", "present", "absent", "absent", "present"]},
+    {"answer": "llama", "guess": "allay", "marks": ["present", "correct", "present", "present", "absent"]},
+    {"answer": "llama", "guess": "plaza", "marks": ["absent", "correct", "correct", "absent", "correct"]},
+    {"answer": "geese", "guess": "eerie", "marks": ["present", "correct", "absent", "absent", "correct"]},
+    {"answer": "abbey", "guess": "babes", "marks": ["present", "present", "correct", "correct", "absent"]},
+    {"answer": "niño", "guess": "ñoño", "marks": ["absent", "absent", "correct", "correct"]},
+    {"answer": "año", "guess": "ano", "marks": ["correct", "absent", "correct"]},
+    {"answer": "quilt", "guess": "fjord", "marks": ["absent", "absent", "absent", "absent", "absent"]}
+  ]
+}

@@ -29,7 +29,7 @@ struct SettingsView: View {
         Section {
           Toggle("Hard mode", isOn: $wordHardMode)
         } header: {
-          Text("Word")
+          Text("Password")
         } footer: {
           Text(
             "Every guess uses the hints so far: green letters stay put and yellow letters appear somewhere. A puzzle keeps the mode it had at its first guess."

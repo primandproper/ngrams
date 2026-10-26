@@ -10,7 +10,7 @@ struct ShareTextTests {
 
     #expect(
       ShareText.word(game, on: testDay) == """
-        n-grams · Word 🇺🇸 n=5 · Jan 1 · 2/6* ⭐
+        n-grams · Password 🇺🇸 n=5 · Jan 1 · 2/6* ⭐
         ⬛🟦🟦⬛🟦
         🟦🟦🟦🟦🟦
         https://apps.apple.com/app/id6826954747
@@ -21,7 +21,7 @@ struct ShareTextTests {
   func lostWord() {
     let game = WordGame(puzzle: wordPuzzle, guesses: Array(repeating: "cramp", count: 6))
 
-    #expect(ShareText.word(game, on: testDay).hasPrefix("n-grams · Word 🇺🇸 n=5 · Jan 1 · X/6\n"))
+    #expect(ShareText.word(game, on: testDay).hasPrefix("n-grams · Password 🇺🇸 n=5 · Jan 1 · X/6\n"))
   }
 
   @Test("shares a tiles board's progress")
@@ -60,7 +60,7 @@ struct ShareTextTests {
     #expect(
       ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: testDay) == """
         n-grams · Jan 1
-        🇺🇸 Word · n=5 2/6* ⭐
+        🇺🇸 Password · n=5 2/6* ⭐
         🇺🇸 Tiles · n=2 3/50
         https://apps.apple.com/app/id6826954747
         """)

@@ -9,9 +9,7 @@ modeled on games I already like (NYT Wordle, Apple News Quartiles, and NYT Spell
 offered at three sizes, so N varies, in English and Spanish. Nine puzzles a day per language,
 every day.
 
-Built to launch publicly on the App Store. What a launch still needs:
-
-- Final names for the app and the games (see [Open questions](#open-questions)).
+Built to launch publicly on the App Store.
 
 ## Non-goals (for now)
 
@@ -24,9 +22,9 @@ Built to launch publicly on the App Store. What a launch still needs:
 ## Games
 
 The originals' names are trademarks (WORDLE and SPELLING BEE are NYT's, Quartiles is Apple's)
-and must not appear in the app. The in-app names are "Word", "Tiles", and "Pangram", under the
-app name "n-grams"; the first two are placeholders. The app's name and the n in its own text
-("n=4") are always lowercase. Internally the kinds are `word`, `tiles`, and `pangram`.
+and must not appear in the app. The in-app names are "Password", "Tiles", and "Pangram", under
+the app name "n-grams". The app's name and the n in its own text ("n=4") are always lowercase.
+Internally the kinds are `word`, `tiles`, and `pangram`.
 
 | Kind      | Modeled on   | Sizes (N)          | Daily puzzles |
 | --------- | ------------ | ------------------ | ------------- |
@@ -35,7 +33,10 @@ app name "n-grams"; the first two are placeholders. The app's name and the n in 
 | `pangram` | Spelling Bee | 6, 7, 8 letters    | 3             |
 
 "Spellbound" was considered for `pangram` and rejected: Spellbound: A Game of Letters, the same
-game under that name, is already on the App Store (checked 2026-10-24).
+game under that name, is already on the App Store (checked 2026-10-24). "Password" for `word`
+collides with Fremantle's TV word game of that name, and "Magic Word" with several App Store word
+games; the risk was accepted for an in-app label, since only the app's name is searchable
+(2026-10-25).
 
 ### `word`
 
@@ -413,9 +414,8 @@ bundled copy as fallback" changes nothing about the format.
 
 ## Open questions
 
-1. In-app names for `word` and `tiles`. "Word" and "Tiles" are placeholders.
-2. Whether the `tiles` scoring curve and target scores above play well; tune by playing.
-3. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
+1. Whether the `tiles` scoring curve and target scores above play well; tune by playing.
+2. Whether the `es_MX` `.dic` stems are good enough as the Spanish base-form list, or a real
    lemma source is needed. On the boards seen so far, stems as targets read like base forms
    (`musulmán`, `envenenamiento`), including `-mente` adverbs, which the dictionary stores as
    stems.

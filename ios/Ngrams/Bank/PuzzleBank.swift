@@ -29,7 +29,7 @@ nonisolated enum PuzzleKind: String, CaseIterable, Codable, Sendable {
 
   var name: String {
     switch self {
-    case .word: "Word"
+    case .word: "Password"
     case .tiles: "Tiles"
     case .pangram: "Pangram"
     }

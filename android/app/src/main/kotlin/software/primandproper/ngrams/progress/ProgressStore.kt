@@ -3,6 +3,7 @@ package software.primandproper.ngrams.progress
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import software.primandproper.ngrams.core.Logger
+import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 
 /** Reads and writes saved progress. */
@@ -16,6 +17,9 @@ class ProgressStore(
     suspend fun find(key: ProgressKey): PuzzleProgress? = dao.find(key.language.code, key.kind.code, key.n, key.day.toString())
 
     fun onDay(day: PuzzleDay): Flow<List<PuzzleProgress>> = dao.onDay(day.toString())
+
+    /** Everything saved, for stats and streaks. */
+    fun all(): Flow<List<PuzzleProgress>> = dao.all()
 
     /**
      * Appends one entry. Appending rather than replacing means a failed read can never turn into a

@@ -16,16 +16,11 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import software.primandproper.ngrams.core.Language
+import software.primandproper.ngrams.core.PlayRecord
+import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
-
-/** Identifies one puzzle across the bank and saved progress, which share nothing else. */
-data class ProgressKey(
-    val language: Language,
-    val kind: PuzzleKind,
-    val n: Int,
-    val day: PuzzleDay,
-)
+import java.time.Instant
 
 /**
  * What a player has done on one puzzle, the same record the iOS app keeps. Entries are
@@ -47,7 +42,20 @@ data class PuzzleProgress(
     /** Epoch milliseconds when a Password puzzle ended, which decides streaks. */
     val completedAt: Long? = null,
     val updatedAt: Long,
-)
+) {
+    /**
+     * The plain values stats read, or null if a field doesn't parse (saved by a build that knew a
+     * language or game this one doesn't). Records finished before completedAt was saved count their
+     * last play instead.
+     */
+    val record: PlayRecord?
+        get() {
+            val language = Language.fromCode(language) ?: return null
+            val kind = PuzzleKind.fromCode(kind) ?: return null
+            val day = PuzzleDay.parse(day) ?: return null
+            return PlayRecord(ProgressKey(language, kind, n, day), entries, Instant.ofEpochMilli(completedAt ?: updatedAt))
+        }
+}
 
 @Dao
 interface ProgressDao {
@@ -62,6 +70,10 @@ interface ProgressDao {
     /** Every kind, language, and size on one day, updating as progress is saved. */
     @Query("SELECT * FROM puzzle_progress WHERE day = :day")
     fun onDay(day: String): Flow<List<PuzzleProgress>>
+
+    /** Everything saved, for stats and streaks, updating as progress is saved. */
+    @Query("SELECT * FROM puzzle_progress")
+    fun all(): Flow<List<PuzzleProgress>>
 
     @Insert
     suspend fun insert(progress: PuzzleProgress): Long

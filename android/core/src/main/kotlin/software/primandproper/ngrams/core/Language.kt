@@ -30,3 +30,9 @@ enum class PuzzleKind(
         fun fromCode(code: String): PuzzleKind? = entries.firstOrNull { it.code == code }
     }
 }
+
+/** The languages a device is set up for, given its preferred language tags, as a first guess. */
+fun suggestedLanguages(preferred: List<String>): Set<Language> {
+    val codes = preferred.map { it.substringBefore('-').substringBefore('_').lowercase() }.toSet()
+    return Language.entries.filter { it.code in codes }.toSet()
+}

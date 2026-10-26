@@ -4,15 +4,23 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import software.primandproper.ngrams.core.GuessList
 import software.primandproper.ngrams.core.Language
+import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.Logger
 import software.primandproper.ngrams.core.PuzzleBank
+import software.primandproper.ngrams.core.PuzzleDay
+import software.primandproper.ngrams.core.PuzzleLine
+import software.primandproper.ngrams.core.StatsBook
 import software.primandproper.ngrams.progress.NgramsDatabase
 import software.primandproper.ngrams.progress.ProgressStore
+import software.primandproper.ngrams.settings.SettingsStore
 import kotlin.time.measureTimedValue
 
 class NgramsApplication : Application() {
@@ -25,7 +33,7 @@ class NgramsApplication : Application() {
     }
 }
 
-/** What the screens share: the bank, the guess lists, saved progress, and the logger. */
+/** What the screens share: the bank, the guess lists, saved progress, settings, and the logger. */
 class AppContainer(
     context: Context,
 ) {
@@ -36,6 +44,18 @@ class AppContainer(
         Room.databaseBuilder(context, NgramsDatabase::class.java, "ngrams.db").build()
 
     val progress = ProgressStore(database, logger.withName("ProgressStore"))
+    val settings = SettingsStore(context, logger.withName("Settings"))
+
+    /** A day debug builds can pin as today, so screenshots don't depend on when they're taken. */
+    var pinnedToday: PuzzleDay? = null
+
+    fun today(): PuzzleDay = pinnedToday ?: PuzzleDay.today()
+
+    /** Every line's stats as of [today], from everything saved, updating as progress is saved. */
+    fun stats(today: PuzzleDay): Flow<Map<PuzzleLine, LineStats>> =
+        combine(flow { emit(bank()) }, progress.all()) { bank, saved ->
+            StatsBook.compute(saved.mapNotNull { it.record }, bank, today)
+        }
 
     private val bankLock = Mutex()
     private var bank: PuzzleBank? = null

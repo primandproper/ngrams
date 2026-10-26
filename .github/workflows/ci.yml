@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generator:
+    name: Go and scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: generator/go.mod
+          cache-dependency-path: generator/go.sum
+
+      # The format targets rewrite in place, so a diff afterwards means something wasn't formatted.
+      - name: Format
+        run: |
+          make format_golang
+          git diff --exit-code
+
+      - name: Lint
+        run: make golang_lint shellcheck
+
+      - name: Test
+        run: make test_golang
+
+  ios:
+    name: iOS
+    # Xcode 27 ships as its own image, Apple Silicon only.
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Format
+        run: |
+          make format_swift
+          git diff --exit-code
+
+      - name: Lint
+        run: make swift_lint
+
+      - name: Test
+        run: make test_ios

@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val container = (application as NgramsApplication).container
+        ScreenshotSetup.apply(container, intent)
 
         setContent {
             NgramsTheme {

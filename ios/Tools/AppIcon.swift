@@ -1,6 +1,7 @@
 // Draws the app icon: three tiles stepping down the canvas, reading N, GR, AMS. Writes the iOS
 // light, dark, and tinted 1024px variants into the asset catalog directory given first, and the
-// Android adaptive icon's layers into the res directory given second.
+// Android adaptive icon's layers into the res directory given second, with the 512px Play Store
+// icon beside it.
 
 import AppKit
 import CoreGraphics
@@ -51,15 +52,17 @@ func font() -> CTFont {
   return NSFont(descriptor: rounded, size: 150) ?? base
 }
 
-func draw(_ palette: Palette) throws -> CGImage {
+/// The icon at `pixels` square. iOS wants no alpha channel; Play's store icon wants one.
+func draw(_ palette: Palette, pixels: Int = side, alpha: Bool = false) throws -> CGImage {
   guard
     let context = CGContext(
-      data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+      data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: 0,
       space: CGColorSpace(name: CGColorSpace.sRGB)!,
-      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+      bitmapInfo: (alpha ? CGImageAlphaInfo.premultipliedLast : .noneSkipLast).rawValue)
   else {
     throw IconError.context
   }
+  context.scaleBy(x: CGFloat(pixels) / CGFloat(side), y: CGFloat(pixels) / CGFloat(side))
   context.setFillColor(palette.background)
   context.fill(CGRect(x: 0, y: 0, width: side, height: side))
 
@@ -191,3 +194,7 @@ for density in androidDensities {
     try drawAndroidLayer(side: density.side, monochrome: true),
     to: folder.appendingPathComponent("ic_launcher_monochrome.png"))
 }
+// Where Android Studio's own icon tool puts the store icon: next to res, not in it.
+try write(
+  try draw(variants[0].palette, pixels: 512, alpha: true),
+  to: res.deletingLastPathComponent().appendingPathComponent("ic_launcher-playstore.png"))

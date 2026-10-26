@@ -51,6 +51,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -60,6 +61,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
@@ -135,7 +137,7 @@ class TilesViewModel(
                     logger.error("loading tiles progress", e)
                     TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback("Couldn't load saved progress")
                 }
-            val first = arranged(game, SeededGenerator(layoutSeed(key.language, key.kind, key.n, day)))
+            val first = withContext(Dispatchers.Default) { arranged(game, SeededGenerator(layoutSeed(key.language, key.kind, key.n, day))) }
             _state.value = TilesState.Playing(game, first, feedback)
         } catch (e: Exception) {
             logger.error("loading the board", e)
@@ -143,7 +145,10 @@ class TilesViewModel(
         }
     }
 
-    /** Spreads the unsolved tiles, then appends the solved ones, which [TilesState.Playing.boardTiles] places itself. */
+    /**
+     * Spreads the unsolved tiles, then appends the solved ones, which [TilesState.Playing.boardTiles]
+     * places itself. Can take thousands of shuffles, so it runs off the main thread.
+     */
     private fun arranged(
         game: TilesGame,
         rng: SeededGenerator,
@@ -161,7 +166,13 @@ class TilesViewModel(
 
     fun clear() = play { it.copy(game = it.game.clearSelection()) }
 
-    fun shuffle() = play { it.copy(order = arranged(it.game, SeededGenerator(Random.nextLong().toULong()))) }
+    fun shuffle() {
+        val playing = _state.value as? TilesState.Playing ?: return
+        viewModelScope.launch {
+            val order = withContext(Dispatchers.Default) { arranged(playing.game, SeededGenerator(Random.nextLong().toULong())) }
+            play { it.copy(order = order) }
+        }
+    }
 
     fun submit() {
         val playing = _state.value as? TilesState.Playing ?: return

@@ -21,6 +21,14 @@ class ProgressStore(
     /** Everything saved, for stats and streaks. */
     fun all(): Flow<List<PuzzleProgress>> = dao.all()
 
+    /** Replaces everything saved with [rows]. Only the debug build's screenshot seed calls it. */
+    suspend fun replaceAll(rows: List<PuzzleProgress>) {
+        database.withTransaction {
+            dao.deleteAll()
+            rows.forEach { dao.insert(it) }
+        }
+    }
+
     /**
      * Appends one entry. Appending rather than replacing means a failed read can never turn into a
      * write that drops earlier entries. The first entry records [hardMode]; later ones leave it, so

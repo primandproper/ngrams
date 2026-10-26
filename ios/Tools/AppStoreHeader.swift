@@ -1,15 +1,16 @@
-// Draws the App Store product page header: the app icon's three tiles, larger, in the middle of a
-// 21:9 canvas, over a field of faint fragment tiles. Apple keeps the safe area in its templates,
-// so everything that matters sits in the center and the edges are only texture. Writes an opaque
-// 3840x1646 PNG to the path given as the only argument.
+// Draws a store banner: the app icon's three tiles, larger, in the middle of a wide canvas, over a
+// field of faint fragment tiles. Neither store publishes its banner's safe area outside design
+// templates, so everything that matters sits in the center and the edges are only texture. Writes
+// an opaque PNG of the given size, 3840x1646 (the App Store header) unless told otherwise; the
+// layout is drawn at the header's height and scaled, so every size shows the same banner.
 
 import AppKit
 import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
-let width = 3840
-let height = 1646
+/// The height the layout is drawn at; other sizes scale it.
+let designHeight: CGFloat = 1646
 
 func color(_ hex: UInt32) -> CGColor {
   CGColor(
@@ -66,7 +67,7 @@ func drawTile(
   CTLineDraw(line, context)
 }
 
-func draw() throws -> CGImage {
+func draw(width: Int, height: Int) throws -> CGImage {
   guard
     let context = CGContext(
       data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
@@ -77,11 +78,14 @@ func draw() throws -> CGImage {
   }
   context.setFillColor(background)
   context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+  let factor = CGFloat(height) / designHeight
+  context.scaleBy(x: factor, y: factor)
+  let canvas = CGSize(width: CGFloat(width) / factor, height: designHeight)
 
   // Where the icon's tiles land, in CoreGraphics coordinates (origin at the bottom left).
   let cluster = CGRect(
-    x: (CGFloat(width) - iconBounds.width * scale) / 2,
-    y: (CGFloat(height) - iconBounds.height * scale) / 2,
+    x: (canvas.width - iconBounds.width * scale) / 2,
+    y: (canvas.height - iconBounds.height * scale) / 2,
     width: iconBounds.width * scale, height: iconBounds.height * scale)
   let clear = cluster.insetBy(dx: -160, dy: -90)
 
@@ -90,14 +94,14 @@ func draw() throws -> CGImage {
   let faintFont = font(size: 110)
   var top: CGFloat = -60
   var row = 0
-  while top < CGFloat(height) {
+  while top < canvas.height {
     var x = -CGFloat((row * 137) % 260) - 40
     var index = row * 11
-    while x < CGFloat(width) {
+    while x < canvas.width {
       let label = fragments[index % fragments.count]
       index += 7
       let rect = CGRect(
-        x: x, y: CGFloat(height) - top - rowHeight,
+        x: x, y: canvas.height - top - rowHeight,
         width: unitWidth + CGFloat(label.count) * 70, height: rowHeight)
       if !rect.intersects(clear) {
         drawTile(
@@ -144,8 +148,13 @@ enum HeaderError: Error {
   case write(String)
 }
 
-guard CommandLine.arguments.count == 2 else {
-  FileHandle.standardError.write(Data("usage: AppStoreHeader.swift <output png>\n".utf8))
+let arguments = CommandLine.arguments
+guard arguments.count == 2 || arguments.count == 4,
+  let width = Int(arguments.count == 4 ? arguments[2] : "3840"),
+  let height = Int(arguments.count == 4 ? arguments[3] : "1646")
+else {
+  FileHandle.standardError.write(
+    Data("usage: AppStoreHeader.swift <output png> [<width> <height>]\n".utf8))
   exit(2)
 }
-try write(try draw(), to: URL(fileURLWithPath: CommandLine.arguments[1]))
+try write(try draw(width: width, height: height), to: URL(fileURLWithPath: arguments[1]))

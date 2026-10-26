@@ -7,6 +7,7 @@ RAW_DATA_DIR  := data/raw
 BLOCKLIST_DIR := data/blocklists
 BANK_FILE     := data/bank/puzzles.json
 GUESS_DIR     := data/bank/guesses
+SCREENSHOTS   := ios/build/screenshots
 
 # BANK
 # The committed bank starts here. Moving the start or seed regenerates every board.
@@ -102,6 +103,11 @@ bank: data
 		-start $(BANK_START) -days $(BANK_DAYS) -seed $(BANK_SEED) $(ARGS)
 
 ## RELEASE
+
+# Captures the App Store screenshots into SCREENSHOTS. Override the simulator with IOS_SIM.
+.PHONY: screenshots
+screenshots:
+	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)
 
 # Uploads a Release build to App Store Connect and tags it. Submit and release it there by hand.
 .PHONY: release

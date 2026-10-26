@@ -1,4 +1,5 @@
 import Observability
+import SwiftData
 import SwiftUI
 
 /// Loads the bundled bank, then hands it to the home screen.
@@ -10,6 +11,7 @@ struct RootView: View {
   }
 
   @Environment(\.pillars) private var pillars
+  @Environment(\.modelContext) private var context
   @State private var state = LoadState.loading
 
   var body: some View {
@@ -34,6 +36,15 @@ struct RootView: View {
       logger.withValue("days", bank.days.count)
         .withValue("took", "\(ContinuousClock.now - started)")
         .info("loaded puzzle bank")
+      #if DEBUG
+        if ScreenshotSeed.isOn {
+          do {
+            try ScreenshotSeed.plant(bank: bank, today: .today, in: context)
+          } catch {
+            logger.error("planting the screenshot seed", error)
+          }
+        }
+      #endif
       state = .loaded(bank)
     } catch {
       logger.error("loading puzzle bank", error)

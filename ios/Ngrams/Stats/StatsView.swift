@@ -11,7 +11,7 @@ extension StatsBook {
   /// Every line's stats as of today, from everything saved.
   static func current(_ progress: [PuzzleProgress], bank: PuzzleBank) -> [PuzzleLine: LineStats] {
     compute(
-      records: progress.compactMap(\.record), bank: bank, today: PuzzleDay(containing: .now))
+      records: progress.compactMap(\.record), bank: bank, today: PuzzleDay.today)
   }
 }
 

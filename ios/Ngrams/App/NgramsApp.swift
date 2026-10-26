@@ -11,7 +11,16 @@ struct NgramsApp: App {
       RootView()
         .environment(\.pillars, pillars)
     }
-    .modelContainer(for: PuzzleProgress.self)
+    .modelContainer(for: PuzzleProgress.self, inMemory: Self.inMemory)
+  }
+
+  /// Screenshot runs keep their seeded history out of the real store.
+  private static var inMemory: Bool {
+    #if DEBUG
+      ScreenshotSeed.isOn
+    #else
+      false
+    #endif
   }
 }
 

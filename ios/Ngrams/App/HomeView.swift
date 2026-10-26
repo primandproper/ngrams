@@ -6,7 +6,7 @@ struct HomeView: View {
   let bank: PuzzleBank
 
   @Environment(\.scenePhase) private var scenePhase
-  @State private var today = PuzzleDay(containing: .now)
+  @State private var today = PuzzleDay.today
   /// An earlier day the player went back to, or nil for today.
   @State private var pickedDay: PuzzleDay?
   @State private var choosingDay = false
@@ -93,11 +93,11 @@ struct HomeView: View {
     }
     .onChange(of: scenePhase) {
       if scenePhase == .active {
-        today = PuzzleDay(containing: .now)
+        today = PuzzleDay.today
       }
     }
     .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
-      today = PuzzleDay(containing: .now)
+      today = PuzzleDay.today
     }
   }
 }
@@ -325,20 +325,24 @@ private struct DayList: View {
 
   private func rows(_ entries: [Entry], labeled labeling: RowLabeling) -> some View {
     ForEach(entries) { entry in
-      switch entry {
-      case .word(let game):
-        NavigationLink(value: WordRoute(puzzle: game.puzzle, day: day)) {
-          WordRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
-        }
-      case .tiles(let game):
-        NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
-          TilesRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
-        }
-      case .pangram(let game):
-        NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
-          PangramRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
+      Group {
+        switch entry {
+        case .word(let game):
+          NavigationLink(value: WordRoute(puzzle: game.puzzle, day: day)) {
+            WordRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
+          }
+        case .tiles(let game):
+          NavigationLink(value: TilesRoute(puzzle: game.puzzle, day: day)) {
+            TilesRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
+          }
+        case .pangram(let game):
+          NavigationLink(value: PangramRoute(puzzle: game.puzzle, day: day)) {
+            PangramRow(game: game, labeling: labeling, streak: streaks[entry.line] ?? 0)
+          }
         }
       }
+      // The screenshot test finds rows by this, since their titles repeat across sections.
+      .accessibilityIdentifier(entry.id)
     }
   }
 }

@@ -57,3 +57,17 @@ nonisolated struct PuzzleDay: Hashable, Comparable, Sendable, CustomStringConver
     (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
   }
 }
+
+extension PuzzleDay {
+  /// The day it is on the device. Debug builds take a `YYYY-MM-DD` from the `pinnedToday` default
+  /// instead (launch with `-pinnedToday 2026-11-12`), so screenshots don't depend on when they're
+  /// taken.
+  static var today: PuzzleDay {
+    #if DEBUG
+      if let pinned = UserDefaults.standard.string(forKey: "pinnedToday").flatMap(PuzzleDay.init) {
+        return pinned
+      }
+    #endif
+    return PuzzleDay(containing: .now)
+  }
+}

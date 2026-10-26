@@ -64,6 +64,20 @@ targets:
       - package: primitives-swift
         product: Observability
 
+  # Captures the App Store screenshots; run by make screenshots, not make test.
+  NgramsScreenshots:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - NgramsScreenshots
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        # XCTestCase's initializers are nonisolated, so a MainActor default can't subclass it.
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+    dependencies:
+      - target: Ngrams
+
 schemes:
   Ngrams:
     build:
@@ -73,3 +87,11 @@ schemes:
     test:
       targets:
         - NgramsTests
+  NgramsScreenshots:
+    build:
+      targets:
+        Ngrams: all
+        NgramsScreenshots: [test]
+    test:
+      targets:
+        - NgramsScreenshots

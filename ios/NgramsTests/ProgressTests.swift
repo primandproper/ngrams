@@ -237,6 +237,17 @@ struct PangramSessionTests {
     #expect(self.session(store).game.foundWords == ["plaice"])
   }
 
+  @Test("tells a bonus pangram apart from a common one")
+  func bonusFeedback() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    spell("epical", in: session)
+
+    #expect(session.feedback?.kind == .foundBonusPangram(pangramPuzzle.words[4]))
+    #expect(try store.entries(for: pangramKey) == ["epical"])
+  }
+
   @Test("doesn't save rejected words")
   func skipsRejected() throws {
     let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))

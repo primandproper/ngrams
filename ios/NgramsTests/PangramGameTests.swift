@@ -34,6 +34,20 @@ struct PangramGameTests {
     #expect(!pangramPuzzle.isPangram("place"))
   }
 
+  @Test("scores a bonus pangram without counting it toward the star")
+  func bonusPangram() {
+    var game = PangramGame(puzzle: pangramPuzzle, foundWords: ["pace", "pail", "place"])
+
+    #expect(submit("epical", in: &game) == .found(pangramPuzzle.words[4]))
+
+    #expect(pangramPuzzle.isBonusPangram("epical"))
+    #expect(!pangramPuzzle.isBonusPangram("plaice"))
+    #expect(game.score == 20)
+    #expect(game.foundPangrams == 0)
+    #expect(game.foundBonusPangrams == 1)
+    #expect(!game.earnedStar)
+  }
+
   @Test("rejects short, centerless, blocked, unknown, and repeated words")
   func rejects() {
     var game = PangramGame(puzzle: pangramPuzzle, foundWords: ["pace"])

@@ -98,6 +98,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   points in the common words alone, so obscure words help but are never needed.
 - A board's star takes every common pangram and the target score, as a `tiles` star takes
   every target. Obscure pangrams score but aren't required.
+- The app calls an obscure pangram a bonus pangram: its own banner ("Bonus pangram!"), bold
+  italic in the found list, and a separate count in the header ("1 of 4 pangrams · 1 bonus").
+  Shown as a plain pangram, finding one looked like it went uncounted (2026-10-26).
 - A "hard mode" setting makes the first word found a pangram, any pangram, obscure ones
   included.
 - No S on any board in either language: plurals would double every board, and in Spanish S

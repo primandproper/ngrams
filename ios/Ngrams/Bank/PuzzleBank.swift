@@ -188,6 +188,12 @@ nonisolated struct PangramPuzzle: Sendable, Hashable, Identifiable {
   func isPangram(_ word: String) -> Bool {
     Set(word) == Set(letters)
   }
+
+  /// Whether `word` uses every letter but isn't one of the common pangrams the star needs. It
+  /// scores like any pangram.
+  func isBonusPangram(_ word: String) -> Bool {
+    isPangram(word) && !pangrams.contains(word)
+  }
 }
 
 /// A valid word on a pangram board.

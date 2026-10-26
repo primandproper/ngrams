@@ -65,6 +65,10 @@ nonisolated struct PangramGame: Sendable {
     found.filter { puzzle.pangrams.contains($0.word) }.count
   }
 
+  var foundBonusPangrams: Int {
+    found.filter { puzzle.isBonusPangram($0.word) }.count
+  }
+
   /// A star takes every common pangram and the target score.
   var earnedStar: Bool {
     foundPangrams == puzzle.pangrams.count && score >= puzzle.targetScore

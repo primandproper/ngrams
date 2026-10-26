@@ -12,7 +12,9 @@ import protocol Observability.Observer
 final class PangramSession {
   struct Feedback: Equatable, Identifiable {
     enum Kind: Equatable {
+      /// `pangram` is true only for a common pangram; the rest come as `foundBonusPangram`.
       case found(PangramWord, pangram: Bool)
+      case foundBonusPangram(PangramWord)
       case alreadyFound(PangramWord)
       case tooShort
       case missingCenter
@@ -92,7 +94,10 @@ final class PangramSession {
       logger.debug("spelled a blocked word")
       feedback = Feedback(kind: .blocked)
     case .found(let word):
-      feedback = Feedback(kind: .found(word, pangram: game.puzzle.isPangram(word.word)))
+      feedback = Feedback(
+        kind: game.puzzle.isBonusPangram(word.word)
+          ? .foundBonusPangram(word)
+          : .found(word, pangram: game.puzzle.pangrams.contains(word.word)))
       do {
         try store.append(
           word.word, for: key, hardMode: game.hardMode, completes: game.earnedStar)

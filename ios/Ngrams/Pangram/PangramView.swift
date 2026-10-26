@@ -123,12 +123,8 @@ private struct ScoreHeader: View {
         Text("/ \(game.puzzle.targetScore)")
           .foregroundStyle(.secondary)
         Spacer()
-        Text(
-          game.puzzle.pangrams.count == 1
-            ? "\(game.foundPangrams) of 1 pangram"
-            : "\(game.foundPangrams) of \(game.puzzle.pangrams.count) pangrams"
-        )
-        .foregroundStyle(.secondary)
+        Text(pangramCount)
+          .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(max(game.puzzle.targetScore, 1)), 1))
       if game.earnedStar {
@@ -141,6 +137,17 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
     }
+  }
+
+  /// The common pangrams the star needs, then any bonus ones apart, so a bonus find never looks
+  /// like it went uncounted.
+  private var pangramCount: String {
+    let total = game.puzzle.pangrams.count
+    let count =
+      total == 1
+      ? "\(game.foundPangrams) of 1 pangram" : "\(game.foundPangrams) of \(total) pangrams"
+    let bonus = game.foundBonusPangrams
+    return bonus == 0 ? count : "\(count) · \(bonus) bonus"
   }
 }
 
@@ -277,8 +284,10 @@ private struct FoundWords: View {
       LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)], spacing: 6) {
         ForEach(game.found(sortedBy: order), id: \.word) { word in
           HStack(spacing: 4) {
+            // Common pangrams bold, bonus ones bold and italic.
             Text(word.shown)
               .fontWeight(game.puzzle.isPangram(word.word) ? .bold : .regular)
+              .italic(game.puzzle.isBonusPangram(word.word))
             Text("\(word.points)")
               .font(.caption2)
               .foregroundStyle(.secondary)
@@ -306,6 +315,7 @@ private struct FeedbackBanner: View {
     switch feedback.kind {
     case .found(let word, let pangram):
       pangram ? "Pangram! \(word.shown) +\(word.points)" : "\(word.shown) +\(word.points)"
+    case .foundBonusPangram(let word): "Bonus pangram! \(word.shown) +\(word.points)"
     case .alreadyFound(let word): "Already found \(word.shown)"
     case .tooShort: "Too short"
     case .missingCenter: "Missing the center letter"

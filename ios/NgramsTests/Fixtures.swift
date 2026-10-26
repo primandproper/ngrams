@@ -49,7 +49,8 @@ let wordPuzzle = WordPuzzle(language: .en, n: 5, answer: "llama", display: nil)
 let wordList = GuessList(
   accepted: ["llama", "label", "allay", "lolls", "loamy", "cramp", "plaza"], blocked: ["bitch"])
 
-/// A six-letter board centered on p, with one pangram, "plaice". "clip" is blocked.
+/// A six-letter board centered on p, with one common pangram, "plaice", and one bonus pangram,
+/// "epical". "clip" is blocked.
 let pangramPuzzle = PangramPuzzle(
   language: .en,
   n: 6,
@@ -61,6 +62,7 @@ let pangramPuzzle = PangramPuzzle(
     PangramWord(word: "pail", display: nil, points: 1),
     PangramWord(word: "place", display: nil, points: 5),
     PangramWord(word: "plaice", display: nil, points: 13),
+    PangramWord(word: "epical", display: nil, points: 13),
   ],
   pangrams: ["plaice"],
   blocked: ["clip"])

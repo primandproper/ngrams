@@ -3,8 +3,8 @@ import Foundation
 /// Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
 /// marks a result played in hard mode, and a ⭐ one that earned its star.
 nonisolated enum ShareText {
-  /// Appended to every share once the app has an App Store page; nil until then.
-  static let appStoreURL: URL? = nil
+  /// Appended to every share.
+  static let appStoreURL: URL? = URL(string: "https://apps.apple.com/app/id6826954747")
 
   /// The headline and the guess grid.
   static func word(_ game: WordGame, on day: PuzzleDay) -> String {

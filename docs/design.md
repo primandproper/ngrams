@@ -12,8 +12,6 @@ every day.
 Built to launch publicly on the App Store. What a launch still needs:
 
 - Final names for the app and the games (see [Open questions](#open-questions)).
-- The App Store link at the end of every share (`ShareText.appStoreURL`), once the app has a
-  page.
 
 ## Non-goals (for now)
 

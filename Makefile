@@ -106,6 +106,11 @@ test: test_golang test_ios test_android
 ios_install:
 	$(SCRIPTS_DIR)/install_ios.sh $(IOS_DIR)
 
+# Opens a Debug build on a Pixel 8 emulator, booting one in a window first if none is up.
+.PHONY: android_run
+android_run:
+	$(SCRIPTS_DIR)/run_android.sh $(ANDROID_DIR)
+
 # Redraws the app icon: the iOS asset catalog's variants and the Android adaptive icon's layers.
 .PHONY: icon
 icon:

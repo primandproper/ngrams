@@ -334,6 +334,10 @@ seed and source data rebuild the same bank. No target repeats within a language.
 shuffled, though the app lays them out itself. Each day sits in its own block with one word
 per line, so a rebuilt bank diffs by eye; `make bank ARGS=-print` prints every board for review.
 
+The bank holds 260 days, through 2027-07-09: Spanish `tiles` at N=5 runs out of valid boards
+around day 264, and tripling the search effort bought only 10 more days. That's 13.9 MB, which
+a Release build decodes in about 0.5 s on the simulator. Every app update can extend it.
+
 A rebuild never changes a day a player may have reached: saved progress is keyed by date, so a changed
 board would sit under someone's old guesses. Every day through today in the earliest time zone
 (UTC+14) is frozen, copied as it was from the committed bank, and the days after it repeat

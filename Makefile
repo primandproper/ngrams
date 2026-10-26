@@ -11,7 +11,7 @@ GUESS_DIR     := data/bank/guesses
 # BANK
 # The committed bank starts here. Moving the start or seed regenerates every board.
 BANK_START := 2026-10-23
-BANK_DAYS  := 90
+BANK_DAYS  := 260
 BANK_SEED  := 1
 
 # RELEASE

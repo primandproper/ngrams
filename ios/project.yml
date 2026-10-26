@@ -56,6 +56,10 @@ targets:
     platform: iOS
     sources:
       - NgramsTests
+      # Fixtures the Android tests run too, so both apps play the same game.
+      - path: ../testdata
+        type: folder
+        buildPhase: resources
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

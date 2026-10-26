@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import software.primandproper.ngrams.core.GuessList
 import software.primandproper.ngrams.core.Language
+import software.primandproper.ngrams.core.Level
 import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.Logger
 import software.primandproper.ngrams.core.PuzzleBank
@@ -37,7 +38,7 @@ class NgramsApplication : Application() {
 class AppContainer(
     context: Context,
 ) {
-    val logger: Logger = LogcatLogger("ngrams")
+    val logger: Logger = LogcatLogger("ngrams", if (BuildConfig.DEBUG) Level.DEBUG else Level.INFO)
 
     private val assets = context.assets
     private val database =

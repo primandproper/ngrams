@@ -1,0 +1,97 @@
+# What goes in each part of the App Store Connect submission form, in the order the form asks.
+# This is a reference to copy from by hand; nothing reads it. Limits are Apple's.
+
+app_information:
+  # 2-30 characters. Localizable.
+  name: n-grams
+  # 30 characters. Localizable.
+  subtitle: Daily word puzzles, no ads
+  bundle_id: software.primandproper.ngrams
+  # Also in the App Store link ShareText appends to every share.
+  apple_id: "6826954747"
+  primary_language: English (U.S.)
+  category:
+    primary: Games
+    subcategories: [Word, Puzzle]
+  # The word lists in NOTICE are third-party content, used under their licenses.
+  content_rights: Yes, it contains third-party content, and I have the necessary rights
+  # Answer every questionnaire item none or no: no ads, no web access, no user-generated content,
+  # no messaging. Offensive words are blocked from every puzzle (data/blocklists/).
+  age_rating: 4+
+  privacy_policy_url: https://primandproper.software/ngrams/privacy/
+
+pricing_and_availability:
+  price: Free
+  availability: All countries and regions
+
+app_privacy:
+  # Progress and settings stay on the device; the app makes no network requests.
+  data_collection: Data Not Collected
+  privacy_policy_url: https://primandproper.software/ngrams/privacy/
+
+version:
+  # iPhone with Dynamic Island (large display), labeled 6.9" in the form: 1320x2868 PNGs from
+  # make screenshots, uploaded in this order. App Store Connect scales them for smaller iPhones.
+  screenshots:
+    - ios/build/screenshots/01-home.png
+    - ios/build/screenshots/02-password.png
+    - ios/build/screenshots/03-tiles.png
+    - ios/build/screenshots/04-pangram.png
+    - ios/build/screenshots/05-stats.png
+    - ios/build/screenshots/06-settings.png
+
+  # 170 characters. Editable any time, without a new version.
+  promotional_text: >-
+    Nine new puzzles every day, in English and Spanish: crack the password, rebuild words from
+    tiles, and find the pangram. No ads, no accounts, no upsells.
+
+  # 4000 characters, plain text.
+  description: |-
+    n-grams is a daily set of word puzzles with nothing else attached: no ads, no accounts, no energy meters, and nothing to buy.
+
+    Three games, each at three sizes, so n varies:
+
+    PASSWORD
+    Guess the hidden word in six tries. Each guess shows which letters are in the right spot and which are in the word somewhere else. Play it at 4, 5, or 6 letters.
+
+    TILES
+    A board of word fragments hides long words that use every tile. Build any word you can from the tiles, find every hidden word, and reach the target score for a star. Hidden words run 3, 4, or 5 tiles long.
+
+    PANGRAM
+    Spell words from a wheel of letters, always using the one in the middle. Find the pangrams, the words that use every letter, and reach the target score for a star. Boards have 6, 7, or 8 letters.
+
+    ENGLISH AND SPANISH
+    Every game comes in English and in Mexican Spanish, with its own word lists and a keyboard with Ñ. Play one language or both.
+
+    EVERY DAY
+    New puzzles arrive at midnight wherever you are, the same for everyone. Missed a day? Go back and play it. Streaks and stats track every game, size, and language on its own, and sharing your results never spoils the answers.
+
+    HARD MODES
+    Each game has an optional hard mode, for when the regular rules start to feel easy.
+
+    PRIVATE BY DESIGN
+    Every puzzle ships inside the app, so it works offline. Your progress stays on your iPhone, and the app collects nothing about you.
+
+  # 100 bytes, comma-separated. Don't repeat the app's name or use other apps' names. Each
+  # keyword must be longer than two characters.
+  keywords: word,puzzle,daily,guess,anagram,spelling,letters,tiles,pangram,vocabulary,spanish,español,offline
+
+  # Must lead to real contact information.
+  support_url: https://primandproper.software/ngrams/
+  marketing_url: ""
+  # "Year plus owner"; the form adds the ©.
+  copyright: 2026 Jeffrey D
+  # Not asked on the first version. 4000 characters.
+  whats_new: ""
+  version_release: Manually release this version
+  # ITSAppUsesNonExemptEncryption is false in the Info.plist, so the form doesn't ask.
+  export_compliance: No non-exempt encryption
+
+app_review:
+  # Name, email, and phone (international format, leading +) go in the form, not this public
+  # file. They carry over to later versions.
+  contact: Entered in App Store Connect
+  sign_in_required: false
+  # 4000 bytes.
+  notes: |-
+    No account or sign-in. Every puzzle is bundled with the app, so it works offline and makes no network requests. Home lists today's puzzles; the arrows and calendar at the bottom open earlier days. Settings turns each language and each game's hard mode on or off.

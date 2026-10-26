@@ -18,3 +18,10 @@ ios/Ngrams/Info.plist
 # xcodebuild
 ios/build/
 *.xcresult
+
+# Gradle and Android Studio
+android/.gradle/
+android/**/build/
+android/local.properties
+android/.idea/
+android/.kotlin/

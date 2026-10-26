@@ -32,7 +32,7 @@ struct WordScreen: View {
           "Couldn't load the word list", systemImage: "exclamationmark.triangle")
       }
     }
-    .navigationTitle("\(puzzle.language.flag) Word · \(puzzle.n)")
+    .navigationTitle("\(puzzle.language.flag) Password · \(puzzle.n)")
     .navigationBarTitleDisplayMode(.inline)
   }
 

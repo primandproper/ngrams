@@ -16,7 +16,7 @@ BANK_SEED  := 1
 
 # RELEASE
 # App Store Connect API key; the .p8 itself lives in 1Password under ASC_KEY_ITEM.
-ASC_KEY_ID     := 9ZW28F2324
+ASC_KEY_ID     := YKYV3KLQVJ
 ASC_ISSUER_ID  := ddeb2389-f4e3-4804-a04e-4b5fd77b1a4e
 ASC_KEY_ITEM   := hd444byt2soiz5hivq2rx6twqy
 MIN_BANK_DAYS  := 60

@@ -197,7 +197,7 @@ class HomeViewModel(
                 } +
                     bank.tilesPuzzles(day).filter { settings.plays(it.language) }.map {
                         val record = saved(PuzzleKind.TILES, it.language, it.n)
-                        HomeEntry.Tiles(TilesGame(it, record?.entries.orEmpty(), settings.solvedTilesLeave))
+                        HomeEntry.Tiles(TilesGame(it, record?.entries.orEmpty(), settings.hardMode(PuzzleKind.TILES, it.language)))
                     } +
                     bank.pangramPuzzles(day).filter { settings.plays(it.language) }.map {
                         val record = saved(PuzzleKind.PANGRAM, it.language, it.n)

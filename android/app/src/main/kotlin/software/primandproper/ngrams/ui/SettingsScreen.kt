@@ -43,6 +43,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val store = container.settings
     val languages = settings.languages ?: Language.entries.toSet()
+    val played = Language.entries.filter { it in languages }
 
     Scaffold(
         topBar = {
@@ -68,18 +69,27 @@ fun SettingsScreen(
                 ) { checked -> scope.launch { store.setLanguages(if (checked) languages + language else languages - language) } }
             }
             HorizontalDivider()
-            Header(PuzzleKind.WORD.displayName)
-            SwitchRow("Hard mode", settings.wordHardMode) { scope.launch { store.setWordHardMode(it) } }
-            Footer(
-                "Every guess uses the hints so far: green letters stay put and yellow letters appear somewhere. " +
-                    "A puzzle keeps the mode it had at its first guess.",
-            )
-            Header(PuzzleKind.TILES.displayName)
-            SwitchRow("Hard mode", settings.solvedTilesLeave) { scope.launch { store.setSolvedTilesLeave(it) } }
-            Footer("Found targets leave the board, so their tiles can't spell other words. Finding the last target ends the board.")
-            Header(PuzzleKind.PANGRAM.displayName)
-            SwitchRow("Hard mode", settings.pangramHardMode) { scope.launch { store.setPangramHardMode(it) } }
-            Footer("The first word on a board has to be a pangram. A board keeps the mode it had at its first word.")
+            // One language keeps a section per game; more get a section per language, so each can
+            // be harder or easier than the others.
+            val only = played.singleOrNull()
+            if (only != null) {
+                for (kind in PuzzleKind.entries) {
+                    Header(kind.displayName)
+                    SwitchRow("Hard mode", settings.hardMode(kind, only)) { scope.launch { store.setHardMode(kind, only, it) } }
+                    Footer(hardModeRules.getValue(kind))
+                }
+            } else {
+                for (language in played) {
+                    Header("${language.flag} ${language.displayName}")
+                    for (kind in PuzzleKind.entries) {
+                        SwitchRow(
+                            "${kind.displayName} hard mode",
+                            settings.hardMode(kind, language),
+                            supporting = hardModeRules.getValue(kind),
+                        ) { scope.launch { store.setHardMode(kind, language, it) } }
+                    }
+                }
+            }
             HorizontalDivider()
             ListItem(
                 modifier = Modifier.clickable(onClick = onAcknowledgements),
@@ -89,6 +99,17 @@ fun SettingsScreen(
         }
     }
 }
+
+/** What each game's hard mode changes. */
+private val hardModeRules =
+    mapOf(
+        PuzzleKind.WORD to
+            "Every guess uses the hints so far: green letters stay put and yellow letters appear somewhere. " +
+            "A puzzle keeps the mode it had at its first guess.",
+        PuzzleKind.TILES to
+            "Found targets leave the board, so their tiles can't spell other words. Finding the last target ends the board.",
+        PuzzleKind.PANGRAM to "The first word on a board has to be a pangram. A board keeps the mode it had at its first word.",
+    )
 
 @Composable
 private fun Header(title: String) {
@@ -115,10 +136,12 @@ private fun SwitchRow(
     title: String,
     checked: Boolean,
     enabled: Boolean = true,
+    supporting: String? = null,
     onChange: (Boolean) -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(title) },
+        supportingContent = supporting?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) },
     )
 }

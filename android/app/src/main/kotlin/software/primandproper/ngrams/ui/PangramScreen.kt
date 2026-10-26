@@ -144,7 +144,7 @@ class PangramViewModel(
             val puzzle = container.bank().pangramPuzzles(day).first { it.language == key.language && it.n == key.n }
             // The setting applies only until the first word is saved; after that the board keeps
             // the mode it was saved with.
-            val hardMode = container.settings.settings.first().pangramHardMode
+            val hardMode = container.settings.settings.first().hardMode(PuzzleKind.PANGRAM, key.language)
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)

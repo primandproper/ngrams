@@ -267,4 +267,28 @@ class SharedFixturesTest {
             assertEquals(case["text"].takeIf { it != JsonNull }?.string, text)
         }
     }
+
+    @Test
+    fun `stores and moves hard modes the way the iOS app does`() {
+        val fixture = fixture("settings.json")
+
+        fun <V> JsonElement.byKind(value: (JsonElement) -> V): Map<PuzzleKind, V> =
+            jsonObject.entries.associate { (code, raw) -> requireNotNull(PuzzleKind.fromCode(code)) to value(raw) }
+
+        val keys = fixture.getValue("keys").byKind { it.string }
+        val legacyKeys = fixture.getValue("legacyKeys").byKind { it.string }
+        for (kind in PuzzleKind.entries) {
+            assertEquals(keys[kind], HardModes.key(kind))
+            assertEquals(legacyKeys[kind], HardModes.legacyKey(kind))
+        }
+
+        for (case in fixture.getValue("migrations").jsonArray) {
+            val after =
+                HardModes.migrated(
+                    legacy = case["legacy"].byKind { it.jsonPrimitive.boolean },
+                    current = case["current"].byKind { languagesFrom(it.string) },
+                )
+            assertEquals(case["after"].byKind { it.string }, after.mapValues { languageCodes(it.value) }, case["name"].string)
+        }
+    }
 }

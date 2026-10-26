@@ -1,0 +1,12 @@
+{
+  "description": "Hard modes, stored per game as the languages each is on for, in comma-separated codes. keys: where each game's languages are stored. legacyKeys: the single switch each hard mode was before it went per language. migrations: each game's stored languages after moving those switches over; legacy is the old switches, current what's already stored per language.",
+  "keys": {"word": "wordHardModeLanguages", "tiles": "solvedTilesLeaveLanguages", "pangram": "pangramHardModeLanguages"},
+  "legacyKeys": {"word": "wordHardMode", "tiles": "solvedTilesLeave", "pangram": "pangramHardMode"},
+  "migrations": [
+    {"name": "a switch that was on turns on for every language", "legacy": {"pangram": true}, "current": {}, "after": {"pangram": "en,es"}},
+    {"name": "a switch that was off turns on for none", "legacy": {"word": false}, "current": {}, "after": {"word": ""}},
+    {"name": "languages already stored win over an old switch", "legacy": {"tiles": true}, "current": {"tiles": "es"}, "after": {"tiles": "es"}},
+    {"name": "games without an old switch keep what they have", "legacy": {"word": true}, "current": {"pangram": "en"}, "after": {"word": "en,es", "pangram": "en"}},
+    {"name": "nothing stored stays empty", "legacy": {}, "current": {}, "after": {}}
+  ]
+}

@@ -18,9 +18,9 @@ final class ScreenshotTests: XCTestCase {
       // Every setting, so whatever a simulator saved from earlier play can't show through.
       "-languages", "en,es",
       "-homeGrouping", "game",
-      "-wordHardMode", "YES",
-      "-solvedTilesLeave", "NO",
-      "-pangramHardMode", "NO",
+      "-wordHardModeLanguages", "en,es",
+      "-solvedTilesLeaveLanguages", "",
+      "-pangramHardModeLanguages", "",
       "-pangramFoundOrder", "alphabetical",
       "-AppleLanguages", "(en)",
       "-AppleLocale", "en_US",

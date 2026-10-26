@@ -36,3 +36,9 @@ fun suggestedLanguages(preferred: List<String>): Set<Language> {
     val codes = preferred.map { it.substringBefore('-').substringBefore('_').lowercase() }.toSet()
     return Language.entries.filter { it.code in codes }.toSet()
 }
+
+/** [languages] as comma-separated codes, in [Language] order: how the app stores a set of them. */
+fun languageCodes(languages: Set<Language>): String = Language.entries.filter(languages::contains).joinToString(",") { it.code }
+
+/** The languages in comma-separated [codes]. Codes this build doesn't know are dropped. */
+fun languagesFrom(codes: String): Set<Language> = codes.split(",").mapNotNull(Language::fromCode).toSet()

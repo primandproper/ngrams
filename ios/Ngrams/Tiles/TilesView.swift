@@ -9,7 +9,7 @@ struct TilesScreen: View {
 
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
-  @AppStorage(SettingsKey.solvedTilesLeave) private var solvedTilesLeave = false
+  @AppStorage(SettingsKey.hardMode(.tiles)) private var hardModes = LanguageSelection([])
   @State private var session: TilesSession?
 
   var body: some View {
@@ -26,7 +26,8 @@ struct TilesScreen: View {
       if session == nil {
         let observer = makeObserver("TilesSession", pillars)
         session = TilesSession(
-          puzzle: puzzle, day: day, solvedTilesLeave: solvedTilesLeave,
+          puzzle: puzzle, day: day,
+          solvedTilesLeave: hardModes.languages.contains(puzzle.language),
           store: ProgressStore(context: context, observer: observer), observer: observer)
       }
     }

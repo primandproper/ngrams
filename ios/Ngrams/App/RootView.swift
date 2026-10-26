@@ -30,6 +30,8 @@ struct RootView: View {
 
   private func load() async {
     let logger = makeObserver("RootView", pillars).logger
+    // Before home, the first screen that reads a hard mode.
+    HardModeMigration.run(on: .standard, logger: logger)
     let started = ContinuousClock.now
     do {
       let bank = try await PuzzleBank.loadBundled()

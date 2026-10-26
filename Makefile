@@ -105,10 +105,10 @@ test: test_golang test_ios test_android
 ios_install:
 	$(SCRIPTS_DIR)/install_ios.sh $(IOS_DIR)
 
-# Redraws the app icon's variants into the asset catalog.
+# Redraws the app icon: the iOS asset catalog's variants and the Android adaptive icon's layers.
 .PHONY: icon
 icon:
-	$(SCRIPTS_DIR)/make_icon.sh $(IOS_DIR)
+	$(SCRIPTS_DIR)/make_icon.sh $(IOS_DIR) $(ANDROID_DIR)
 
 # Pass generator flags through ARGS, e.g. make bank ARGS="-print -langs es".
 .PHONY: bank

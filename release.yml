@@ -29,6 +29,10 @@ app_privacy:
   data_collection: Data Not Collected
   privacy_policy_url: https://primandproper.software/ngrams/privacy/
 
+product_page_information:
+  # Header and search results: from make header. 21:9, 3840x1646, no alpha. Apple reviews it.
+  header: ios/build/app-store/header.png
+
 version:
   # From make screenshots, uploaded in file-name order. Up to 10 per size.
   screenshots:

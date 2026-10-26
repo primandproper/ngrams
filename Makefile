@@ -8,6 +8,7 @@ BLOCKLIST_DIR := data/blocklists
 BANK_FILE     := data/bank/puzzles.json
 GUESS_DIR     := data/bank/guesses
 SCREENSHOTS   := ios/build/screenshots
+HEADER        := ios/build/app-store/header.png
 
 # BANK
 # The committed bank starts here. Moving the start or seed regenerates every board.
@@ -110,6 +111,11 @@ bank: data
 screenshots:
 	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/medium "iPhone 18 Pro"
 	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/large "iPhone 18 Pro Max"
+
+# Draws the App Store product page header image into HEADER.
+.PHONY: header
+header:
+	$(SCRIPTS_DIR)/make_header.sh $(IOS_DIR) $(HEADER)
 
 # Uploads a Release build to App Store Connect and tags it. Submit and release it there by hand.
 .PHONY: release

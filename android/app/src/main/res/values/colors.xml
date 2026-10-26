@@ -2,4 +2,6 @@
 <resources>
     <!-- The iOS icon's light background (ios/Tools/AppIcon.swift). -->
     <color name="ic_launcher_background">#0F766E</color>
+    <!-- Material 3's background, which Compose draws over this, so launch doesn't change color. -->
+    <color name="window_background">#FEF7FF</color>
 </resources>

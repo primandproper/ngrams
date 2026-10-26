@@ -65,6 +65,11 @@ jobs:
         with:
           working_directory: android
 
+      # Gradle installs the platform and build tools it needs, but only once their licenses are accepted.
+      - name: Accept Android SDK licenses
+        working-directory: android
+        run: yes | mise exec -- sdkmanager --licenses >/dev/null
+
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Format

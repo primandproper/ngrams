@@ -53,6 +53,9 @@ struct SettingsView: View {
             "The first word on a board has to be a pangram. A board keeps the mode it had at its first word."
           )
         }
+        Section {
+          NavigationLink("Acknowledgements") { AcknowledgementsView() }
+        }
       }
       .navigationTitle("Settings")
       .navigationBarTitleDisplayMode(.inline)

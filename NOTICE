@@ -1,0 +1,16 @@
+n-grams is under the MIT License (see LICENSE), except for the puzzle bank.
+
+The puzzle bank in data/bank/ is built from these word lists, pinned by commit in
+scripts/fetch_data.sh, which keep their own licenses:
+
+- ENABLE, the English dictionary, via https://github.com/dolph/dictionary. Public domain.
+- RLA-ES, the es_MX Hunspell dictionary, via https://github.com/LibreOffice/dictionaries
+  (upstream https://github.com/sbosio/rla-es). Offered under GPLv3+, LGPLv3+, or MPL 1.1+;
+  used here under MPL 1.1.
+- FrequencyWords by Hermit Dave, word frequencies from OpenSubtitles 2018,
+  https://github.com/hermitdave/FrequencyWords. Content under CC BY-SA 4.0.
+
+As an adaptation of FrequencyWords, data/bank/ is distributed under CC BY-SA 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/), and its Spanish words remain covered by
+MPL 1.1 (https://www.mozilla.org/en-US/MPL/1.1/). The app credits all three under Settings,
+Acknowledgements.

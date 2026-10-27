@@ -2,8 +2,9 @@ package software.primandproper.ngrams.core
 
 /**
  * Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
- * marks a result played in hard mode, and a ⭐ one that earned its star. Matches the iOS app's
- * text exactly; testdata/share.json holds both apps to it.
+ * marks a result played in hard mode, and a ⭐ one that earned its star. Written in the sharer's
+ * interface language, and matches the iOS app's text exactly; testdata/share.json holds both apps
+ * to it.
  */
 object ShareText {
     /** Appended to every share: one page for both stores, so a share works whoever receives it. */
@@ -13,22 +14,29 @@ object ShareText {
     fun word(
         game: WordGame,
         day: PuzzleDay,
+        interfaceLanguage: Language,
     ): String {
         val puzzle = game.puzzle
         val grid = game.marks.map { marks -> marks.joinToString("") { it.square } }
-        return finished(listOf(headline(PuzzleKind.WORD, puzzle.language, puzzle.n, day) + " · " + result(game)) + grid)
+        return finished(listOf(headline(PuzzleKind.WORD, puzzle.language, puzzle.n, day, interfaceLanguage) + " · " + result(game)) + grid)
     }
 
     /** The headline, then progress toward the target and the targets found. */
     fun tiles(
         game: TilesGame,
         day: PuzzleDay,
+        interfaceLanguage: Language,
     ): String {
         val puzzle = game.puzzle
+        val targets =
+            when (interfaceLanguage) {
+                Language.EN -> "targets"
+                Language.ES -> "objetivos"
+            }
         return finished(
             listOf(
-                headline(PuzzleKind.TILES, puzzle.language, puzzle.n, day) + " · " + result(game),
-                bar(game.score, puzzle.targetScore) + " ${game.solvedTargets.size}/${puzzle.targets.size} targets",
+                headline(PuzzleKind.TILES, puzzle.language, puzzle.n, day, interfaceLanguage) + " · " + result(game),
+                bar(game.score, puzzle.targetScore) + " ${game.solvedTargets.size}/${puzzle.targets.size} $targets",
             ),
         )
     }
@@ -37,13 +45,15 @@ object ShareText {
     fun pangram(
         game: PangramGame,
         day: PuzzleDay,
+        interfaceLanguage: Language,
     ): String {
         val puzzle = game.puzzle
         val pangrams = puzzle.pangrams.size
+        val noun = PuzzleKind.PANGRAM.displayName(interfaceLanguage).lowercase() + if (pangrams == 1) "" else "s"
         return finished(
             listOf(
-                headline(PuzzleKind.PANGRAM, puzzle.language, puzzle.n, day) + " · " + result(game),
-                bar(game.score, puzzle.targetScore) + " ${game.foundPangrams}/$pangrams pangram${if (pangrams == 1) "" else "s"}",
+                headline(PuzzleKind.PANGRAM, puzzle.language, puzzle.n, day, interfaceLanguage) + " · " + result(game),
+                bar(game.score, puzzle.targetScore) + " ${game.foundPangrams}/$pangrams $noun",
             ),
         )
     }
@@ -54,6 +64,7 @@ object ShareText {
         tiles: List<TilesGame>,
         pangrams: List<PangramGame>,
         day: PuzzleDay,
+        interfaceLanguage: Language,
     ): String? {
         val lines = mutableListOf<String>()
         for (language in Language.entries) {
@@ -77,14 +88,14 @@ object ShareText {
                 )
             for ((kind, kindResults) in results) {
                 if (kindResults.isNotEmpty()) {
-                    lines += "${language.flag} ${kind.displayName} · " + kindResults.joinToString(" · ")
+                    lines += "${language.flag} ${kind.displayName(interfaceLanguage)} · " + kindResults.joinToString(" · ")
                 }
             }
         }
         if (lines.isEmpty()) {
             return null
         }
-        return finished(listOf("n-grams · ${day.name(includingYear = false)}") + lines)
+        return finished(listOf("n-grams · ${day.name(includingYear = false, interfaceLanguage)}") + lines)
     }
 
     private fun headline(
@@ -92,7 +103,9 @@ object ShareText {
         language: Language,
         n: Int,
         day: PuzzleDay,
-    ): String = "n-grams · ${kind.displayName} ${language.flag} n=$n · ${day.name(includingYear = false)}"
+        interfaceLanguage: Language,
+    ): String =
+        "n-grams · ${kind.displayName(interfaceLanguage)} ${language.flag} n=$n · ${day.name(includingYear = false, interfaceLanguage)}"
 
     private fun result(game: WordGame): String {
         val guesses =

@@ -1,4 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">n-grams</string>
+    <string name="app_name" translatable="false">n-grams</string>
+    <!-- The language these resources are in, which also picks the language of game names, dates and share text. -->
+    <string name="interface_language" translatable="false">en</string>
+    <!-- A found word and the points it scored, the same in every language. -->
+    <string name="word_points" translatable="false">%1$s +%2$d</string>
+
+    <!-- Shared -->
+    <string name="back">Back</string>
+    <string name="share">Share</string>
+    <string name="star">Star</string>
+    <string name="star_earned">Star earned</string>
+    <string name="enter">Enter</string>
+    <string name="delete">Delete</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="current_word">Current word %s</string>
+    <string name="already_found">Already found %s</string>
+    <string name="not_on_list">%s isn\'t on the list</string>
+    <string name="how_dare_you">How dare you</string>
+    <string name="couldnt_load_progress">Couldn\'t load saved progress</string>
+    <string name="couldnt_save_word">Couldn\'t save that word</string>
+    <string name="couldnt_load_board">Couldn\'t load this board.</string>
+    <plurals name="streak_description">
+        <item quantity="one">%d day streak</item>
+        <item quantity="other">%d day streak</item>
+    </plurals>
+    <plurals name="found_count">
+        <item quantity="one">%d found</item>
+        <item quantity="other">%d found</item>
+    </plurals>
+
+    <!-- Home -->
+    <string name="today">Today</string>
+    <string name="stats">Stats</string>
+    <string name="settings">Settings</string>
+    <string name="puzzles_failed">The puzzles didn\'t load.</string>
+    <string name="no_puzzles">No puzzles for %s.</string>
+    <string name="completed">Completed</string>
+    <string name="group_by">Group by</string>
+    <string name="grouping_game">Game</string>
+    <string name="grouping_n" translatable="false">n</string>
+    <string name="selected">Selected</string>
+    <string name="earlier">Earlier</string>
+    <string name="later">Later</string>
+    <string name="choose_day">Choose a day, %s</string>
+    <string name="done">Done</string>
+    <string name="languages">Languages</string>
+    <string name="language_prompt">Which languages do you want puzzles in?</string>
+    <string name="language_prompt_footer">You can change this any time in Settings.</string>
+    <string name="continue_button">Continue</string>
+    <plurals name="target_count">
+        <item quantity="one">%d target</item>
+        <item quantity="other">%d targets</item>
+    </plurals>
+    <plurals name="letter_count">
+        <item quantity="one">%d letter</item>
+        <item quantity="other">%d letters</item>
+    </plurals>
+
+    <!-- Password -->
+    <string name="couldnt_load_puzzle">Couldn\'t load this puzzle.</string>
+    <string name="couldnt_save_guess">Couldn\'t save that guess</string>
+    <string name="not_enough_letters">Not enough letters</string>
+    <!-- %1$s is an English ordinal ("2nd"), %2$d the same position as a number, %3$s the letter. -->
+    <string name="hint_position">%1$s letter must be %3$s</string>
+    <string name="hint_letter">Guess must contain %s</string>
+    <string name="mark_correct">correct</string>
+    <string name="mark_present">in the word</string>
+    <string name="mark_absent">not in the word</string>
+    <string name="empty_cell">empty</string>
+    <string name="word_was">The word was %s</string>
+    <plurals name="guesses_left">
+        <item quantity="one">%d guess left</item>
+        <item quantity="other">%d guesses left</item>
+    </plurals>
+    <plurals name="solved_in">
+        <item quantity="one">Solved in %d guess</item>
+        <item quantity="other">Solved in %d guesses</item>
+    </plurals>
+
+    <!-- Tiles -->
+    <string name="clear">Clear</string>
+    <string name="submit">Submit</string>
+    <string name="tiles_star_missing">Find every target for the star</string>
+    <plurals name="targets_progress">
+        <item quantity="one">%1$d of %2$d target</item>
+        <item quantity="other">%1$d of %2$d targets</item>
+    </plurals>
+
+    <!-- Pangram -->
+    <string name="pangram_found">Pangram! %1$s +%2$d</string>
+    <string name="bonus_pangram_found">Bonus pangram! %1$s +%2$d</string>
+    <string name="too_short">Too short</string>
+    <string name="missing_center">Missing the center letter</string>
+    <string name="needs_pangram">Start with a pangram</string>
+    <string name="pangram_star_missing">Find every pangram for the star</string>
+    <string name="pangram_bonus_count">%1$s · %2$d bonus</string>
+    <string name="center_letter">%s, center</string>
+    <string name="sorted_alphabetical">Sorted A to Z</string>
+    <string name="sorted_newest">Sorted newest first</string>
+    <plurals name="pangrams_progress">
+        <item quantity="one">%1$d of %2$d pangram</item>
+        <item quantity="other">%1$d of %2$d pangrams</item>
+    </plurals>
+
+    <!-- Stats -->
+    <string name="played">Played</string>
+    <string name="won">Won</string>
+    <string name="starred">Starred</string>
+    <string name="streak">Streak</string>
+    <string name="best_streak">Best streak</string>
+    <string name="guesses">Guesses</string>
+    <string name="no_stats">No stats yet</string>
+    <string name="streaks_count_solves">Streaks count solves on the puzzle\'s own day.</string>
+    <string name="streaks_count_stars">Streaks count stars on the puzzle\'s own day.</string>
+    <plurals name="stats_won_summary">
+        <item quantity="one">%1$d played · %2$s won</item>
+        <item quantity="other">%1$d played · %2$s won</item>
+    </plurals>
+    <plurals name="stats_starred_summary">
+        <item quantity="one">%1$d played · %2$s starred</item>
+        <item quantity="other">%1$d played · %2$s starred</item>
+    </plurals>
+    <plurals name="guess_distribution_row">
+        <item quantity="one">%1$d guess: %2$d</item>
+        <item quantity="other">%1$d guesses: %2$d</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="hard_mode">Hard mode</string>
+    <string name="game_hard_mode">%s hard mode</string>
+    <string name="acknowledgements">Acknowledgements</string>
+    <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess.</string>
+    <string name="tiles_hard_mode_rule">Found targets leave the board, so their tiles can\'t spell other words. Finding the last target ends the board.</string>
+    <string name="pangram_hard_mode_rule">The first word on a board has to be a pangram. A board keeps the mode it had at its first word.</string>
+    <string name="word_lists">Word lists</string>
+    <string name="source">Source</string>
+    <string name="credit_enable">The English dictionary.</string>
+    <string name="credit_rla_es">The Mexican Spanish dictionary, from Recursos Lingüísticos Abiertos del Español.</string>
+    <string name="credit_frequency_words">Word frequencies from OpenSubtitles 2018, by Hermit Dave, which decide the common words.</string>
+    <string name="credit_source">This app\'s source and puzzle bank.</string>
+    <string name="license_public_domain">Public domain</string>
+    <string name="license_source">MIT, puzzles CC BY-SA 4.0</string>
 </resources>

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Capture the Play Store screenshots on an emulator, from a seeded, pinned day
-# Usage: screenshots_android.sh <android_dir> <out_dir>
+# Capture the Play Store screenshots on an emulator, from a seeded, pinned day, in one interface
+# language
+# Usage: screenshots_android.sh <android_dir> <out_dir> [en|es]
 
 ANDROID_DIR="${1:-android}"
-OUT_DIR="${2:-android/build/play/screenshots}"
+OUT_DIR="${2:-android/build/play/screenshots/en}"
+LANGUAGE="${3:-en}"
 
 # shellcheck source=scripts/gradle.sh
 source "$(dirname "${BASH_SOURCE[0]}")/gradle.sh"
@@ -19,6 +21,16 @@ IMAGE="system-images;android-35;google_apis;arm64-v8a"
 PORT=5590
 SERIAL="emulator-${PORT}"
 APP="software.primandproper.ngrams"
+
+# The per-app language each interface language runs in: the locales the store listings target.
+case "${LANGUAGE}" in
+  en) LOCALE="en-US" ;;
+  es) LOCALE="es-MX" ;;
+  *)
+    echo "unknown language ${LANGUAGE}: expected en or es" >&2
+    exit 1
+    ;;
+esac
 
 tool() { (cd "${ANDROID_DIR}" && mise exec -- "$@"); }
 adb_play() { tool adb -s "${SERIAL}" "$@"; }
@@ -40,7 +52,7 @@ emulator="$(cd "${ANDROID_DIR}" && mise where android-sdk)/emulator/emulator"
   >"${work_dir}/emulator.log" 2>&1 &
 trap 'adb_play emu kill >/dev/null 2>&1 || true; rm -rf "${work_dir}"' EXIT
 
-echo "capturing on ${AVD} (${SERIAL})"
+echo "capturing ${LANGUAGE} on ${AVD} (${SERIAL})"
 adb_play wait-for-device
 until [[ "$(adb_play shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; do
   sleep 2
@@ -61,6 +73,8 @@ outputs="${ANDROID_DIR}/app/build/outputs/apk"
 adb_play install -r "$(pwd)/${outputs}/debug/app-debug.apk" >/dev/null
 adb_play install -r "$(pwd)/${outputs}/androidTest/debug/app-debug-androidTest.apk" >/dev/null
 adb_play shell pm clear "${APP}" >/dev/null
+# After the clear, which resets the app's language along with its data.
+adb_play shell cmd locale set-app-locales "${APP}" --locales "${LOCALE}"
 
 # am instrument exits 0 whatever happens, so success is read from its report.
 adb_play shell am instrument -w -e class "${APP}.ScreenshotTest" \

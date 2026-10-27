@@ -19,12 +19,28 @@ enum class Language(
 /** The game kinds, as the bank and saved progress name them. */
 enum class PuzzleKind(
     val code: String,
-    val displayName: String,
 ) {
-    WORD("word", "Password"),
-    TILES("tiles", "Tiles"),
-    PANGRAM("pangram", "Pangram"),
+    WORD("word"),
+    TILES("tiles"),
+    PANGRAM("pangram"),
     ;
+
+    /** The game's name in [interfaceLanguage], which share text uses as well as the screens. */
+    fun displayName(interfaceLanguage: Language): String =
+        when (interfaceLanguage) {
+            Language.EN ->
+                when (this) {
+                    WORD -> "Password"
+                    TILES -> "Tiles"
+                    PANGRAM -> "Pangram"
+                }
+            Language.ES ->
+                when (this) {
+                    WORD -> "Contraseña"
+                    TILES -> "Fichas"
+                    PANGRAM -> "Pangrama"
+                }
+        }
 
     companion object {
         fun fromCode(code: String): PuzzleKind? = entries.firstOrNull { it.code == code }

@@ -11,6 +11,10 @@ final class ScreenshotTests: XCTestCase {
   @MainActor
   func testScreenshots() throws {
     continueAfterFailure = false
+    // make screenshots passes the language as TEST_RUNNER_SCREENSHOT_LANGUAGE, which reaches the
+    // test runner without the prefix.
+    let language = ProcessInfo.processInfo.environment["SCREENSHOT_LANGUAGE"] ?? "en"
+    let locale = language == "es" ? "es_MX" : "en_US"
     let app = XCUIApplication()
     app.launchArguments = [
       "-screenshotSeed", "YES",
@@ -22,8 +26,8 @@ final class ScreenshotTests: XCTestCase {
       "-solvedTilesLeaveLanguages", "",
       "-pangramHardModeLanguages", "",
       "-pangramFoundOrder", "alphabetical",
-      "-AppleLanguages", "(en)",
-      "-AppleLocale", "en_US",
+      "-AppleLanguages", "(\(language))",
+      "-AppleLocale", locale,
     ]
     app.launch()
 
@@ -31,27 +35,27 @@ final class ScreenshotTests: XCTestCase {
     try snap("01-home")
 
     password.tap()
-    XCTAssertTrue(app.buttons["Enter"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["enter"].waitForExistence(timeout: 10))
     try snap("02-password")
     back(in: app)
 
     row("tiles-en-4", in: app).tap()
-    XCTAssertTrue(app.buttons["Submit"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["submit"].waitForExistence(timeout: 10))
     try snap("03-tiles")
     back(in: app)
 
     row("pangram-en-7", in: app).tap()
-    XCTAssertTrue(app.buttons["Shuffle"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["shuffle"].waitForExistence(timeout: 10))
     try snap("04-pangram")
     back(in: app)
 
-    app.buttons["Stats"].tap()
-    XCTAssertTrue(app.navigationBars["Stats"].waitForExistence(timeout: 10))
+    app.buttons["stats"].tap()
+    XCTAssertTrue(app.buttons["stats-done"].waitForExistence(timeout: 10))
     try snap("05-stats")
-    app.buttons["Done"].tap()
+    app.buttons["stats-done"].tap()
 
-    app.buttons["Settings"].tap()
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
+    app.buttons["settings"].tap()
+    XCTAssertTrue(app.buttons["settings-done"].waitForExistence(timeout: 10))
     try snap("06-settings")
   }
 

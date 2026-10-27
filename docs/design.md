@@ -17,7 +17,7 @@ Built to launch publicly on the App Store.
 - A "play unlimited" mode.
 - Live puzzle generation on the device.
 - Monetization of any kind.
-- Translating the app's own text. Puzzles are bilingual; the app around them stays English.
+- Interface languages beyond English and Spanish.
 
 ## Games
 
@@ -25,6 +25,15 @@ The originals' names are trademarks (WORDLE and SPELLING BEE are NYT's, Quartile
 and must not appear in the app. The in-app names are "Password", "Tiles", and "Pangram", under
 the app name "n-grams". The app's name and the n in its own text ("n=4") are always lowercase.
 Internally the kinds are `word`, `tiles`, and `pangram`.
+
+The interface comes in English and Mexican Spanish ("tú"), following the device's language,
+separately from which puzzle languages are on. The game names translate ("Contraseña", "Fichas",
+"Pangrama"): they're generic words picked to stay clear of trademarks, which holds in Spanish too.
+Dates follow the interface ("Oct 25", "25 oct"), and so does share text, since its reader is
+usually someone the sharer plays with. Game names, dates and share text are spelled out in each
+app's shared code rather than left to platform formatters, so the two apps write them identically,
+and `testdata/share.json` checks them. Everything else lives in each platform's own string tables:
+a String Catalog on iOS, `strings.xml` on Android.
 
 | Kind      | Modeled on   | Sizes (N)          | Daily puzzles |
 | --------- | ------------ | ------------------ | ------------- |
@@ -142,12 +151,12 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   `@AppStorage`. The single switches from before move over on first launch, to every language if
   they were on; a language turned on later starts with its hard modes off.
 - Results share as spoiler-free text: each puzzle from its own screen, and every puzzle started
-  on a day from home, a line per language and game. Shares carry the date ("Oct 25") rather
-  than a puzzle number, a flag even when only one language is on (the reader may play
-  another), `*` for hard mode, and ⭐ for a star. `word` shares its grid; `tiles` and `pangram`
-  a ten-segment bar toward the target. The grid avoids the original's colors: blue in place,
-  grey in the word, dark for absent (🟦⬜⬛), matching the board, where absent letters fade
-  rather than fill.
+  on a day from home, a line per language and game, in the interface language. Shares carry the
+  date ("Oct 25") rather than a puzzle number, a flag even when only one language is on (the
+  reader may play another), `*` for hard mode, and ⭐ for a star. `word` shares its grid;
+  `tiles` and `pangram` a ten-segment bar toward the target. The grid avoids the original's
+  colors: blue in place, grey in the word, dark for absent (🟦⬜⬛), matching the board, where
+  absent letters fade rather than fill.
 - Stats and streaks are per `(lang, kind, n)`: played, the share won (`word`) or starred
   (boards), current and best streak, and for `word` how many guesses each solve took. They
   show on a stats screen from home, after finishing a puzzle, and as a flame on each home row.

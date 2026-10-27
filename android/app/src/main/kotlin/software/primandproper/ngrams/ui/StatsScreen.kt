@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -21,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import software.primandproper.ngrams.AppContainer
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.PuzzleKind
@@ -56,15 +55,14 @@ fun StatsScreen(
 ) {
     val model: StatsViewModel = viewModel { StatsViewModel(container) }
     val lines by model.lines.collectAsStateWithLifecycle()
+    val interfaceLanguage = interfaceLanguage()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Stats") },
+                title = { Text(stringResource(R.string.stats)) },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
             )
         },
@@ -75,13 +73,13 @@ fun StatsScreen(
             return@Scaffold
         }
         val multilingual = current.map { it.line.language }.toSet().size > 1
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+        LazyColumn(Modifier.fillMaxSize().testTag("stats-list"), contentPadding = padding) {
             for (kind in PuzzleKind.entries) {
                 val ofKind = current.filter { it.line.kind == kind }
                 if (ofKind.isEmpty()) continue
                 item(key = kind.code) {
                     Text(
-                        kind.displayName,
+                        kind.displayName(interfaceLanguage),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
@@ -105,7 +103,7 @@ fun StatsScreen(
                             modifier = Modifier.clickable { onLine(stats.line) },
                             headlineContent = { Text("n=${stats.line.n}") },
                             supportingContent = {
-                                Text("${stats.played} played · ${percent(stats.successRate)} ${successWord(stats.line.kind)}")
+                                Text(statsSummary(stats))
                             },
                             trailingContent = { StreakBadge(stats.currentStreak) },
                         )
@@ -130,18 +128,16 @@ fun LineStatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(line.title) },
+                title = { Text(line.title(interfaceLanguage())) },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
             )
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (val stats = lines?.firstOrNull { it.line == line }) {
-                null -> Text("No stats yet", modifier = Modifier.padding(16.dp))
+                null -> Text(stringResource(R.string.no_stats), modifier = Modifier.padding(16.dp))
                 else -> LineStatsView(stats)
             }
         }

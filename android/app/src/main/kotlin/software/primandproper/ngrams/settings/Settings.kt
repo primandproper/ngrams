@@ -1,6 +1,7 @@
 package software.primandproper.ngrams.settings
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
@@ -12,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.FoundWordOrder
 import software.primandproper.ngrams.core.HardModes
 import software.primandproper.ngrams.core.Language
@@ -24,10 +26,10 @@ import java.io.IOException
 /** How home sections the day's open puzzles. By N puts every game's puzzles of one size together. */
 enum class HomeGrouping(
     val code: String,
-    val displayName: String,
+    @StringRes val label: Int,
 ) {
-    GAME("game", "Game"),
-    N("n", "n"),
+    GAME("game", R.string.grouping_game),
+    N("n", R.string.grouping_n),
 }
 
 /** App-wide settings. */

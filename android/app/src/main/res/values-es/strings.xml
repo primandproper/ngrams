@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="interface_language" translatable="false">es</string>
+
+    <!-- Shared -->
+    <string name="back">Atrás</string>
+    <string name="share">Compartir</string>
+    <string name="star">Estrella</string>
+    <string name="star_earned">Estrella ganada</string>
+    <string name="enter">Enviar</string>
+    <string name="delete">Borrar</string>
+    <string name="shuffle">Revolver</string>
+    <string name="current_word">Palabra actual %s</string>
+    <string name="already_found">Ya encontraste %s</string>
+    <string name="not_on_list">%s no está en la lista</string>
+    <string name="how_dare_you">¿Cómo te atreves?</string>
+    <string name="couldnt_load_progress">No se pudo cargar tu progreso</string>
+    <string name="couldnt_save_word">No se pudo guardar esa palabra</string>
+    <string name="couldnt_load_board">No se pudo cargar este tablero.</string>
+    <plurals name="streak_description">
+        <item quantity="one">Racha de %d día</item>
+        <item quantity="many">Racha de %d días</item>
+        <item quantity="other">Racha de %d días</item>
+    </plurals>
+    <plurals name="found_count">
+        <item quantity="one">%d encontrada</item>
+        <item quantity="many">%d encontradas</item>
+        <item quantity="other">%d encontradas</item>
+    </plurals>
+
+    <!-- Home -->
+    <string name="today">Hoy</string>
+    <string name="stats">Estadísticas</string>
+    <string name="settings">Ajustes</string>
+    <string name="puzzles_failed">No se cargaron los retos.</string>
+    <string name="no_puzzles">No hay retos para el %s.</string>
+    <string name="completed">Completados</string>
+    <string name="group_by">Agrupar por</string>
+    <string name="grouping_game">Juego</string>
+    <string name="selected">Seleccionado</string>
+    <string name="earlier">Anterior</string>
+    <string name="later">Siguiente</string>
+    <string name="choose_day">Elige un día, %s</string>
+    <string name="done">Listo</string>
+    <string name="languages">Idiomas</string>
+    <string name="language_prompt">¿En qué idiomas quieres tus retos?</string>
+    <string name="language_prompt_footer">Puedes cambiarlo cuando quieras en Ajustes.</string>
+    <string name="continue_button">Continuar</string>
+    <plurals name="target_count">
+        <item quantity="one">%d objetivo</item>
+        <item quantity="many">%d objetivos</item>
+        <item quantity="other">%d objetivos</item>
+    </plurals>
+    <plurals name="letter_count">
+        <item quantity="one">%d letra</item>
+        <item quantity="many">%d letras</item>
+        <item quantity="other">%d letras</item>
+    </plurals>
+
+    <!-- Password -->
+    <string name="couldnt_load_puzzle">No se pudo cargar este reto.</string>
+    <string name="couldnt_save_guess">No se pudo guardar ese intento</string>
+    <string name="not_enough_letters">Faltan letras</string>
+    <string name="hint_position">La %2$d.ª letra debe ser %3$s</string>
+    <string name="hint_letter">El intento debe contener %s</string>
+    <string name="mark_correct">en su lugar</string>
+    <string name="mark_present">en la palabra</string>
+    <string name="mark_absent">no está en la palabra</string>
+    <string name="empty_cell">vacía</string>
+    <string name="word_was">La palabra era %s</string>
+    <plurals name="guesses_left">
+        <item quantity="one">Queda %d intento</item>
+        <item quantity="many">Quedan %d intentos</item>
+        <item quantity="other">Quedan %d intentos</item>
+    </plurals>
+    <plurals name="solved_in">
+        <item quantity="one">Resuelto en %d intento</item>
+        <item quantity="many">Resuelto en %d intentos</item>
+        <item quantity="other">Resuelto en %d intentos</item>
+    </plurals>
+
+    <!-- Tiles -->
+    <string name="clear">Limpiar</string>
+    <string name="submit">Enviar</string>
+    <string name="tiles_star_missing">Encuentra todos los objetivos para ganar la estrella</string>
+    <plurals name="targets_progress">
+        <item quantity="one">%1$d de %2$d objetivo</item>
+        <item quantity="many">%1$d de %2$d objetivos</item>
+        <item quantity="other">%1$d de %2$d objetivos</item>
+    </plurals>
+
+    <!-- Pangram -->
+    <string name="pangram_found">¡Pangrama! %1$s +%2$d</string>
+    <string name="bonus_pangram_found">¡Pangrama extra! %1$s +%2$d</string>
+    <string name="too_short">Muy corta</string>
+    <string name="missing_center">Falta la letra central</string>
+    <string name="needs_pangram">Empieza con un pangrama</string>
+    <string name="pangram_star_missing">Encuentra todos los pangramas para ganar la estrella</string>
+    <string name="pangram_bonus_count">%1$s · %2$d extra</string>
+    <string name="center_letter">%s, centro</string>
+    <string name="sorted_alphabetical">Orden alfabético</string>
+    <string name="sorted_newest">Más recientes primero</string>
+    <plurals name="pangrams_progress">
+        <item quantity="one">%1$d de %2$d pangrama</item>
+        <item quantity="many">%1$d de %2$d pangramas</item>
+        <item quantity="other">%1$d de %2$d pangramas</item>
+    </plurals>
+
+    <!-- Stats -->
+    <string name="played">Jugados</string>
+    <string name="won">Ganados</string>
+    <string name="starred">Con estrella</string>
+    <string name="streak">Racha</string>
+    <string name="best_streak">Mejor racha</string>
+    <string name="guesses">Intentos</string>
+    <string name="no_stats">Aún no hay estadísticas</string>
+    <string name="streaks_count_solves">Las rachas cuentan los retos resueltos el mismo día del reto.</string>
+    <string name="streaks_count_stars">Las rachas cuentan las estrellas ganadas el mismo día del reto.</string>
+    <!-- Labels first, so the count never has to agree with "jugado". -->
+    <plurals name="stats_won_summary">
+        <item quantity="one">%1$d jugado · %2$s ganados</item>
+        <item quantity="many">%1$d jugados · %2$s ganados</item>
+        <item quantity="other">%1$d jugados · %2$s ganados</item>
+    </plurals>
+    <plurals name="stats_starred_summary">
+        <item quantity="one">%1$d jugado · %2$s con estrella</item>
+        <item quantity="many">%1$d jugados · %2$s con estrella</item>
+        <item quantity="other">%1$d jugados · %2$s con estrella</item>
+    </plurals>
+    <plurals name="guess_distribution_row">
+        <item quantity="one">%1$d intento: %2$d</item>
+        <item quantity="many">%1$d intentos: %2$d</item>
+        <item quantity="other">%1$d intentos: %2$d</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="hard_mode">Modo difícil</string>
+    <string name="game_hard_mode">Modo difícil de %s</string>
+    <string name="acknowledgements">Créditos</string>
+    <string name="word_hard_mode_rule">Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí y las letras que están en la palabra aparecen en algún lado. Un reto conserva el modo que tenía en su primer intento.</string>
+    <string name="tiles_hard_mode_rule">Los objetivos encontrados salen del tablero, así que sus fichas no sirven para otras palabras. Encontrar el último objetivo termina el tablero.</string>
+    <string name="pangram_hard_mode_rule">La primera palabra de un tablero tiene que ser un pangrama. Un tablero conserva el modo que tenía en su primera palabra.</string>
+    <string name="word_lists">Listas de palabras</string>
+    <string name="source">Código fuente</string>
+    <string name="credit_enable">El diccionario de inglés.</string>
+    <string name="credit_rla_es">El diccionario de español de México, de Recursos Lingüísticos Abiertos del Español.</string>
+    <string name="credit_frequency_words">Frecuencias de palabras de OpenSubtitles 2018, de Hermit Dave, que deciden cuáles palabras son comunes.</string>
+    <string name="credit_source">El código fuente de esta app y su banco de retos.</string>
+    <string name="license_public_domain">Dominio público</string>
+    <string name="license_source">MIT, retos CC BY-SA 4.0</string>
+</resources>

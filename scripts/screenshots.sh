@@ -3,17 +3,19 @@ set -euo pipefail
 
 # Capture the App Store screenshots on one simulator, from a seeded, pinned day. Each display
 # size App Store Connect asks for is a run on a simulator of that size.
-# Usage: screenshots.sh <ios_dir> <out_dir> <simulator>
+# Usage: screenshots.sh <ios_dir> <out_dir> <simulator> [language]
+# language is the interface language the app runs in: en (the default) or es.
 
 IOS_DIR="${1:-ios}"
 OUT_DIR="${2:-ios/build/screenshots}"
 IOS_SIM="${3:?simulator name}"
+LANGUAGE="${4:-en}"
 
 # shellcheck source=scripts/simulator.sh
 source "$(dirname "${BASH_SOURCE[0]}")/simulator.sh"
 
 udid="$(resolve_simulator)"
-echo "capturing on ${IOS_SIM} (${udid})"
+echo "capturing in ${LANGUAGE} on ${IOS_SIM} (${udid})"
 boot_simulator "${udid}"
 
 work_dir="$(mktemp -d)"
@@ -47,7 +49,8 @@ cd "${IOS_DIR}"
 xcodegen generate --quiet
 
 result="${work_dir}/screenshots.xcresult"
-xcodebuild \
+# xcodebuild hands TEST_RUNNER_-prefixed variables to the test runner, without the prefix.
+TEST_RUNNER_SCREENSHOT_LANGUAGE="${LANGUAGE}" xcodebuild \
   -project Ngrams.xcodeproj \
   -scheme NgramsScreenshots \
   -destination "id=${udid}" \

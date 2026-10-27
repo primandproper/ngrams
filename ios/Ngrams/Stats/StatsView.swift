@@ -67,6 +67,7 @@ struct StatsView: View {
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("Done") { dismiss() }
+            .accessibilityIdentifier("stats-done")
         }
       }
     }
@@ -81,9 +82,13 @@ private struct StatsRow: View {
       VStack(alignment: .leading) {
         Text("n=\(stats.line.n)")
           .font(.headline)
-        Text(
-          "\(stats.played) played · \(percent(stats.successRate)) \(successWord(stats.line.kind))"
-        )
+        Group {
+          if stats.line.kind == .word {
+            Text("\(stats.played) played · \(percent(stats.successRate)) won")
+          } else {
+            Text("\(stats.played) played · \(percent(stats.successRate)) starred")
+          }
+        }
         .font(.subheadline)
         .foregroundStyle(.secondary)
       }
@@ -105,16 +110,20 @@ struct LineStatsView: View {
         HStack(alignment: .top) {
           Figure(value: "\(stats.played)", label: "Played")
           Figure(
-            value: percent(stats.successRate), label: successWord(stats.line.kind).capitalized)
+            value: percent(stats.successRate), label: stats.line.kind == .word ? "Won" : "Starred")
           Figure(value: "\(stats.currentStreak)", label: "Streak")
           Figure(value: "\(stats.bestStreak)", label: "Best streak")
         }
         if stats.line.kind == .word {
           GuessDistribution(counts: stats.guessCounts, highlight: highlight)
         }
-        Text(
-          "Streaks count \(stats.line.kind == .word ? "solves" : "stars") on the puzzle's own day."
-        )
+        Group {
+          if stats.line.kind == .word {
+            Text("Streaks count solves on the puzzle's own day.")
+          } else {
+            Text("Streaks count stars on the puzzle's own day.")
+          }
+        }
         .font(.footnote)
         .foregroundStyle(.secondary)
       }
@@ -124,7 +133,7 @@ struct LineStatsView: View {
 
   private struct Figure: View {
     let value: String
-    let label: String
+    let label: LocalizedStringKey
 
     var body: some View {
       VStack(spacing: 4) {
@@ -224,8 +233,4 @@ struct StreakBadge: View {
 
 private func percent(_ rate: Double?) -> String {
   rate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "–"
-}
-
-private func successWord(_ kind: PuzzleKind) -> String {
-  kind == .word ? "won" : "starred"
 }

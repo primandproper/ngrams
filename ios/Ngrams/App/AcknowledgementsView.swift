@@ -5,8 +5,8 @@ import SwiftUI
 struct AcknowledgementsView: View {
   private struct Credit: Identifiable {
     let name: String
-    let use: String
-    let license: String
+    let use: LocalizedStringResource
+    let license: LocalizedStringResource
     let url: URL
 
     var id: String { name }

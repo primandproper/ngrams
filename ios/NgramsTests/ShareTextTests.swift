@@ -9,7 +9,7 @@ struct ShareTextTests {
     let game = WordGame(puzzle: wordPuzzle, guesses: ["plaza", "llama"], hardMode: true)
 
     #expect(
-      ShareText.word(game, on: testDay) == """
+      ShareText.word(game, on: testDay, in: .en) == """
         n-grams · Password 🇺🇸 n=5 · Jan 1 · 2/6* ⭐
         ⬛🟦🟦⬛🟦
         🟦🟦🟦🟦🟦
@@ -21,7 +21,9 @@ struct ShareTextTests {
   func lostWord() {
     let game = WordGame(puzzle: wordPuzzle, guesses: Array(repeating: "cramp", count: 6))
 
-    #expect(ShareText.word(game, on: testDay).hasPrefix("n-grams · Password 🇺🇸 n=5 · Jan 1 · X/6\n"))
+    #expect(
+      ShareText.word(game, on: testDay, in: .en).hasPrefix(
+        "n-grams · Password 🇺🇸 n=5 · Jan 1 · X/6\n"))
   }
 
   @Test("shares a tiles board's progress")
@@ -29,7 +31,7 @@ struct ShareTextTests {
     let game = TilesGame(puzzle: smallPuzzle, foundWords: ["abcd", "ab"])
 
     #expect(
-      ShareText.tiles(game, on: testDay) == """
+      ShareText.tiles(game, on: testDay, in: .en) == """
         n-grams · Tiles 🇺🇸 n=2 · Jan 1 · 3/50
         ▱▱▱▱▱▱▱▱▱▱ 1/2 targets
         https://primandproper.software/ngrams/
@@ -41,7 +43,7 @@ struct ShareTextTests {
     let game = PangramGame(puzzle: pangramPuzzle, foundWords: ["plaice"], hardMode: true)
 
     #expect(
-      ShareText.pangram(game, on: testDay) == """
+      ShareText.pangram(game, on: testDay, in: .en) == """
         n-grams · Pangram 🇺🇸 n=6 · Jan 1 · 13/13* ⭐
         ▰▰▰▰▰▰▰▰▰▰ 1/1 pangram
         https://primandproper.software/ngrams/
@@ -58,13 +60,13 @@ struct ShareTextTests {
     let pangrams = [PangramGame(puzzle: pangramPuzzle)]
 
     #expect(
-      ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: testDay) == """
+      ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: testDay, in: .en) == """
         n-grams · Jan 1
         🇺🇸 Password · n=5 2/6* ⭐
         🇺🇸 Tiles · n=2 3/50
         https://primandproper.software/ngrams/
         """)
     #expect(
-      ShareText.day(words: [words[1]], tiles: [], pangrams: pangrams, on: testDay) == nil)
+      ShareText.day(words: [words[1]], tiles: [], pangrams: pangrams, on: testDay, in: .en) == nil)
   }
 }

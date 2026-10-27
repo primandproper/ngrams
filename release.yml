@@ -39,10 +39,10 @@ app_store:
     # From make screenshots, uploaded in file-name order. Up to 10 per size.
     screenshots:
       # Required: iPhone with Dynamic Island (medium display), 1206x2622.
-      medium: ios/build/screenshots/medium/
+      medium: ios/build/screenshots/en/medium/
       # Optional: iPhone with Dynamic Island (large display), 1320x2868. Without it, App Store
       # Connect scales the medium set.
-      large: ios/build/screenshots/large/
+      large: ios/build/screenshots/en/large/
 
     # 170 characters. Editable any time, without a new version.
     promotional_text: >-
@@ -90,6 +90,48 @@ app_store:
     version_release: Manually release this version
     # ITSAppUsesNonExemptEncryption is false in the Info.plist, so the form doesn't ask.
     export_compliance: No non-exempt encryption
+
+  # The Spanish (Mexico) localization, added under App Information's language menu. Same limits as
+  # the English fields above; everything not here is shared across languages.
+  localizations:
+    es-MX:
+      name: n-grams
+      subtitle: Retos diarios de palabras
+      # From make screenshots SCREENSHOT_LANGUAGE=es.
+      screenshots:
+        medium: ios/build/screenshots/es/medium/
+        large: ios/build/screenshots/es/large/
+      promotional_text: >-
+        Nueve retos nuevos cada día, en inglés y español: descifra la contraseña, arma palabras
+        con fichas y encuentra el pangrama. Sin anuncios, sin cuentas, sin compras.
+      description: |-
+        n-grams es una serie diaria de retos de palabras sin nada más: sin anuncios, sin cuentas, sin medidores de energía y sin nada que comprar.
+
+        Tres juegos, cada uno en tres tamaños, para que n varíe:
+
+        CONTRASEÑA
+        Adivina la palabra oculta en seis intentos. Cada intento muestra qué letras están en su lugar y cuáles están en la palabra en otra posición. Juega con 4, 5 o 6 letras.
+
+        FICHAS
+        Un tablero de fragmentos de palabras esconde palabras largas que usan todas las fichas. Arma cualquier palabra que puedas con las fichas, encuentra todas las palabras ocultas y alcanza el puntaje objetivo para ganar una estrella. Las palabras ocultas tienen 3, 4 o 5 fichas.
+
+        PANGRAMA
+        Forma palabras con una rueda de letras, usando siempre la del centro. Encuentra los pangramas, las palabras que usan todas las letras, y alcanza el puntaje objetivo para ganar una estrella. Los tableros tienen 6, 7 u 8 letras.
+
+        INGLÉS Y ESPAÑOL
+        Cada juego viene en inglés y en español de México, con sus propias listas de palabras y un teclado con Ñ. Juega en un idioma o en los dos.
+
+        TODOS LOS DÍAS
+        Los retos nuevos llegan a medianoche dondequiera que estés, iguales para todos. ¿Te perdiste un día? Regresa y juégalo. Las rachas y las estadísticas llevan la cuenta de cada juego, tamaño e idioma por separado, y compartir tus resultados nunca revela las respuestas.
+
+        MODOS DIFÍCILES
+        Cada juego tiene un modo difícil opcional, para cuando las reglas normales empiecen a sentirse fáciles.
+
+        PRIVADA POR DISEÑO
+        Todos los retos vienen dentro de la app, así que funciona sin conexión. Tu progreso se queda en tu iPhone y la app no recopila nada sobre ti.
+      # 100 bytes; ñ and accented letters take two.
+      keywords: palabras,diario,adivinar,anagrama,letras,fichas,pangrama,vocabulario,ortografía,inglés,español
+      whats_new: ""
 
   app_review:
     # Name, email, and phone (international format, leading +) go in the form, not this public
@@ -141,7 +183,41 @@ google_play:
     feature_graphic: android/build/play/feature-graphic.png
     # 2-8 phone screenshots, from make screenshots, uploaded in file-name order. 1080x1920 (9:16):
     # neither side may be more than twice the other.
-    phone_screenshots: android/build/play/screenshots/
+    phone_screenshots: android/build/play/screenshots/en/
+
+  # Spanish (Latin America), added under Main store listing's Manage translations as es-419. Same
+  # limits as above; the icon and feature graphic are shared.
+  translations:
+    es-419:
+      app_name: n-grams
+      short_description: Retos diarios de palabras en español e inglés. Sin anuncios, sin cuentas.
+      # From make screenshots SCREENSHOT_LANGUAGE=es.
+      phone_screenshots: android/build/play/screenshots/es/
+      full_description: |-
+        n-grams es una serie diaria de retos de palabras sin nada más: sin anuncios, sin cuentas, sin medidores de energía y sin nada que comprar.
+
+        Tres juegos, cada uno en tres tamaños, para que n varíe:
+
+        CONTRASEÑA
+        Adivina la palabra oculta en seis intentos. Cada intento muestra qué letras están en su lugar y cuáles están en la palabra en otra posición. Juega con 4, 5 o 6 letras.
+
+        FICHAS
+        Un tablero de fragmentos de palabras esconde palabras largas que usan todas las fichas. Arma cualquier palabra que puedas con las fichas, encuentra todas las palabras ocultas y alcanza el puntaje objetivo para ganar una estrella. Las palabras ocultas tienen 3, 4 o 5 fichas.
+
+        PANGRAMA
+        Forma palabras con una rueda de letras, usando siempre la del centro. Encuentra los pangramas, las palabras que usan todas las letras, y alcanza el puntaje objetivo para ganar una estrella. Los tableros tienen 6, 7 u 8 letras.
+
+        INGLÉS Y ESPAÑOL
+        Cada juego viene en inglés y en español de México, con sus propias listas de palabras y un teclado con Ñ. Juega en un idioma o en los dos.
+
+        TODOS LOS DÍAS
+        Los retos nuevos llegan a medianoche dondequiera que estés, iguales para todos. ¿Te perdiste un día? Regresa y juégalo. Las rachas y las estadísticas llevan la cuenta de cada juego, tamaño e idioma por separado, y compartir tus resultados nunca revela las respuestas.
+
+        MODOS DIFÍCILES
+        Cada juego tiene un modo difícil opcional, para cuando las reglas normales empiecen a sentirse fáciles.
+
+        PRIVADA POR DISEÑO
+        Todos los retos vienen dentro de la app, así que funciona sin conexión. Tu progreso se queda en tu teléfono y la app no recopila nada sobre ti.
 
   store_settings:
     category: Game › Word

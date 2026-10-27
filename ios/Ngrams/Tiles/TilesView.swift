@@ -20,7 +20,9 @@ struct TilesScreen: View {
         ProgressView()
       }
     }
-    .navigationTitle("\(puzzle.language.flag) Tiles · \(puzzle.n)")
+    .navigationTitle(
+      Text(verbatim: "\(puzzle.language.flag) \(PuzzleKind.tiles.name) · \(puzzle.n)")
+    )
     .navigationBarTitleDisplayMode(.inline)
     .onAppear {
       if session == nil {
@@ -119,6 +121,7 @@ struct TilesView: View {
       Button("Clear") { session.clear() }
         .disabled(session.game.selection.isEmpty)
       Button("Submit") { session.submit() }
+        .accessibilityIdentifier("submit")
         .buttonStyle(.borderedProminent)
         .disabled(session.game.selection.isEmpty)
     }
@@ -258,11 +261,11 @@ private struct FeedbackBanner: View {
   private var message: String {
     switch feedback.kind {
     case .found(let word): "\(word.shown) +\(word.points)"
-    case .alreadyFound(let word): "Already found \(word.shown)"
-    case .blocked: "How dare you"
-    case .notAWord(let text): "\(text) isn't on the list"
-    case .saveFailed: "Couldn't save that word"
-    case .loadFailed: "Couldn't load saved progress"
+    case .alreadyFound(let word): String(localized: "Already found \(word.shown)")
+    case .blocked: String(localized: "How dare you")
+    case .notAWord(let text): String(localized: "\(text) isn't on the list")
+    case .saveFailed: String(localized: "Couldn't save that word")
+    case .loadFailed: String(localized: "Couldn't load saved progress")
     }
   }
 }

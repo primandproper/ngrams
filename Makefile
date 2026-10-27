@@ -9,6 +9,8 @@ BLOCKLIST_DIR := data/blocklists
 BANK_FILE     := data/bank/puzzles.json
 GUESS_DIR     := data/bank/guesses
 SCREENSHOTS   := ios/build/screenshots
+# The interface language the store screenshots are captured in: en or es.
+SCREENSHOT_LANGUAGE ?= en
 PLAY_ASSETS   := android/build/play
 HEADER        := ios/build/app-store/header.png
 
@@ -76,12 +78,22 @@ shellcheck:
 swift_lint:
 	@$(SCRIPTS_DIR)/lint_swift.sh $(IOS_DIR)
 
+# Fails on iOS text with no Spanish translation.
+.PHONY: ios_strings_lint
+ios_strings_lint:
+	@$(SCRIPTS_DIR)/lint_strings_ios.sh $(IOS_DIR)
+
 .PHONY: kotlin_lint
 kotlin_lint:
 	@$(SCRIPTS_DIR)/lint_kotlin.sh $(ANDROID_DIR)
 
+# Fails on Android text with no Spanish translation.
+.PHONY: android_strings_lint
+android_strings_lint:
+	@$(SCRIPTS_DIR)/lint_strings_android.sh $(ANDROID_DIR)
+
 .PHONY: lint
-lint: golang_lint shellcheck swift_lint kotlin_lint
+lint: golang_lint shellcheck swift_lint ios_strings_lint kotlin_lint android_strings_lint
 
 ## EXECUTION
 
@@ -127,17 +139,19 @@ bank: data
 .PHONY: screenshots
 screenshots: screenshots_ios screenshots_android
 
-# Captures the App Store screenshots into a folder per display size under SCREENSHOTS. Medium
-# (1206x2622) is the size App Store Connect requires; large (1320x2868) is optional.
+# Captures the App Store screenshots in SCREENSHOT_LANGUAGE into a folder per display size under
+# SCREENSHOTS/<language>. Medium (1206x2622) is the size App Store Connect requires; large
+# (1320x2868) is optional.
 .PHONY: screenshots_ios
 screenshots_ios:
-	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/medium "iPhone 18 Pro"
-	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/large "iPhone 18 Pro Max"
+	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/$(SCREENSHOT_LANGUAGE)/medium "iPhone 18 Pro" $(SCREENSHOT_LANGUAGE)
+	$(SCRIPTS_DIR)/screenshots.sh $(IOS_DIR) $(SCREENSHOTS)/$(SCREENSHOT_LANGUAGE)/large "iPhone 18 Pro Max" $(SCREENSHOT_LANGUAGE)
 
-# Captures the Play Store phone screenshots (1080x1920) into PLAY_ASSETS.
+# Captures the Play Store phone screenshots (1080x1920) in SCREENSHOT_LANGUAGE into
+# PLAY_ASSETS/screenshots/<language>.
 .PHONY: screenshots_android
 screenshots_android:
-	$(SCRIPTS_DIR)/screenshots_android.sh $(ANDROID_DIR) $(PLAY_ASSETS)/screenshots
+	$(SCRIPTS_DIR)/screenshots_android.sh $(ANDROID_DIR) $(PLAY_ASSETS)/screenshots/$(SCREENSHOT_LANGUAGE) $(SCREENSHOT_LANGUAGE)
 
 # Draws the store banners: the App Store header into HEADER and the Play feature graphic into
 # PLAY_ASSETS.

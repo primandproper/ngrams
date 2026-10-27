@@ -60,6 +60,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -78,6 +80,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.BuildConfig
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.PangramGame
 import software.primandproper.ngrams.core.PuzzleDay
@@ -149,11 +152,20 @@ sealed interface HomeState {
         /** Each line's current streak, as of today rather than the day shown. */
         val streaks: Map<PuzzleLine, Int>,
         val grouping: HomeGrouping,
-        val shareText: String?,
         /** Set until the player picks languages, with the device's languages as a first guess. */
         val languagePrompt: Set<Language>?,
     ) : HomeState {
         val multilingual: Boolean get() = entries.map { it.language }.toSet().size > 1
+
+        /** Every puzzle started on the day, in [interfaceLanguage], or null if none was. */
+        fun shareText(interfaceLanguage: Language): String? =
+            ShareText.day(
+                entries.filterIsInstance<HomeEntry.Word>().map { it.game },
+                entries.filterIsInstance<HomeEntry.Tiles>().map { it.game },
+                entries.filterIsInstance<HomeEntry.Pangram>().map { it.game },
+                day,
+                interfaceLanguage,
+            )
     }
 }
 
@@ -218,13 +230,6 @@ class HomeViewModel(
                 entries = sorted,
                 streaks = StatsBook.compute(saved.mapNotNull { it.record }, bank, today).mapValues { it.value.currentStreak },
                 grouping = settings.grouping,
-                shareText =
-                    ShareText.day(
-                        entries.filterIsInstance<HomeEntry.Word>().map { it.game },
-                        entries.filterIsInstance<HomeEntry.Tiles>().map { it.game },
-                        entries.filterIsInstance<HomeEntry.Pangram>().map { it.game },
-                        day,
-                    ),
                 languagePrompt =
                     if (settings.languages.isNullOrEmpty()) {
                         suggestedLanguages(LocaleList.getDefault().toLanguageTags().split(","))
@@ -260,12 +265,15 @@ private data class RowLabeling(
     /** Whether the headline leads with the language's flag: only when more than one language is on, and not under a language's own group. */
     val showsFlag: Boolean,
 ) {
-    fun title(entry: HomeEntry): String {
+    fun title(
+        entry: HomeEntry,
+        interfaceLanguage: Language,
+    ): String {
         val title =
             when (section) {
                 HomeGrouping.GAME -> "n=${entry.n}"
-                HomeGrouping.N -> entry.kind.displayName
-                null -> "${entry.kind.displayName} · n=${entry.n}"
+                HomeGrouping.N -> entry.kind.displayName(interfaceLanguage)
+                null -> "${entry.kind.displayName(interfaceLanguage)} · n=${entry.n}"
             }
         return if (showsFlag) "${entry.language.flag} $title" else title
     }
@@ -306,6 +314,7 @@ fun HomeScreen(
     }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val loaded = state as? HomeState.Loaded
+    val interfaceLanguage = interfaceLanguage()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
@@ -316,7 +325,11 @@ fun HomeScreen(
                         Text("n-grams")
                         if (loaded != null) {
                             Text(
-                                if (loaded.day == loaded.today) "Today" else loaded.day.name(includingYear = true),
+                                if (loaded.day == loaded.today) {
+                                    stringResource(R.string.today)
+                                } else {
+                                    loaded.day.name(includingYear = true, interfaceLanguage)
+                                },
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -324,14 +337,18 @@ fun HomeScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onStats) { Icon(Icons.Filled.BarChart, contentDescription = "Stats") }
+                    IconButton(onClick = onStats, modifier = Modifier.testTag("stats")) {
+                        Icon(Icons.Filled.BarChart, contentDescription = stringResource(R.string.stats))
+                    }
                 },
                 actions = {
                     if (loaded != null) {
                         GroupingMenu(loaded.grouping, model::group)
                     }
-                    IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
-                    loaded?.shareText?.let { ShareAction(it) }
+                    IconButton(onClick = onSettings, modifier = Modifier.testTag("settings-button")) {
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
+                    }
+                    loaded?.shareText(interfaceLanguage)?.let { ShareAction(it) }
                 },
                 scrollBehavior = scroll,
             )
@@ -346,7 +363,9 @@ fun HomeScreen(
             HomeState.Loading ->
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             HomeState.Failed ->
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("The puzzles didn't load.") }
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.puzzles_failed))
+                }
             is HomeState.Loaded -> {
                 DayList(current, padding) { onOpen(it, current.day) }
                 current.languagePrompt?.let { suggested -> LanguagePrompt(suggested, model::chooseLanguages) }
@@ -364,25 +383,33 @@ private fun DayList(
     val open = state.entries.filter { !it.isCompleted }
     val completed = state.entries.filter { it.isCompleted }
     val multilingual = state.multilingual
+    val interfaceLanguage = interfaceLanguage()
+    val noPuzzles = stringResource(R.string.no_puzzles, state.day.name(includingYear = true, interfaceLanguage))
+    val completedHeader = stringResource(R.string.completed)
 
     fun LazyListScope.rows(
         entries: List<HomeEntry>,
         labeling: RowLabeling,
     ) = items(entries, key = { "${labeling.section}-${it.id}" }) { entry ->
         // The screenshot test finds rows by tag, since their titles repeat across sections.
-        EntryRow(entry, labeling, state.streaks[entry.line] ?: 0, Modifier.testTag(entry.id).clickable { onOpen(entry) })
+        EntryRow(
+            entry,
+            labeling.title(entry, interfaceLanguage),
+            state.streaks[entry.line] ?: 0,
+            Modifier.testTag(entry.id).clickable { onOpen(entry) },
+        )
     }
 
     LazyColumn(Modifier.fillMaxSize().testTag("home"), contentPadding = padding) {
         if (state.entries.isEmpty()) {
-            item { Text("No puzzles for ${state.day.name(includingYear = true)}.", modifier = Modifier.padding(16.dp)) }
+            item { Text(noPuzzles, modifier = Modifier.padding(16.dp)) }
         }
         when (state.grouping) {
             HomeGrouping.GAME ->
                 for (kind in PuzzleKind.entries) {
                     val ofKind = open.filter { it.kind == kind }
                     if (ofKind.isEmpty()) continue
-                    item(key = "header-${kind.code}") { SectionHeader(kind.displayName) }
+                    item(key = "header-${kind.code}") { SectionHeader(kind.displayName(interfaceLanguage)) }
                     if (multilingual) {
                         for (language in Language.entries) {
                             val ofLanguage = ofKind.filter { it.language == language }
@@ -401,7 +428,7 @@ private fun DayList(
                 }
         }
         if (completed.isNotEmpty()) {
-            item(key = "header-completed") { SectionHeader("Completed") }
+            item(key = "header-completed") { SectionHeader(completedHeader) }
             rows(completed, RowLabeling(null, showsFlag = multilingual))
         }
     }
@@ -430,19 +457,22 @@ private fun LanguageHeader(language: Language) {
 @Composable
 private fun EntryRow(
     entry: HomeEntry,
-    labeling: RowLabeling,
+    title: String,
     streak: Int,
     modifier: Modifier,
 ) {
     ListItem(
         modifier = modifier,
-        headlineContent = { Text(labeling.title(entry)) },
+        headlineContent = { Text(title) },
         supportingContent = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     when (entry) {
-                        is HomeEntry.Tiles -> "${entry.game.puzzle.targets.size} targets"
-                        else -> "${entry.n} letters"
+                        is HomeEntry.Tiles -> {
+                            val targets = entry.game.puzzle.targets.size
+                            pluralStringResource(R.plurals.target_count, targets, targets)
+                        }
+                        else -> pluralStringResource(R.plurals.letter_count, entry.n, entry.n)
                     },
                 )
                 StreakBadge(streak)
@@ -450,7 +480,7 @@ private fun EntryRow(
         },
         trailingContent = {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                val star = @Composable { Icon(Icons.Filled.Star, contentDescription = "Star", tint = StarColor) }
+                val star = @Composable { Icon(Icons.Filled.Star, contentDescription = stringResource(R.string.star), tint = StarColor) }
                 when (entry) {
                     is HomeEntry.Word -> {
                         val game = entry.game
@@ -485,19 +515,21 @@ private fun GroupingMenu(
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.AutoMirrored.Filled.ViewList, contentDescription = "Group by")
+            Icon(Icons.AutoMirrored.Filled.ViewList, contentDescription = stringResource(R.string.group_by))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             Text(
-                "Group by",
+                stringResource(R.string.group_by),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             )
             for (option in HomeGrouping.entries) {
                 DropdownMenuItem(
-                    text = { Text(option.displayName) },
-                    trailingIcon = { if (option == grouping) Icon(Icons.Filled.Check, contentDescription = "Selected") },
+                    text = { Text(stringResource(option.label)) },
+                    trailingIcon = {
+                        if (option == grouping) Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.selected))
+                    },
                     onClick = {
                         onGroup(option)
                         open = false
@@ -517,21 +549,27 @@ private fun RowScope.DayPicker(
 ) {
     val earlier = state.days.lastOrNull { it < state.day }
     val later = state.days.firstOrNull { it > state.day }
-    val title = if (state.day == state.today) "Today" else state.day.name(includingYear = state.day.date.year != state.today.date.year)
+    val title =
+        if (state.day == state.today) {
+            stringResource(R.string.today)
+        } else {
+            state.day.name(includingYear = state.day.date.year != state.today.date.year, interfaceLanguage())
+        }
+    val chooseDay = stringResource(R.string.choose_day, title)
     var choosing by remember { mutableStateOf(false) }
 
     IconButton(onClick = { onPick(earlier) }, enabled = earlier != null) {
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Earlier")
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.earlier))
     }
     Spacer(Modifier.weight(1f))
-    TextButton(onClick = { choosing = true }, modifier = Modifier.semantics { contentDescription = "Choose a day, $title" }) {
+    TextButton(onClick = { choosing = true }, modifier = Modifier.semantics { contentDescription = chooseDay }) {
         Icon(Icons.Filled.CalendarMonth, contentDescription = null)
         Spacer(Modifier.width(6.dp))
         Text(title)
     }
     Spacer(Modifier.weight(1f))
     IconButton(onClick = { onPick(later) }, enabled = later != null) {
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Later")
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.later))
     }
 
     if (choosing) {
@@ -554,13 +592,13 @@ private fun RowScope.DayPicker(
                         onPick(PuzzleDay(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()))
                     }
                     choosing = false
-                }) { Text("Done") }
+                }) { Text(stringResource(R.string.done)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     onPick(null)
                     choosing = false
-                }, enabled = state.day != state.today) { Text("Today") }
+                }, enabled = state.day != state.today) { Text(stringResource(R.string.today)) }
             },
         ) { DatePicker(picker) }
     }
@@ -577,10 +615,10 @@ private fun LanguagePrompt(
     var draft by remember { mutableStateOf(suggested) }
     AlertDialog(
         onDismissRequest = {},
-        title = { Text("Languages") },
+        title = { Text(stringResource(R.string.languages)) },
         text = {
             Column {
-                Text("Which languages do you want puzzles in?")
+                Text(stringResource(R.string.language_prompt))
                 for (language in Language.entries) {
                     Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("${language.flag} ${language.displayName}", modifier = Modifier.weight(1f))
@@ -592,14 +630,14 @@ private fun LanguagePrompt(
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 Text(
-                    "You can change this any time in Settings.",
+                    stringResource(R.string.language_prompt_footer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onChoose(draft) }, enabled = draft.isNotEmpty()) { Text("Continue") }
+            TextButton(onClick = { onChoose(draft) }, enabled = draft.isNotEmpty()) { Text(stringResource(R.string.continue_button)) }
         },
     )
 }

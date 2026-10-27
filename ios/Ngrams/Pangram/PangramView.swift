@@ -20,7 +20,9 @@ struct PangramScreen: View {
         ProgressView()
       }
     }
-    .navigationTitle("\(puzzle.language.flag) Pangram · \(puzzle.n)")
+    .navigationTitle(
+      Text(verbatim: "\(puzzle.language.flag) \(PuzzleKind.pangram.name) · \(puzzle.n)")
+    )
     .navigationBarTitleDisplayMode(.inline)
     .onAppear {
       if session == nil {
@@ -95,6 +97,7 @@ struct PangramView: View {
       Button("Shuffle", systemImage: "shuffle") {
         withAnimation { session.shuffle() }
       }
+      .accessibilityIdentifier("shuffle")
       .labelStyle(.iconOnly)
       .buttonBorderShape(.circle)
       Button {
@@ -142,12 +145,9 @@ private struct ScoreHeader: View {
   /// The common pangrams the star needs, then any bonus ones apart, so a bonus find never looks
   /// like it went uncounted.
   private var pangramCount: String {
-    let total = game.puzzle.pangrams.count
-    let count =
-      total == 1
-      ? "\(game.foundPangrams) of 1 pangram" : "\(game.foundPangrams) of \(total) pangrams"
+    let count = String(localized: "\(game.foundPangrams) of \(game.puzzle.pangrams.count) pangrams")
     let bonus = game.foundBonusPangrams
-    return bonus == 0 ? count : "\(count) · \(bonus) bonus"
+    return bonus == 0 ? count : String(localized: "\(count) · \(bonus) bonus")
   }
 }
 
@@ -278,7 +278,10 @@ private struct FoundWords: View {
           Image(systemName: order == .alphabetical ? "textformat.abc" : "clock")
             .frame(minWidth: 44, minHeight: 44)
         }
-        .accessibilityLabel(order == .alphabetical ? "Sorted A to Z" : "Sorted newest first")
+        .accessibilityLabel(
+          order == .alphabetical
+            ? String(localized: "Sorted A to Z") : String(localized: "Sorted newest first")
+        )
         .accessibilityHint("Changes how found words are sorted")
       }
       LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)], spacing: 6) {
@@ -314,16 +317,19 @@ private struct FeedbackBanner: View {
   private var message: String {
     switch feedback.kind {
     case .found(let word, let pangram):
-      pangram ? "Pangram! \(word.shown) +\(word.points)" : "\(word.shown) +\(word.points)"
-    case .foundBonusPangram(let word): "Bonus pangram! \(word.shown) +\(word.points)"
-    case .alreadyFound(let word): "Already found \(word.shown)"
-    case .tooShort: "Too short"
-    case .missingCenter: "Missing the center letter"
-    case .blocked: "How dare you"
-    case .notAWord(let text): "\(text.uppercased()) isn't on the list"
-    case .needsPangram: "Start with a pangram"
-    case .saveFailed: "Couldn't save that word"
-    case .loadFailed: "Couldn't load saved progress"
+      pangram
+        ? String(localized: "Pangram! \(word.shown) +\(word.points)")
+        : "\(word.shown) +\(word.points)"
+    case .foundBonusPangram(let word):
+      String(localized: "Bonus pangram! \(word.shown) +\(word.points)")
+    case .alreadyFound(let word): String(localized: "Already found \(word.shown)")
+    case .tooShort: String(localized: "Too short")
+    case .missingCenter: String(localized: "Missing the center letter")
+    case .blocked: String(localized: "How dare you")
+    case .notAWord(let text): String(localized: "\(text.uppercased()) isn't on the list")
+    case .needsPangram: String(localized: "Start with a pangram")
+    case .saveFailed: String(localized: "Couldn't save that word")
+    case .loadFailed: String(localized: "Couldn't load saved progress")
     }
   }
 }

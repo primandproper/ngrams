@@ -16,13 +16,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -38,6 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.primandproper.ngrams.AppContainer
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.ProgressKey
@@ -135,7 +137,7 @@ class TilesViewModel(
                     TilesGame(puzzle, container.progress.find(key)?.entries.orEmpty(), solvedTilesLeave) to null
                 } catch (e: Exception) {
                     logger.error("loading tiles progress", e)
-                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback("Couldn't load saved progress")
+                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback(R.string.couldnt_load_progress)
                 }
             val first = withContext(Dispatchers.Default) { arranged(game, SeededGenerator(layoutSeed(key.language, key.kind, key.n, day))) }
             _state.value = TilesState.Playing(game, first, feedback)
@@ -179,10 +181,10 @@ class TilesViewModel(
         val (game, submission) = playing.game.submit()
         val feedback =
             when (submission) {
-                is TilesSubmission.Found -> Feedback("${submission.word.shown} +${submission.word.points}")
-                is TilesSubmission.AlreadyFound -> Feedback("Already found ${submission.word.shown}")
-                is TilesSubmission.Blocked -> Feedback("How dare you")
-                is TilesSubmission.NotAWord -> Feedback("${submission.text} isn't on the list")
+                is TilesSubmission.Found -> Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
+                is TilesSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
+                is TilesSubmission.Blocked -> Feedback(R.string.how_dare_you)
+                is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text))
                 TilesSubmission.Empty -> null
             }
         val justFinished = !playing.game.earnedStar && game.earnedStar
@@ -203,7 +205,7 @@ class TilesViewModel(
                 container.progress.append(word.word, key, completes = game.earnedStar)
             } catch (e: Exception) {
                 logger.withValue("word", word.word).error("saving a found word", e)
-                play { it.copy(feedback = Feedback("Couldn't save that word")) }
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_word)) }
             }
         }
     }
@@ -230,6 +232,7 @@ fun TilesScreen(
     val stats by model.stats.collectAsStateWithLifecycle()
     val playing = state as? TilesState.Playing
     var showingStats by rememberSaveable { mutableStateOf(false) }
+    val interfaceLanguage = interfaceLanguage()
 
     LaunchedEffect(playing?.justFinished) {
         if (playing?.justFinished == true) {
@@ -244,13 +247,13 @@ fun TilesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${language.flag} ${PuzzleKind.TILES.displayName} · $n") },
+                title = { Text("${language.flag} ${PuzzleKind.TILES.displayName(interfaceLanguage)} · $n") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
                 actions = {
                     if (playing != null && playing.game.found.isNotEmpty()) {
-                        ShareAction(ShareText.tiles(playing.game, day))
+                        ShareAction(ShareText.tiles(playing.game, day, interfaceLanguage))
                     }
                 },
             )
@@ -260,7 +263,7 @@ fun TilesScreen(
             FeedbackHost(playing?.feedback, model::feedbackShown)
             when (val current = state) {
                 TilesState.Loading -> CircularProgressIndicator()
-                TilesState.Failed -> Text("Couldn't load this board.")
+                TilesState.Failed -> Text(stringResource(R.string.couldnt_load_board))
                 is TilesState.Playing -> Board(current, model)
             }
         }
@@ -279,16 +282,24 @@ private fun Board(
     model: TilesViewModel,
 ) {
     val game = playing.game
+    val currentWord = stringResource(R.string.current_word, game.selectedText)
+    // The screenshot test waits for the board by this tag, whatever the language.
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp).testTag("board"),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         ScoreHeader(
             score = game.score,
             target = game.puzzle.targetScore,
-            progress = "${game.solvedTargets.size} of ${game.puzzle.targets.size} targets",
+            progress =
+                pluralStringResource(
+                    R.plurals.targets_progress,
+                    game.puzzle.targets.size,
+                    game.solvedTargets.size,
+                    game.puzzle.targets.size,
+                ),
             earnedStar = game.earnedStar,
-            missing = "Find every target for the star",
+            missing = stringResource(R.string.tiles_star_missing),
         )
         if (game.solvedTilesLeave) {
             SolvedTargets(game)
@@ -298,7 +309,7 @@ private fun Board(
             style = MaterialTheme.typography.headlineSmall,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Current word ${game.selectedText}" },
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = currentWord },
             textAlign = TextAlign.Center,
         )
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -320,11 +331,11 @@ private fun Board(
             OutlinedButton(onClick = model::shuffle) {
                 Icon(Icons.Filled.Shuffle, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Shuffle")
+                Text(stringResource(R.string.shuffle))
             }
             Spacer(Modifier.weight(1f))
-            OutlinedButton(onClick = model::clear, enabled = game.selection.isNotEmpty()) { Text("Clear") }
-            Button(onClick = model::submit, enabled = game.selection.isNotEmpty()) { Text("Submit") }
+            OutlinedButton(onClick = model::clear, enabled = game.selection.isNotEmpty()) { Text(stringResource(R.string.clear)) }
+            Button(onClick = model::submit, enabled = game.selection.isNotEmpty()) { Text(stringResource(R.string.submit)) }
         }
         FoundWords(game.found)
     }
@@ -399,7 +410,7 @@ private fun SolvedTargets(game: TilesGame) {
 @Composable
 private fun FoundWords(words: List<TilesWord>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("${words.size} found", style = MaterialTheme.typography.titleMedium)
+        Text(pluralStringResource(R.plurals.found_count, words.size, words.size), style = MaterialTheme.typography.titleMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (word in words.reversed()) {
                 FoundWord(word.shown, word.points)

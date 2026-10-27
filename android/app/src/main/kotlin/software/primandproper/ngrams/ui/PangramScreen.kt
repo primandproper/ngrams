@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Shuffle
@@ -48,6 +47,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -74,6 +76,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import software.primandproper.ngrams.AppContainer
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.FoundWordOrder
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
@@ -151,7 +154,7 @@ class PangramViewModel(
                     PangramGame(puzzle, saved?.entries.orEmpty(), saved?.hardMode ?: hardMode) to null
                 } catch (e: Exception) {
                     logger.error("loading pangram progress", e)
-                    PangramGame(puzzle, hardMode = hardMode) to Feedback("Couldn't load saved progress")
+                    PangramGame(puzzle, hardMode = hardMode) to Feedback(R.string.couldnt_load_progress)
                 }
             val outer = puzzle.letters.filter { it != puzzle.center }.toMutableList()
             outer.shuffle(SeededGenerator(layoutSeed(key.language, key.kind, key.n, day)))
@@ -189,17 +192,17 @@ class PangramViewModel(
                 is PangramSubmission.Found -> {
                     val word = submission.word
                     when {
-                        puzzle.isBonusPangram(word.word) -> Feedback("Bonus pangram! ${word.shown} +${word.points}")
-                        word.word in puzzle.pangrams -> Feedback("Pangram! ${word.shown} +${word.points}")
-                        else -> Feedback("${word.shown} +${word.points}")
+                        puzzle.isBonusPangram(word.word) -> Feedback(R.string.bonus_pangram_found, listOf(word.shown, word.points))
+                        word.word in puzzle.pangrams -> Feedback(R.string.pangram_found, listOf(word.shown, word.points))
+                        else -> Feedback(R.string.word_points, listOf(word.shown, word.points))
                     }
                 }
-                is PangramSubmission.AlreadyFound -> Feedback("Already found ${submission.word.shown}")
-                PangramSubmission.TooShort -> Feedback("Too short")
-                PangramSubmission.MissingCenter -> Feedback("Missing the center letter")
-                is PangramSubmission.Blocked -> Feedback("How dare you")
-                is PangramSubmission.NotAWord -> Feedback("${submission.text.uppercase()} isn't on the list")
-                PangramSubmission.NeedsPangram -> Feedback("Start with a pangram")
+                is PangramSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
+                PangramSubmission.TooShort -> Feedback(R.string.too_short)
+                PangramSubmission.MissingCenter -> Feedback(R.string.missing_center)
+                is PangramSubmission.Blocked -> Feedback(R.string.how_dare_you)
+                is PangramSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text.uppercase()))
+                PangramSubmission.NeedsPangram -> Feedback(R.string.needs_pangram)
                 PangramSubmission.Empty -> null
             }
         val justFinished = !playing.game.earnedStar && game.earnedStar
@@ -220,7 +223,7 @@ class PangramViewModel(
                 container.progress.append(word.word, key, game.hardMode, completes = game.earnedStar)
             } catch (e: Exception) {
                 logger.withValue("word", word.word).error("saving a found word", e)
-                play { it.copy(feedback = Feedback("Couldn't save that word")) }
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_word)) }
             }
         }
     }
@@ -245,6 +248,7 @@ fun PangramScreen(
     val order by model.order.collectAsStateWithLifecycle()
     val playing = state as? PangramState.Playing
     var showingStats by rememberSaveable { mutableStateOf(false) }
+    val interfaceLanguage = interfaceLanguage()
 
     LaunchedEffect(playing?.justFinished) {
         if (playing?.justFinished == true) {
@@ -259,13 +263,13 @@ fun PangramScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${language.flag} ${PuzzleKind.PANGRAM.displayName} · $n") },
+                title = { Text("${language.flag} ${PuzzleKind.PANGRAM.displayName(interfaceLanguage)} · $n") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
                 actions = {
                     if (playing != null && playing.game.found.isNotEmpty()) {
-                        ShareAction(ShareText.pangram(playing.game, day))
+                        ShareAction(ShareText.pangram(playing.game, day, interfaceLanguage))
                     }
                 },
             )
@@ -275,7 +279,7 @@ fun PangramScreen(
             FeedbackHost(playing?.feedback, model::feedbackShown)
             when (val current = state) {
                 PangramState.Loading -> CircularProgressIndicator()
-                PangramState.Failed -> Text("Couldn't load this board.")
+                PangramState.Failed -> Text(stringResource(R.string.couldnt_load_board))
                 is PangramState.Playing -> Board(current, order, model)
             }
         }
@@ -303,7 +307,7 @@ private fun Board(
             target = game.puzzle.targetScore,
             progress = pangramCount(game),
             earnedStar = game.earnedStar,
-            missing = "Find every pangram for the star",
+            missing = stringResource(R.string.pangram_star_missing),
         )
         CurrentWord(game)
         LetterWheel(game.puzzle.center, playing.outer, model::type)
@@ -311,24 +315,30 @@ private fun Board(
             OutlinedButton(onClick = model::deleteLetter, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) {
                 Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Delete")
+                Text(stringResource(R.string.delete))
             }
-            FilledTonalIconButton(onClick = model::shuffle) { Icon(Icons.Filled.Shuffle, contentDescription = "Shuffle") }
-            Button(onClick = model::submit, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Enter") }
+            FilledTonalIconButton(onClick = model::shuffle) {
+                Icon(Icons.Filled.Shuffle, contentDescription = stringResource(R.string.shuffle))
+            }
+            Button(onClick = model::submit, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.enter))
+            }
         }
         FoundWords(game, order, model::toggleOrder)
     }
 }
 
 /** The common pangrams the star needs, then any bonus ones apart, so a bonus find never looks like it went uncounted. */
+@Composable
 private fun pangramCount(game: PangramGame): String {
     val total = game.puzzle.pangrams.size
-    val count = if (total == 1) "${game.foundPangrams} of 1 pangram" else "${game.foundPangrams} of $total pangrams"
-    return if (game.foundBonusPangrams == 0) count else "$count · ${game.foundBonusPangrams} bonus"
+    val count = pluralStringResource(R.plurals.pangrams_progress, total, game.foundPangrams, total)
+    return if (game.foundBonusPangrams == 0) count else stringResource(R.string.pangram_bonus_count, count, game.foundBonusPangrams)
 }
 
 @Composable
 private fun CurrentWord(game: PangramGame) {
+    val currentWord = stringResource(R.string.current_word, game.current)
     val primary = MaterialTheme.colorScheme.primary
     Text(
         buildAnnotatedString {
@@ -345,7 +355,7 @@ private fun CurrentWord(game: PangramGame) {
         fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center,
         maxLines = 1,
-        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = "Current word ${game.current}" },
+        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = currentWord },
     )
 }
 
@@ -368,10 +378,13 @@ private fun LetterWheel(
     val span = 360f / maxOf(outer.size, 1)
     val wedgeColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val centerColor = MaterialTheme.colorScheme.primary
+    val centerLabel = stringResource(R.string.center_letter, center.uppercaseChar().toString())
 
+    // The screenshot test waits for the wheel by this tag, whatever the language.
     Box(
         Modifier
             .size(wheelRadius * 2)
+            .testTag("wheel")
             .pointerInput(outer) {
                 detectTapGestures { tap ->
                     val c = Offset(size.width / 2f, size.height / 2f)
@@ -406,7 +419,7 @@ private fun LetterWheel(
             }
             drawCircle(centerColor, centerRadius.toPx(), c)
         }
-        LetterKey(center, Offset.Zero, MaterialTheme.colorScheme.onPrimary, "${center.uppercaseChar()}, center") { onLetter(center) }
+        LetterKey(center, Offset.Zero, MaterialTheme.colorScheme.onPrimary, centerLabel) { onLetter(center) }
         for ((i, letter) in outer.withIndex()) {
             val angle = Math.toRadians((-90.0 + span * i))
             val reach = (wheelRadius - ringWidth / 2).value
@@ -458,11 +471,16 @@ private fun FoundWords(
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${game.found.size} found", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                pluralStringResource(R.plurals.found_count, game.found.size, game.found.size),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
             IconButton(onClick = onToggleOrder) {
                 Icon(
                     if (order == FoundWordOrder.ALPHABETICAL) Icons.Filled.SortByAlpha else Icons.Filled.Schedule,
-                    contentDescription = if (order == FoundWordOrder.ALPHABETICAL) "Sorted A to Z" else "Sorted newest first",
+                    contentDescription =
+                        stringResource(if (order == FoundWordOrder.ALPHABETICAL) R.string.sorted_alphabetical else R.string.sorted_newest),
                 )
             }
         }

@@ -32,6 +32,17 @@ android {
         buildConfig = true
     }
 
+    // Lists the app's languages for Android 13's per-app language setting, from its res/values-*.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+    // make android_strings_lint runs Android lint for one rule: text with no Spanish translation.
+    lint {
+        checkOnly += "MissingTranslation"
+        abortOnError = true
+    }
+
     sourceSets {
         // The same bank and guess lists the iOS app bundles, read in place.
         getByName("main").assets.srcDir("../../data/bank")

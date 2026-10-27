@@ -1,5 +1,5 @@
 {
-  "description": "Share text. puzzles: one puzzle's share, restored from saved entries (hardMode is solved-tiles-leave for tiles). days: a whole day's share from every game given, or null when none was started.",
+  "description": "Share text, written in the sharer's interface language (interface, English when absent). puzzles: one puzzle's share, restored from saved entries (hardMode is solved-tiles-leave for tiles). days: a whole day's share from every game given, or null when none was started. dayNames: how a day is written, with and without its year.",
   "day": "2027-01-01",
   "bank": {"version": 1, "seed": 1, "days": [{"date": "2027-01-01", "puzzles": [
     {"lang": "en", "kind": "word", "n": 5, "answer": "llama"},
@@ -17,7 +17,13 @@
     {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false,
      "text": "n-grams · Tiles 🇺🇸 n=2 · Jan 1 · 3/50\n▱▱▱▱▱▱▱▱▱▱ 1/2 targets\nhttps://primandproper.software/ngrams/"},
     {"kind": "pangram", "lang": "en", "n": 6, "entries": ["plaice"], "hardMode": true,
-     "text": "n-grams · Pangram 🇺🇸 n=6 · Jan 1 · 13/13* ⭐\n▰▰▰▰▰▰▰▰▰▰ 1/1 pangram\nhttps://primandproper.software/ngrams/"}
+     "text": "n-grams · Pangram 🇺🇸 n=6 · Jan 1 · 13/13* ⭐\n▰▰▰▰▰▰▰▰▰▰ 1/1 pangram\nhttps://primandproper.software/ngrams/"},
+    {"kind": "word", "lang": "en", "n": 5, "entries": ["plaza", "llama"], "hardMode": true, "interface": "es",
+     "text": "n-grams · Contraseña 🇺🇸 n=5 · 1 ene · 2/6* ⭐\n⬛🟦🟦⬛🟦\n🟦🟦🟦🟦🟦\nhttps://primandproper.software/ngrams/"},
+    {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false, "interface": "es",
+     "text": "n-grams · Fichas 🇺🇸 n=2 · 1 ene · 3/50\n▱▱▱▱▱▱▱▱▱▱ 1/2 objetivos\nhttps://primandproper.software/ngrams/"},
+    {"kind": "pangram", "lang": "en", "n": 6, "entries": ["plaice"], "hardMode": true, "interface": "es",
+     "text": "n-grams · Pangrama 🇺🇸 n=6 · 1 ene · 13/13* ⭐\n▰▰▰▰▰▰▰▰▰▰ 1/1 pangrama\nhttps://primandproper.software/ngrams/"}
   ],
   "days": [
     {"games": [
@@ -26,9 +32,20 @@
       {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false},
       {"kind": "pangram", "lang": "en", "n": 6, "entries": [], "hardMode": false}],
      "text": "n-grams · Jan 1\n🇺🇸 Password · n=5 2/6* ⭐\n🇺🇸 Tiles · n=2 3/50\nhttps://primandproper.software/ngrams/"},
+    {"interface": "es", "games": [
+      {"kind": "word", "lang": "en", "n": 5, "entries": ["plaza", "llama"], "hardMode": true},
+      {"kind": "tiles", "lang": "en", "n": 2, "entries": ["abcd", "ab"], "hardMode": false}],
+     "text": "n-grams · 1 ene\n🇺🇸 Contraseña · n=5 2/6* ⭐\n🇺🇸 Fichas · n=2 3/50\nhttps://primandproper.software/ngrams/"},
     {"games": [
       {"kind": "word", "lang": "es", "n": 4, "entries": [], "hardMode": false},
       {"kind": "pangram", "lang": "en", "n": 6, "entries": [], "hardMode": false}],
      "text": null}
+  ],
+  "dayNames": [
+    {"day": "2027-01-01", "interface": "en", "includingYear": false, "name": "Jan 1"},
+    {"day": "2027-01-01", "interface": "en", "includingYear": true, "name": "Jan 1, 2027"},
+    {"day": "2026-10-28", "interface": "es", "includingYear": false, "name": "28 oct"},
+    {"day": "2026-10-28", "interface": "es", "includingYear": true, "name": "28 oct 2026"},
+    {"day": "2026-12-05", "interface": "es", "includingYear": false, "name": "5 dic"}
   ]
 }

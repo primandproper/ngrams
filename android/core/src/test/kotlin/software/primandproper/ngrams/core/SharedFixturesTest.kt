@@ -246,12 +246,14 @@ class SharedFixturesTest {
                 game["hardMode"].jsonPrimitive.boolean,
             )
 
+        fun interfaceLanguage(case: JsonElement) = case.jsonObject["interface"]?.let { Language.fromCode(it.string) } ?: Language.EN
+
         for (case in fixture.getValue("puzzles").jsonArray) {
             val text =
                 when (case["kind"].string) {
-                    "word" -> ShareText.word(word(case), day)
-                    "tiles" -> ShareText.tiles(tiles(case), day)
-                    else -> ShareText.pangram(pangram(case), day)
+                    "word" -> ShareText.word(word(case), day, interfaceLanguage(case))
+                    "tiles" -> ShareText.tiles(tiles(case), day, interfaceLanguage(case))
+                    else -> ShareText.pangram(pangram(case), day, interfaceLanguage(case))
                 }
             assertEquals(case["text"].string, text)
         }
@@ -263,8 +265,13 @@ class SharedFixturesTest {
                     games.filter { it["kind"].string == "tiles" }.map(::tiles),
                     games.filter { it["kind"].string == "pangram" }.map(::pangram),
                     day,
+                    interfaceLanguage(case),
                 )
             assertEquals(case["text"].takeIf { it != JsonNull }?.string, text)
+        }
+        for (case in fixture.getValue("dayNames").jsonArray) {
+            val name = PuzzleDay.parse(case["day"].string)!!.name(case["includingYear"].jsonPrimitive.boolean, interfaceLanguage(case))
+            assertEquals(case["name"].string, name)
         }
     }
 

@@ -5,12 +5,9 @@ import android.graphics.Bitmap
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -27,7 +24,7 @@ import java.io.File
 /**
  * Walks the app through its Play Store screenshots on a seeded, pinned day, saving each to the
  * app's external files. make screenshots runs this on an emulator and pulls them off; make test
- * leaves it out.
+ * leaves it out. It finds everything by test tag, so it runs in whatever language the app is set to.
  */
 @RunWith(AndroidJUnit4::class)
 class ScreenshotTest {
@@ -50,27 +47,27 @@ class ScreenshotTest {
             snap("01-home")
 
             open("word-es-5")
-            waitFor(hasContentDescription("Enter"))
+            waitFor(hasTestTag("keyboard"))
             snap("02-password")
             back()
 
             open("tiles-en-4")
-            waitFor(hasText("Submit"))
+            waitFor(hasTestTag("board"))
             snap("03-tiles")
             back()
 
             open("pangram-en-7")
-            waitFor(hasContentDescription("Shuffle"))
+            waitFor(hasTestTag("wheel"))
             snap("04-pangram")
             back()
 
-            compose.onNodeWithContentDescription("Stats").performClick()
-            waitFor(hasText("Stats"))
+            compose.onNodeWithTag("stats").performClick()
+            waitFor(hasTestTag("stats-list"))
             snap("05-stats")
             back()
 
-            compose.onNodeWithContentDescription("Settings").performClick()
-            waitFor(hasText("Hard mode"))
+            compose.onNodeWithTag("settings-button").performClick()
+            waitFor(hasTestTag("settings"))
             snap("06-settings")
         }
     }
@@ -87,9 +84,9 @@ class ScreenshotTest {
 
     /** Goes back to home and waits out the transition, while which home is in the tree twice. */
     private fun back() {
-        compose.onNodeWithContentDescription("Back").performClick()
+        compose.onNodeWithTag("back").performClick()
         compose.waitUntil(timeoutMillis = 15_000) {
-            compose.onAllNodes(hasContentDescription("Back")).fetchSemanticsNodes().isEmpty() &&
+            compose.onAllNodes(hasTestTag("back")).fetchSemanticsNodes().isEmpty() &&
                 compose.onAllNodes(hasTestTag("home")).fetchSemanticsNodes().size == 1
         }
         compose.waitForIdle()

@@ -19,6 +19,12 @@ nonisolated enum Language: String, CaseIterable, Codable, Sendable {
     case .es: "🇲🇽"
     }
   }
+
+  /// The language the interface is showing: the app's best match for the device's preferred
+  /// languages, which also decides the language of game names, dates and share text.
+  static var interface: Language {
+    Bundle.main.preferredLocalizations.first.flatMap(Language.init(rawValue:)) ?? .en
+  }
 }
 
 /// The game kinds, as the bank and saved progress name them.
@@ -27,11 +33,18 @@ nonisolated enum PuzzleKind: String, CaseIterable, Codable, Sendable {
   case tiles
   case pangram
 
-  var name: String {
-    switch self {
-    case .word: "Password"
-    case .tiles: "Tiles"
-    case .pangram: "Pangram"
+  /// The game's name in the interface's language.
+  var name: String { name(in: .interface) }
+
+  /// The game's name in `interfaceLanguage`, which share text uses as well as the screens.
+  func name(in interfaceLanguage: Language) -> String {
+    switch (interfaceLanguage, self) {
+    case (.en, .word): "Password"
+    case (.en, .tiles): "Tiles"
+    case (.en, .pangram): "Pangram"
+    case (.es, .word): "Contraseña"
+    case (.es, .tiles): "Fichas"
+    case (.es, .pangram): "Pangrama"
     }
   }
 }

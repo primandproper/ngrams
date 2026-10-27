@@ -36,10 +36,21 @@ data class PuzzleDay(
     }
 }
 
-private val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+private val englishMonths = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+private val spanishMonths = listOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
-/** "Oct 25", or "Oct 25, 2026" with the year. Always English, like the rest of the app's text. */
-fun PuzzleDay.name(includingYear: Boolean): String {
-    val name = "${monthNames[date.monthValue - 1]} ${date.dayOfMonth}"
-    return if (includingYear) "$name, ${date.year}" else name
+/**
+ * The day in [interfaceLanguage]: "Oct 25" or "Oct 25, 2026" in English, "25 oct" or "25 oct 2026"
+ * in Spanish. Spelled out here rather than left to the platform's formatter, so share text matches
+ * the iOS app's exactly.
+ */
+fun PuzzleDay.name(
+    includingYear: Boolean,
+    interfaceLanguage: Language,
+): String {
+    val month = date.monthValue - 1
+    return when (interfaceLanguage) {
+        Language.EN -> "${englishMonths[month]} ${date.dayOfMonth}" + if (includingYear) ", ${date.year}" else ""
+        Language.ES -> "${date.dayOfMonth} ${spanishMonths[month]}" + if (includingYear) " ${date.year}" else ""
+    }
 }

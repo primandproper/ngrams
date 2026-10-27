@@ -76,6 +76,7 @@ struct SettingsView: View {
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("Done") { dismiss() }
+            .accessibilityIdentifier("settings-done")
         }
       }
     }
@@ -101,10 +102,10 @@ struct SettingsView: View {
   }
 
   /// What a game's hard mode changes.
-  private func rule(_ kind: PuzzleKind) -> String {
+  private func rule(_ kind: PuzzleKind) -> LocalizedStringResource {
     switch kind {
     case .word:
-      "Every guess uses the hints so far: green letters stay put and yellow letters appear somewhere. A puzzle keeps the mode it had at its first guess."
+      "Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess."
     case .tiles:
       "Found targets leave the board, so their tiles can't spell other words. Finding the last target ends the board."
     case .pangram:

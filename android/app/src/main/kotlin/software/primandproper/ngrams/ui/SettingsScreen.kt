@@ -1,5 +1,6 @@
 package software.primandproper.ngrams.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,12 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,10 +23,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import software.primandproper.ngrams.AppContainer
+import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.PuzzleKind
 import software.primandproper.ngrams.settings.Settings
@@ -44,21 +46,20 @@ fun SettingsScreen(
     val store = container.settings
     val languages = settings.languages ?: Language.entries.toSet()
     val played = Language.entries.filter { it in languages }
+    val interfaceLanguage = interfaceLanguage()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
-            Header("Languages")
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).testTag("settings")) {
+            Header(stringResource(R.string.languages))
             for (language in Language.entries) {
                 val on = language in languages
                 SwitchRow(
@@ -74,18 +75,20 @@ fun SettingsScreen(
             val only = played.singleOrNull()
             if (only != null) {
                 for (kind in PuzzleKind.entries) {
-                    Header(kind.displayName)
-                    SwitchRow("Hard mode", settings.hardMode(kind, only)) { scope.launch { store.setHardMode(kind, only, it) } }
-                    Footer(hardModeRules.getValue(kind))
+                    Header(kind.displayName(interfaceLanguage))
+                    SwitchRow(stringResource(R.string.hard_mode), settings.hardMode(kind, only)) {
+                        scope.launch { store.setHardMode(kind, only, it) }
+                    }
+                    Footer(stringResource(hardModeRules.getValue(kind)))
                 }
             } else {
                 for (language in played) {
                     Header("${language.flag} ${language.displayName}")
                     for (kind in PuzzleKind.entries) {
                         SwitchRow(
-                            "${kind.displayName} hard mode",
+                            stringResource(R.string.game_hard_mode, kind.displayName(interfaceLanguage)),
                             settings.hardMode(kind, language),
-                            supporting = hardModeRules.getValue(kind),
+                            supporting = stringResource(hardModeRules.getValue(kind)),
                         ) { scope.launch { store.setHardMode(kind, language, it) } }
                     }
                 }
@@ -93,7 +96,7 @@ fun SettingsScreen(
             HorizontalDivider()
             ListItem(
                 modifier = Modifier.clickable(onClick = onAcknowledgements),
-                headlineContent = { Text("Acknowledgements") },
+                headlineContent = { Text(stringResource(R.string.acknowledgements)) },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
             )
         }
@@ -103,12 +106,9 @@ fun SettingsScreen(
 /** What each game's hard mode changes. */
 private val hardModeRules =
     mapOf(
-        PuzzleKind.WORD to
-            "Every guess uses the hints so far: green letters stay put and yellow letters appear somewhere. " +
-            "A puzzle keeps the mode it had at its first guess.",
-        PuzzleKind.TILES to
-            "Found targets leave the board, so their tiles can't spell other words. Finding the last target ends the board.",
-        PuzzleKind.PANGRAM to "The first word on a board has to be a pangram. A board keeps the mode it had at its first word.",
+        PuzzleKind.WORD to R.string.word_hard_mode_rule,
+        PuzzleKind.TILES to R.string.tiles_hard_mode_rule,
+        PuzzleKind.PANGRAM to R.string.pangram_hard_mode_rule,
     )
 
 @Composable
@@ -146,32 +146,44 @@ private fun SwitchRow(
     )
 }
 
+/** A credit: what it's for and its license are resources, the rest is the same in every language. */
 private data class Credit(
     val name: String,
-    val use: String,
-    val license: String,
+    @StringRes val use: Int,
+    val license: License,
     val url: String,
 )
 
+/** A license by its own name, or one that reads differently per language. */
+private sealed interface License {
+    data class Named(
+        val name: String,
+    ) : License
+
+    data class Described(
+        @StringRes val description: Int,
+    ) : License
+}
+
 private val wordLists =
     listOf(
-        Credit("ENABLE", "The English dictionary.", "Public domain", "https://github.com/dolph/dictionary"),
         Credit(
-            "RLA-ES",
-            "The Mexican Spanish dictionary, from Recursos Lingüísticos Abiertos del Español.",
-            "MPL 1.1",
-            "https://github.com/sbosio/rla-es",
+            "ENABLE",
+            R.string.credit_enable,
+            License.Described(R.string.license_public_domain),
+            "https://github.com/dolph/dictionary",
         ),
+        Credit("RLA-ES", R.string.credit_rla_es, License.Named("MPL 1.1"), "https://github.com/sbosio/rla-es"),
         Credit(
             "FrequencyWords",
-            "Word frequencies from OpenSubtitles 2018, by Hermit Dave, which decide the common words.",
-            "CC BY-SA 4.0",
+            R.string.credit_frequency_words,
+            License.Named("CC BY-SA 4.0"),
             "https://github.com/hermitdave/FrequencyWords",
         ),
     )
 
 private val source =
-    Credit("n-grams", "This app's source and puzzle bank.", "MIT, puzzles CC BY-SA 4.0", "https://github.com/primandproper/ngrams")
+    Credit("n-grams", R.string.credit_source, License.Described(R.string.license_source), "https://github.com/primandproper/ngrams")
 
 /** Credits for the word lists every puzzle is built from, as their licenses ask, and for the app's own source. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,21 +193,19 @@ fun AcknowledgementsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Acknowledgements") },
+                title = { Text(stringResource(R.string.acknowledgements)) },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    BackButton(onBack)
                 },
             )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
-            Header("Word lists")
+            Header(stringResource(R.string.word_lists))
             for (credit in wordLists) {
                 CreditRow(credit) { uris.openUri(credit.url) }
             }
-            Header("Source")
+            Header(stringResource(R.string.source))
             CreditRow(source) { uris.openUri(source.url) }
         }
     }
@@ -209,6 +219,13 @@ private fun CreditRow(
     ListItem(
         modifier = Modifier.clickable(onClick = onOpen),
         headlineContent = { Text(credit.name) },
-        supportingContent = { Text("${credit.use} ${credit.license}.") },
+        supportingContent = {
+            val license =
+                when (val license = credit.license) {
+                    is License.Named -> license.name
+                    is License.Described -> stringResource(license.description)
+                }
+            Text("${stringResource(credit.use)} $license.")
+        },
     )
 }

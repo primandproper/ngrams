@@ -2,6 +2,7 @@ package software.primandproper.ngrams.ui
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -38,22 +40,47 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.withTimeoutOrNull
+import software.primandproper.ngrams.R
+import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.PuzzleKind
 import software.primandproper.ngrams.core.PuzzleLine
 import kotlin.math.roundToInt
 
-/** Something to tell the player about their last move. [id] tells two identical messages apart. */
+/**
+ * Something to tell the player about their last move: a string resource and its format arguments,
+ * resolved when it's shown so ViewModels stay free of Context. [id] tells two identical messages
+ * apart.
+ */
 data class Feedback(
-    val message: String,
+    @StringRes val message: Int,
+    val args: List<Any> = emptyList(),
     val id: Long = System.nanoTime(),
 )
+
+/** The language the interface is showing: the one its string resources are in. */
+fun Context.interfaceLanguage(): Language = Language.fromCode(getString(R.string.interface_language)) ?: Language.EN
+
+/** The language the interface is showing, for game names, dates and share text. */
+@Composable
+fun interfaceLanguage(): Language = Language.fromCode(stringResource(R.string.interface_language)) ?: Language.EN
+
+/** A top bar's way back, tagged so tests find it whatever the language. */
+@Composable
+fun BackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack, modifier = Modifier.testTag("back")) {
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+    }
+}
 
 /** The orange the iOS app uses for stars and streaks. */
 val StarColor = Color(0xFFFF9500)
@@ -68,10 +95,12 @@ fun BoxScope.FeedbackHost(
     onShown: (Feedback) -> Unit,
 ) {
     val host = remember { SnackbarHostState() }
+    val context = LocalContext.current
     LaunchedEffect(feedback) {
         if (feedback != null) {
             host.currentSnackbarData?.dismiss()
-            withTimeoutOrNull(1_500) { host.showSnackbar(feedback.message) }
+            val message = context.getString(feedback.message, *feedback.args.toTypedArray())
+            withTimeoutOrNull(1_500) { host.showSnackbar(message) }
             onShown(feedback)
         }
     }
@@ -82,9 +111,10 @@ fun BoxScope.FeedbackHost(
 @Composable
 fun StreakBadge(streak: Int) {
     if (streak > 0) {
+        val description = pluralStringResource(R.plurals.streak_description, streak, streak)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clearAndSetSemantics { contentDescription = "$streak day streak" },
+            modifier = Modifier.clearAndSetSemantics { contentDescription = description },
         ) {
             Icon(Icons.Filled.LocalFireDepartment, contentDescription = null, tint = StarColor, modifier = Modifier.padding(end = 2.dp))
             Text("$streak", color = StarColor, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
@@ -106,7 +136,7 @@ fun share(
 fun ShareAction(text: String) {
     val context = LocalContext.current
     IconButton(onClick = { share(context, text) }) {
-        Icon(Icons.Filled.Share, contentDescription = "Share")
+        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.share))
     }
 }
 
@@ -130,7 +160,12 @@ fun ScoreHeader(
         if (earnedStar) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Star, contentDescription = null, tint = StarColor)
-                Text("Star earned", color = StarColor, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp))
+                Text(
+                    stringResource(R.string.star_earned),
+                    color = StarColor,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
             }
         } else if (score >= target) {
             Text(missing, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
@@ -138,9 +173,22 @@ fun ScoreHeader(
     }
 }
 
-val PuzzleLine.title: String get() = "${language.flag} ${kind.displayName} · n=$n"
+/** The line's flag, game and size, with the game named in [interfaceLanguage]. */
+fun PuzzleLine.title(interfaceLanguage: Language): String = "${language.flag} ${kind.displayName(interfaceLanguage)} · n=$n"
 
-fun successWord(kind: PuzzleKind): String = if (kind == PuzzleKind.WORD) "won" else "starred"
+/** What counts as success on a line: winning a Password puzzle, starring a board. */
+@StringRes
+fun successLabel(kind: PuzzleKind): Int = if (kind == PuzzleKind.WORD) R.string.won else R.string.starred
+
+/** "12 played · 50% won", or starred for a board. */
+@Composable
+fun statsSummary(stats: LineStats): String =
+    pluralStringResource(
+        if (stats.line.kind == PuzzleKind.WORD) R.plurals.stats_won_summary else R.plurals.stats_starred_summary,
+        stats.played,
+        stats.played,
+        percent(stats.successRate),
+    )
 
 fun percent(rate: Double?): String = rate?.let { "${(it * 100).roundToInt()}%" } ?: "–"
 
@@ -155,16 +203,16 @@ fun LineStatsView(
         verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
         Row(Modifier.fillMaxWidth()) {
-            Figure("${stats.played}", "Played")
-            Figure(percent(stats.successRate), successWord(stats.line.kind).replaceFirstChar { it.uppercase() })
-            Figure("${stats.currentStreak}", "Streak")
-            Figure("${stats.bestStreak}", "Best streak")
+            Figure("${stats.played}", stringResource(R.string.played))
+            Figure(percent(stats.successRate), stringResource(successLabel(stats.line.kind)))
+            Figure("${stats.currentStreak}", stringResource(R.string.streak))
+            Figure("${stats.bestStreak}", stringResource(R.string.best_streak))
         }
         if (stats.line.kind == PuzzleKind.WORD) {
             GuessDistribution(stats.guessCounts, highlight)
         }
         Text(
-            "Streaks count ${if (stats.line.kind == PuzzleKind.WORD) "solves" else "stars"} on the puzzle's own day.",
+            stringResource(if (stats.line.kind == PuzzleKind.WORD) R.string.streaks_count_solves else R.string.streaks_count_stars),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -192,11 +240,12 @@ private fun GuessDistribution(
 ) {
     val most = maxOf(counts.maxOrNull() ?: 0, 1)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Guesses", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.guesses), style = MaterialTheme.typography.titleMedium)
         counts.forEachIndexed { index, count ->
+            val description = pluralStringResource(R.plurals.guess_distribution_row, index + 1, index + 1, count)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clearAndSetSemantics { contentDescription = "${index + 1} guesses: $count" },
+                modifier = Modifier.clearAndSetSemantics { contentDescription = description },
             ) {
                 Text("${index + 1}", modifier = Modifier.width(16.dp))
                 BoxWithConstraints(Modifier.weight(1f)) {
@@ -235,9 +284,9 @@ fun LineStatsSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(line.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp))
+        Text(line.title(interfaceLanguage()), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp))
         if (stats == null) {
-            Text("No stats yet", modifier = Modifier.padding(16.dp))
+            Text(stringResource(R.string.no_stats), modifier = Modifier.padding(16.dp))
         } else {
             LineStatsView(stats, highlight)
         }

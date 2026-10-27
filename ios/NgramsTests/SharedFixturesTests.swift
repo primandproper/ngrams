@@ -246,12 +246,17 @@ struct SharedFixturesTests {
         foundWords: entries(game), hardMode: hard(game))
     }
 
+    func interface(_ testCase: Object) -> Language {
+      (testCase["interface"] as? String).flatMap(Language.init(rawValue:)) ?? .en
+    }
+
     for testCase in try cases(fixture, "puzzles") {
+      let language = interface(testCase)
       let text =
         switch testCase["kind"] as? String {
-        case "word": ShareText.word(try word(testCase), on: day)
-        case "tiles": ShareText.tiles(try tiles(testCase), on: day)
-        default: ShareText.pangram(try pangram(testCase), on: day)
+        case "word": ShareText.word(try word(testCase), on: day, in: language)
+        case "tiles": ShareText.tiles(try tiles(testCase), on: day, in: language)
+        default: ShareText.pangram(try pangram(testCase), on: day, in: language)
         }
       #expect(text == testCase["text"] as? String)
     }
@@ -261,8 +266,14 @@ struct SharedFixturesTests {
         words: try games.filter { $0["kind"] as? String == "word" }.map(word),
         tiles: try games.filter { $0["kind"] as? String == "tiles" }.map(tiles),
         pangrams: try games.filter { $0["kind"] as? String == "pangram" }.map(pangram),
-        on: day)
+        on: day, in: interface(testCase))
       #expect(text == testCase["text"] as? String)
+    }
+    for testCase in try cases(fixture, "dayNames") {
+      let name = try #require(PuzzleDay(testCase["day"] as? String ?? ""))
+        .name(
+          includingYear: try #require(testCase["includingYear"] as? Bool), in: interface(testCase))
+      #expect(name == testCase["name"] as? String)
     }
   }
 

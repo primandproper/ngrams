@@ -31,17 +31,24 @@ nonisolated struct PuzzleDay: Hashable, Comparable, Sendable, CustomStringConver
     self.init(year: parts.year ?? 0, month: parts.month ?? 0, day: parts.day ?? 0)
   }
 
-  private static let monthNames = [
+  private static let englishMonths = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ]
+  private static let spanishMonths = [
+    "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic",
+  ]
 
-  /// "Oct 25", or "Oct 25, 2026" with the year. Always English, like the rest of the app's text.
-  func name(includingYear: Bool) -> String {
-    guard Self.monthNames.indices.contains(month - 1) else {
+  /// The day in `interfaceLanguage`: "Oct 25" or "Oct 25, 2026" in English, "25 oct" or
+  /// "25 oct 2026" in Spanish. Spelled out here rather than left to a date formatter, so share
+  /// text matches the Android app's exactly.
+  func name(includingYear: Bool, in interfaceLanguage: Language = .interface) -> String {
+    guard Self.englishMonths.indices.contains(month - 1) else {
       return description
     }
-    let name = "\(Self.monthNames[month - 1]) \(day)"
-    return includingYear ? "\(name), \(year)" : name
+    return switch interfaceLanguage {
+    case .en: "\(Self.englishMonths[month - 1]) \(day)" + (includingYear ? ", \(year)" : "")
+    case .es: "\(day) \(Self.spanishMonths[month - 1])" + (includingYear ? " \(year)" : "")
+    }
   }
 
   /// The midnight that starts the day on `calendar`, or nil if the calendar has no such date.

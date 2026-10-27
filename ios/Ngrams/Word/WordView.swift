@@ -32,7 +32,9 @@ struct WordScreen: View {
           "Couldn't load the word list", systemImage: "exclamationmark.triangle")
       }
     }
-    .navigationTitle("\(puzzle.language.flag) Password · \(puzzle.n)")
+    .navigationTitle(
+      Text(verbatim: "\(puzzle.language.flag) \(PuzzleKind.word.name) · \(puzzle.n)")
+    )
     .navigationBarTitleDisplayMode(.inline)
   }
 
@@ -158,9 +160,9 @@ extension LetterMark {
 
   var accessibilityName: String {
     switch self {
-    case .correct: "correct"
-    case .present: "in the word"
-    case .absent: "not in the word"
+    case .correct: String(localized: "correct")
+    case .present: String(localized: "in the word")
+    case .absent: String(localized: "not in the word")
     }
   }
 }
@@ -187,7 +189,7 @@ private struct LetterCell: View {
       }
       .accessibilityLabel(
         letter.map { "\(String($0).uppercased())\(mark.map { ", \($0.accessibilityName)" } ?? "")" }
-          ?? "empty")
+          ?? String(localized: "empty"))
   }
 
   private var foreground: Color {
@@ -215,12 +217,9 @@ private struct ResultLine: View {
       Text("\(WordGame.maxGuesses - game.guesses.count) guesses left")
         .foregroundStyle(.secondary)
     case .won(let guesses):
-      Label(
-        guesses == 1 ? "Solved in 1 guess" : "Solved in \(guesses) guesses",
-        systemImage: "star.fill"
-      )
-      .font(.headline)
-      .foregroundStyle(.orange)
+      Label("Solved in \(guesses) guesses", systemImage: "star.fill")
+        .font(.headline)
+        .foregroundStyle(.orange)
     case .lost:
       Text("The word was \(game.puzzle.shown.uppercased())")
         .font(.headline)
@@ -247,6 +246,7 @@ private struct Keyboard: View {
         HStack(spacing: 5) {
           if index == rows.count - 1 {
             ActionKey(title: "Enter", systemImage: "return", action: onEnter)
+              .accessibilityIdentifier("enter")
           }
           ForEach(row, id: \.self) { letter in
             LetterKey(letter: letter, mark: marks[letter]) { onLetter(letter) }
@@ -293,7 +293,7 @@ private struct LetterKey: View {
 }
 
 private struct ActionKey: View {
-  let title: String
+  let title: LocalizedStringKey
   let systemImage: String
   let action: () -> Void
 
@@ -323,24 +323,27 @@ private struct FeedbackBanner: View {
 
   private var message: String {
     switch feedback.kind {
-    case .tooShort: "Not enough letters"
-    case .blocked: "How dare you"
-    case .notAWord(let text): "\(text.uppercased()) isn't on the list"
+    case .tooShort: String(localized: "Not enough letters")
+    case .blocked: String(localized: "How dare you")
+    case .notAWord(let text): String(localized: "\(text.uppercased()) isn't on the list")
     case .missingHint(.position(let letter, let index)):
-      "\(ordinal(index + 1)) letter must be \(String(letter).uppercased())"
-    case .missingHint(.letter(let letter)): "Guess must contain \(String(letter).uppercased())"
-    case .saveFailed: "Couldn't save that guess"
-    case .loadFailed: "Couldn't load saved progress"
+      String(localized: "\(ordinal(index + 1)) letter must be \(String(letter).uppercased())")
+    case .missingHint(.letter(let letter)):
+      String(localized: "Guess must contain \(String(letter).uppercased())")
+    case .saveFailed: String(localized: "Couldn't save that guess")
+    case .loadFailed: String(localized: "Couldn't load saved progress")
     }
   }
 }
 
-/// English ordinals, correct through 20th.
+/// Ordinals for letter positions, correct through 20th in English: "1st", or "1.ª" in Spanish,
+/// which agrees with the feminine "letra".
 private func ordinal(_ n: Int) -> String {
-  switch n {
-  case 1: "1st"
-  case 2: "2nd"
-  case 3: "3rd"
-  default: "\(n)th"
+  switch (Language.interface, n) {
+  case (.es, _): "\(n).ª"
+  case (.en, 1): "1st"
+  case (.en, 2): "2nd"
+  case (.en, 3): "3rd"
+  case (.en, _): "\(n)th"
   }
 }

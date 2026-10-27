@@ -48,7 +48,9 @@ struct HomeView: View {
         streaks: StatsBook.current(allProgress, bank: bank).mapValues(\.currentStreak)
       )
       .navigationTitle("n-grams")
-      .navigationSubtitle(day == today ? "Today" : day.description)
+      .navigationSubtitle(
+        day == today ? String(localized: "Today") : day.name(includingYear: true)
+      )
       .navigationDestination(for: WordRoute.self) { route in
         WordScreen(puzzle: route.puzzle, day: route.day)
       }
@@ -82,9 +84,11 @@ struct HomeView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
           Button("Settings", systemImage: "gearshape") { showingSettings = true }
+            .accessibilityIdentifier("settings")
         }
         ToolbarItem(placement: .topBarLeading) {
           Button("Stats", systemImage: "chart.bar") { showingStats = true }
+            .accessibilityIdentifier("stats")
         }
         ToolbarItemGroup(placement: .bottomBar) {
           DayPicker(days: days, today: today, picked: $pickedDay, choosing: $choosingDay)
@@ -110,7 +114,7 @@ enum HomeGrouping: String, CaseIterable {
 
   var name: String {
     switch self {
-    case .game: "Game"
+    case .game: String(localized: "Game")
     case .n: "n"
     }
   }
@@ -255,7 +259,7 @@ private struct DayList: View {
 
     List {
       if all.isEmpty {
-        Text("No puzzles for \(day.description).")
+        Text("No puzzles for \(day.name(includingYear: true)).")
           .foregroundStyle(.secondary)
       }
       switch grouping {
@@ -485,7 +489,8 @@ private struct DayPicker: View {
   private var later: PuzzleDay? { days.first { $0 > current } }
 
   private var title: String {
-    current == today ? "Today" : current.name(includingYear: current.year != today.year)
+    current == today
+      ? String(localized: "Today") : current.name(includingYear: current.year != today.year)
   }
 
   var body: some View {

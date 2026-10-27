@@ -49,7 +49,7 @@ jobs:
           git diff --exit-code
 
       - name: Lint
-        run: make swift_lint
+        run: make swift_lint ios_strings_lint
 
       - name: Test
         run: make test_ios
@@ -78,7 +78,7 @@ jobs:
           git diff --exit-code
 
       - name: Lint
-        run: make kotlin_lint
+        run: make kotlin_lint android_strings_lint
 
       - name: Test
         run: make test_android

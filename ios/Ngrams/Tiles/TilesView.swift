@@ -1,3 +1,4 @@
+import DesignSystem
 import Observability
 import SwiftData
 import SwiftUI
@@ -39,6 +40,7 @@ struct TilesScreen: View {
 struct TilesView: View {
   @Bindable var session: TilesSession
 
+  @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
 
   /// One column per tile in a target, so every board is a full rectangle and a solved target
@@ -84,12 +86,12 @@ struct TilesView: View {
         FeedbackBanner(feedback: feedback)
           .task(id: feedback.id) {
             try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { session.dismissFeedback(feedback) }
+            withAnimation(theme.animation.normal) { session.dismissFeedback(feedback) }
           }
           .transition(.move(edge: .top).combined(with: .opacity))
       }
     }
-    .animation(.default, value: session.feedback)
+    .animation(theme.animation.normal, value: session.feedback)
   }
 
   private var board: some View {
@@ -110,7 +112,7 @@ struct TilesView: View {
           }
         }
       }
-      .animation(.default, value: session.boardTiles)
+      .animation(theme.animation.normal, value: session.boardTiles)
     }
   }
 
@@ -132,6 +134,8 @@ struct TilesView: View {
 private struct ScoreHeader: View {
   let game: TilesGame
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     VStack(spacing: 6) {
       HStack(alignment: .firstTextBaseline) {
@@ -147,7 +151,7 @@ private struct ScoreHeader: View {
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.orange)
+          .foregroundStyle(theme.colors.tertiary)
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every target for the star")
           .font(.subheadline)
@@ -160,6 +164,8 @@ private struct ScoreHeader: View {
 private struct SolvedTargets: View {
   let game: TilesGame
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     if !game.solvedTargets.isEmpty {
       VStack(spacing: 6) {
@@ -170,7 +176,8 @@ private struct SolvedTargets: View {
                 .font(.callout.monospaced())
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(.green.opacity(0.2), in: .rect(cornerRadius: 6))
+                .background(
+                  theme.colors.success.opacity(0.2), in: .rect(cornerRadius: theme.radius.sm))
             }
             Spacer()
             Text(shownWord(target))
@@ -194,11 +201,13 @@ private struct TileButton: View {
   let solved: Bool
   let action: () -> Void
 
+  @Environment(\.dsTheme) private var theme
+
   private var background: Color {
     if position != nil {
-      return .accentColor
+      return theme.colors.primary
     }
-    return solved ? .green.opacity(0.2) : Color(.secondarySystemBackground)
+    return solved ? theme.colors.success.opacity(0.2) : theme.colors.cardBackground
   }
 
   var body: some View {
@@ -208,13 +217,15 @@ private struct TileButton: View {
         .lineLimit(1)
         .minimumScaleFactor(0.6)
         .frame(maxWidth: .infinity, minHeight: 56)
-        .foregroundStyle(position == nil ? Color.primary : Color.white)
-        .background(background, in: .rect(cornerRadius: 10))
+        .foregroundStyle(
+          position == nil ? theme.colors.textPrimary : theme.colors.textOnPrimary
+        )
+        .background(background, in: .rect(cornerRadius: theme.radius.lg))
         .overlay(alignment: .topTrailing) {
           if let position {
             Text("\(position + 1)")
               .font(.caption2.weight(.bold))
-              .foregroundStyle(.white.opacity(0.8))
+              .foregroundStyle(theme.colors.textOnPrimary.opacity(0.8))
               .padding(4)
           }
         }

@@ -25,6 +25,9 @@ packages:
   primitives-swift:
     url: https://github.com/primandproper/primitives-swift
     from: 0.0.1
+  platform-ui-swift:
+    url: https://github.com/primandproper/platform-ui-swift
+    from: 0.0.1
 
 targets:
   Ngrams:
@@ -40,6 +43,8 @@ targets:
     dependencies:
       - package: primitives-swift
         product: Observability
+      - package: platform-ui-swift
+        product: DesignSystem
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: software.primandproper.ngrams

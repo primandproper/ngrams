@@ -1,3 +1,4 @@
+import DesignSystem
 import Observability
 import SwiftData
 import SwiftUI
@@ -10,6 +11,7 @@ struct NgramsApp: App {
     WindowGroup {
       RootView()
         .environment(\.pillars, pillars)
+        .dsTheme(.ngrams)
     }
     .modelContainer(for: PuzzleProgress.self, inMemory: Self.inMemory)
   }

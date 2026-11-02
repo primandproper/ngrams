@@ -1,3 +1,4 @@
+import DesignSystem
 import SwiftData
 import SwiftUI
 
@@ -207,6 +208,7 @@ private struct DayList: View {
 
   @Query private var progress: [PuzzleProgress]
   @AppStorage(SettingsKey.hardMode(.tiles)) private var tilesHardModes = LanguageSelection([])
+  @Environment(\.dsTheme) private var theme
 
   init(
     words: [WordPuzzle], tiles: [TilesPuzzle], pangrams: [PangramPuzzle], day: PuzzleDay,
@@ -302,8 +304,8 @@ private struct DayList: View {
         }
       }
     }
-    .animation(.default, value: completed.map(\.id))
-    .animation(.default, value: grouping)
+    .animation(theme.animation.normal, value: completed.map(\.id))
+    .animation(theme.animation.normal, value: grouping)
     .toolbar {
       if let text = shareText(all) {
         ToolbarItem(placement: .topBarTrailing) {
@@ -376,6 +378,8 @@ private struct WordRow: View {
   let labeling: RowLabeling
   let streak: Int
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     let puzzle = game.puzzle
     HStack {
@@ -393,7 +397,7 @@ private struct WordRow: View {
       switch game.status {
       case .won(let guesses):
         Image(systemName: "star.fill")
-          .foregroundStyle(.orange)
+          .foregroundStyle(theme.colors.tertiary)
         Text("\(guesses)/\(WordGame.maxGuesses)")
           .monospacedDigit()
           .foregroundStyle(.secondary)
@@ -417,6 +421,8 @@ private struct PangramRow: View {
   let labeling: RowLabeling
   let streak: Int
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     let puzzle = game.puzzle
     HStack {
@@ -433,7 +439,7 @@ private struct PangramRow: View {
       Spacer()
       if game.earnedStar {
         Image(systemName: "star.fill")
-          .foregroundStyle(.orange)
+          .foregroundStyle(theme.colors.tertiary)
       }
       Text("\(game.score) / \(puzzle.targetScore)")
         .monospacedDigit()
@@ -446,6 +452,8 @@ private struct TilesRow: View {
   let game: TilesGame
   let labeling: RowLabeling
   let streak: Int
+
+  @Environment(\.dsTheme) private var theme
 
   var body: some View {
     let puzzle = game.puzzle
@@ -463,7 +471,7 @@ private struct TilesRow: View {
       Spacer()
       if game.earnedStar {
         Image(systemName: "star.fill")
-          .foregroundStyle(.orange)
+          .foregroundStyle(theme.colors.tertiary)
       }
       Text("\(game.score) / \(puzzle.targetScore)")
         .monospacedDigit()

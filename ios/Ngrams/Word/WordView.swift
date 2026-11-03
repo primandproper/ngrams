@@ -1,3 +1,4 @@
+import DesignSystem
 import Observability
 import SwiftData
 import SwiftUI
@@ -58,6 +59,7 @@ struct WordScreen: View {
 struct WordView: View {
   @Bindable var session: WordSession
 
+  @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
 
   var body: some View {
@@ -97,12 +99,12 @@ struct WordView: View {
         FeedbackBanner(feedback: feedback)
           .task(id: feedback.id) {
             try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { session.dismissFeedback(feedback) }
+            withAnimation(theme.animation.normal) { session.dismissFeedback(feedback) }
           }
           .transition(.move(edge: .top).combined(with: .opacity))
       }
     }
-    .animation(.default, value: session.feedback)
+    .animation(theme.animation.normal, value: session.feedback)
   }
 
   private var solvedIn: Int? {
@@ -116,6 +118,8 @@ struct WordView: View {
 private struct GuessGrid: View {
   let game: WordGame
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     let marks = game.marks
     VStack(spacing: 6) {
@@ -127,7 +131,7 @@ private struct GuessGrid: View {
         }
       }
     }
-    .animation(.default, value: game.guesses)
+    .animation(theme.animation.normal, value: game.guesses)
   }
 
   private func letter(row: Int, column: Int) -> Character? {
@@ -150,10 +154,10 @@ private struct GuessGrid: View {
 
 extension LetterMark {
   /// The fill behind a marked letter. Absent letters get none; they fade instead.
-  var fill: Color? {
+  func fill(in theme: DSTheme) -> Color? {
     switch self {
-    case .correct: .accentColor
-    case .present: Color(.systemGray)
+    case .correct: theme.colors.primary
+    case .present: theme.colors.secondary
     case .absent: nil
     }
   }
@@ -175,15 +179,18 @@ private struct LetterCell: View {
   /// Nil until the letter's guess is submitted.
   let mark: LetterMark?
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
+    let fill = mark?.fill(in: theme)
     Text(letter.map { String($0).uppercased() } ?? " ")
       .font(.title.weight(.bold))
       .frame(width: Self.size, height: Self.size)
       .foregroundStyle(foreground)
-      .background(mark?.fill ?? .clear, in: .rect(cornerRadius: 8))
+      .background(fill ?? .clear, in: .rect(cornerRadius: theme.radius.md))
       .overlay {
-        if mark?.fill == nil {
-          RoundedRectangle(cornerRadius: 8)
+        if fill == nil {
+          RoundedRectangle(cornerRadius: theme.radius.md)
             .strokeBorder(border, lineWidth: 2)
         }
       }
@@ -194,22 +201,24 @@ private struct LetterCell: View {
 
   private var foreground: Color {
     switch mark {
-    case .absent: .secondary
-    case .correct, .present: .white
-    case nil: .primary
+    case .absent: theme.colors.textSecondary
+    case .correct, .present: theme.colors.textOnPrimary
+    case nil: theme.colors.textPrimary
     }
   }
 
   private var border: Color {
     if mark == .absent || letter == nil {
-      return Color(.systemGray5)
+      return theme.colors.border
     }
-    return Color(.systemGray)
+    return theme.colors.secondary
   }
 }
 
 private struct ResultLine: View {
   let game: WordGame
+
+  @Environment(\.dsTheme) private var theme
 
   var body: some View {
     switch game.status {
@@ -219,7 +228,7 @@ private struct ResultLine: View {
     case .won(let guesses):
       Label("Solved in \(guesses) guesses", systemImage: "star.fill")
         .font(.headline)
-        .foregroundStyle(.orange)
+        .foregroundStyle(theme.colors.tertiary)
     case .lost:
       Text("The word was \(game.puzzle.shown.uppercased())")
         .font(.headline)
@@ -266,13 +275,15 @@ private struct LetterKey: View {
   let mark: LetterMark?
   let action: () -> Void
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     Button(action: action) {
       Text(String(letter).uppercased())
         .font(.title3.weight(.semibold))
         .frame(maxWidth: .infinity, minHeight: 52)
         .foregroundStyle(foreground)
-        .background(background, in: .rect(cornerRadius: 6))
+        .background(background, in: .rect(cornerRadius: theme.radius.sm))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(
@@ -281,14 +292,15 @@ private struct LetterKey: View {
 
   private var foreground: Color {
     switch mark {
-    case .absent: Color(.tertiaryLabel)
-    case .correct, .present: .white
-    case nil: .primary
+    case .absent: theme.colors.textTertiary
+    case .correct, .present: theme.colors.textOnPrimary
+    case nil: theme.colors.textPrimary
     }
   }
 
   private var background: Color {
-    mark?.fill ?? Color(mark == .absent ? .systemGray6 : .systemGray5)
+    mark?.fill(in: theme)
+      ?? (mark == .absent ? theme.colors.cardBackground : theme.colors.cardBackgroundElevated)
   }
 }
 
@@ -297,12 +309,14 @@ private struct ActionKey: View {
   let systemImage: String
   let action: () -> Void
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     Button(action: action) {
       Image(systemName: systemImage)
         .font(.title3)
         .frame(minWidth: 48, minHeight: 52)
-        .background(Color(.systemGray4), in: .rect(cornerRadius: 6))
+        .background(theme.colors.borderSubtle, in: .rect(cornerRadius: theme.radius.sm))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(title)

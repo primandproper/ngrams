@@ -235,9 +235,32 @@ calling Swift from Kotlin costs more than porting 1,400 lines of pure logic.
 What keeps the two from drifting is `testdata/`: rules and scoring for every game, hard-mode
 hints, stats and streaks, share text, seeded layouts, and the hard-mode settings keys and their
 migration, as JSON cases both test suites run. The layouts reproduce Swift's SplitMix64, `next(upperBound:)`, and `shuffle(using:)` bit for bit, so
-a day's board starts in the same order on both platforms. Each app otherwise follows its own
-platform's design language. Shares end with one link for both stores,
-`https://primandproper.software/ngrams/`.
+a day's board starts in the same order on both platforms. Shares end with one link for both
+stores, `https://primandproper.software/ngrams/`.
+
+### Look
+
+Both apps take their look from one ngrams theme over the shared platform-ui libraries
+(`platform-ui-swift` on iOS, `platform-ui-kt` on Android), whose own defaults stay plain. Lists,
+forms, navigation and the stock buttons stay native to each platform. The game boards are the
+app's own views, drawn from the theme's tokens (2026-11-02).
+
+The theme has no room for an app's own roles, so the games borrow the nearest token. iOS sets
+it in `ios/Ngrams/App/Theme.swift`; Android's should match these values.
+
+| Token                      | Value (iOS)                 | Used for                                                      |
+| -------------------------- | --------------------------- | ------------------------------------------------------------- |
+| `primary`                  | accent color (system blue)  | correct letter, selected tile, center letter, highlighted bar |
+| `secondary`                | `systemGray`                | letter in the word, a typed letter's cell, other bars         |
+| `tertiary`                 | orange                      | star, streak flame                                            |
+| `success`                  | green, at 20% opacity       | solved tiles                                                  |
+| `cardBackground`           | `secondarySystemBackground` | tiles, wedges, absent keys                                    |
+| `cardBackgroundElevated`   | `systemGray5`               | letter keys                                                   |
+| `border`                   | `systemGray5`               | an empty or absent letter's cell                              |
+| `borderSubtle`             | `systemGray4`               | Enter and Delete keys                                         |
+| `textOnPrimary`            | white                       | text on any filled color                                      |
+| radius `xs`/`sm`/`md`/`lg` | 4 / 6 / 8 / 10              | stat bars / keys, solved chips / letter cells / tiles         |
+| animation `normal`         | SwiftUI's `.default`        | every animated change                                         |
 
 ## Generator
 

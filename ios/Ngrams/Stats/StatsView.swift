@@ -1,3 +1,4 @@
+import DesignSystem
 import SwiftData
 import SwiftUI
 
@@ -154,6 +155,8 @@ private struct GuessDistribution: View {
   let counts: [Int]
   let highlight: Int?
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     let most = max(counts.max() ?? 0, 1)
     VStack(alignment: .leading, spacing: 6) {
@@ -167,15 +170,15 @@ private struct GuessDistribution: View {
           GeometryReader { geometry in
             Text("\(count)")
               .font(.caption.weight(.bold).monospacedDigit())
-              .foregroundStyle(.white)
+              .foregroundStyle(theme.colors.textOnPrimary)
               .padding(.horizontal, 8)
               .frame(
                 width: max(30, geometry.size.width * CGFloat(count) / CGFloat(most)),
                 height: geometry.size.height, alignment: .trailing
               )
               .background(
-                index + 1 == highlight ? Color.accentColor : Color(.systemGray),
-                in: .rect(cornerRadius: 4))
+                index + 1 == highlight ? theme.colors.primary : theme.colors.secondary,
+                in: .rect(cornerRadius: theme.radius.xs))
           }
           .frame(height: 22)
         }
@@ -220,12 +223,14 @@ struct LineStatsSheet: View {
 struct StreakBadge: View {
   let streak: Int
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     if streak > 0 {
       Label("\(streak)", systemImage: "flame.fill")
         .labelStyle(.titleAndIcon)
         .font(.subheadline.weight(.semibold).monospacedDigit())
-        .foregroundStyle(.orange)
+        .foregroundStyle(theme.colors.tertiary)
         .accessibilityLabel("\(streak) day streak")
     }
   }

@@ -1,3 +1,4 @@
+import DesignSystem
 import Observability
 import SwiftData
 import SwiftUI
@@ -39,6 +40,7 @@ struct PangramScreen: View {
 struct PangramView: View {
   @Bindable var session: PangramSession
 
+  @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
 
   var body: some View {
@@ -77,12 +79,12 @@ struct PangramView: View {
         FeedbackBanner(feedback: feedback)
           .task(id: feedback.id) {
             try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { session.dismissFeedback(feedback) }
+            withAnimation(theme.animation.normal) { session.dismissFeedback(feedback) }
           }
           .transition(.move(edge: .top).combined(with: .opacity))
       }
     }
-    .animation(.default, value: session.feedback)
+    .animation(theme.animation.normal, value: session.feedback)
   }
 
   private var controls: some View {
@@ -95,7 +97,7 @@ struct PangramView: View {
       }
       .disabled(session.game.current.isEmpty)
       Button("Shuffle", systemImage: "shuffle") {
-        withAnimation { session.shuffle() }
+        withAnimation(theme.animation.normal) { session.shuffle() }
       }
       .accessibilityIdentifier("shuffle")
       .labelStyle(.iconOnly)
@@ -118,6 +120,8 @@ struct PangramView: View {
 private struct ScoreHeader: View {
   let game: PangramGame
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     VStack(spacing: 6) {
       HStack(alignment: .firstTextBaseline) {
@@ -133,7 +137,7 @@ private struct ScoreHeader: View {
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.orange)
+          .foregroundStyle(theme.colors.tertiary)
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every pangram for the star")
           .font(.subheadline)
@@ -154,11 +158,14 @@ private struct ScoreHeader: View {
 private struct CurrentWord: View {
   let game: PangramGame
 
+  @Environment(\.dsTheme) private var theme
+
   var body: some View {
     var text = AttributedString()
     for letter in game.current {
       var run = AttributedString(String(letter).uppercased())
-      run.foregroundColor = letter == game.puzzle.center ? .accentColor : .primary
+      run.foregroundColor =
+        letter == game.puzzle.center ? theme.colors.primary : theme.colors.textPrimary
       text += run
     }
     return Text(game.current.isEmpty ? AttributedString(" ") : text)
@@ -178,6 +185,8 @@ private struct LetterWheel: View {
   let outer: [Character]
   let onLetter: (Character) -> Void
 
+  @Environment(\.dsTheme) private var theme
+
   static let centerRadius: CGFloat = 46
   static let ringWidth: CGFloat = 90
   static let gap: CGFloat = 6
@@ -194,9 +203,9 @@ private struct LetterWheel: View {
       } label: {
         Text(String(center).uppercased())
           .font(.title.weight(.bold))
-          .foregroundStyle(.white)
+          .foregroundStyle(theme.colors.textOnPrimary)
           .frame(width: 2 * Self.centerRadius, height: 2 * Self.centerRadius)
-          .background(Color.accentColor, in: .circle)
+          .background(theme.colors.primary, in: .circle)
           .contentShape(.circle)
       }
       .buttonStyle(.plain)
@@ -213,17 +222,19 @@ private struct LetterWheel: View {
     let rotation: Angle
     let action: () -> Void
 
+    @Environment(\.dsTheme) private var theme
+
     var body: some View {
       let wedge = Wedge(
         span: span, inner: LetterWheel.centerRadius + LetterWheel.gap, outer: LetterWheel.radius,
         gap: LetterWheel.gap)
       Button(action: action) {
         wedge
-          .fill(Color(.secondarySystemBackground))
+          .fill(theme.colors.cardBackground)
           .overlay {
             Text(String(letter).uppercased())
               .font(.title.weight(.bold))
-              .foregroundStyle(.primary)
+              .foregroundStyle(theme.colors.textPrimary)
               .rotationEffect(-rotation)
               .offset(y: -(LetterWheel.radius - LetterWheel.ringWidth / 2))
           }
@@ -265,6 +276,7 @@ private struct FoundWords: View {
   let game: PangramGame
 
   @AppStorage(SettingsKey.pangramFoundOrder) private var order = FoundWordOrder.alphabetical
+  @Environment(\.dsTheme) private var theme
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -273,7 +285,9 @@ private struct FoundWords: View {
           .font(.headline)
         Spacer()
         Button {
-          withAnimation { order = order == .alphabetical ? .recent : .alphabetical }
+          withAnimation(theme.animation.normal) {
+            order = order == .alphabetical ? .recent : .alphabetical
+          }
         } label: {
           Image(systemName: order == .alphabetical ? "textformat.abc" : "clock")
             .frame(minWidth: 44, minHeight: 44)

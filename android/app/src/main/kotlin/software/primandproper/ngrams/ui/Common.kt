@@ -35,6 +35,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,12 +49,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
+import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.PuzzleKind
 import software.primandproper.ngrams.core.PuzzleLine
+import software.primandproper.ngrams.core.formattedTime
+import software.primandproper.ngrams.progress.PuzzleTimer
+import java.time.Duration
 import kotlin.math.roundToInt
 
 /**
@@ -197,6 +207,9 @@ fun percent(rate: Double?): String = rate?.let { "${(it * 100).roundToInt()}%" }
 fun LineStatsView(
     stats: LineStats,
     highlight: Int? = null,
+    /** The time a just-finished puzzle took. */
+    time: Duration? = null,
+    showTimer: Boolean = false,
 ) {
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -207,6 +220,12 @@ fun LineStatsView(
             Figure(percent(stats.successRate), stringResource(successLabel(stats.line.kind)))
             Figure("${stats.currentStreak}", stringResource(R.string.streak))
             Figure("${stats.bestStreak}", stringResource(R.string.best_streak))
+        }
+        if (showTimer && (time != null || stats.bestTime != null)) {
+            Row(Modifier.fillMaxWidth()) {
+                if (time != null) Figure(formattedTime(time), stringResource(R.string.time))
+                Figure(stats.bestTime?.let(::formattedTime) ?: "–", stringResource(R.string.best_time))
+            }
         }
         if (stats.line.kind == PuzzleKind.WORD) {
             GuessDistribution(stats.guessCounts, highlight)
@@ -281,6 +300,8 @@ fun LineStatsSheet(
     line: PuzzleLine,
     stats: LineStats?,
     highlight: Int? = null,
+    time: Duration? = null,
+    showTimer: Boolean = false,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -288,7 +309,56 @@ fun LineStatsSheet(
         if (stats == null) {
             Text(stringResource(R.string.no_stats), modifier = Modifier.padding(16.dp))
         } else {
-            LineStatsView(stats, highlight)
+            LineStatsView(stats, highlight, time, showTimer)
+        }
+    }
+}
+
+/** Whether puzzles show their time, false until the setting is read so a hidden clock never flashes. */
+@Composable
+fun showsTimer(container: AppContainer): Boolean {
+    val settings by container.settings.settings.collectAsStateWithLifecycle(null)
+    return settings?.showTimer == true
+}
+
+/** A puzzle's title, with its time under it when [shown]. */
+@Composable
+fun TimedTitle(
+    title: String,
+    timer: PuzzleTimer,
+    shown: Boolean,
+) {
+    val elapsed = timer.state.collectAsStateWithLifecycle().value.elapsed
+    Column {
+        Text(title)
+        if (shown && elapsed != null) {
+            Text(
+                formattedTime(elapsed),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Runs [timer] while its puzzle is on screen with the app in front. Leaving the screen or the app
+ * cancels the loop, which closes the stretch.
+ */
+@Composable
+fun RunTimer(timer: PuzzleTimer) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(timer, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            timer.resume()
+            try {
+                while (true) {
+                    delay(1_000)
+                    timer.tick()
+                }
+            } finally {
+                timer.pause()
+            }
         }
     }
 }

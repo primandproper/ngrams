@@ -457,6 +457,16 @@
         }
       }
     },
+    "Best time" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor tiempo"
+          }
+        }
+      }
+    },
     "Bonus pangram! %@ +%lld" : {
       "localizations" : {
         "es" : {
@@ -899,6 +909,16 @@
         }
       }
     },
+    "Show timer" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar cronómetro"
+          }
+        }
+      }
+    },
     "Shuffle" : {
       "localizations" : {
         "es" : {
@@ -1111,6 +1131,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El código fuente de esta app y su banco de retos."
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo"
+          }
+        }
+      }
+    },
+    "Times are kept either way, so turning this back on shows them all." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los tiempos se guardan de todos modos, así que al volver a activarlo los verás todos."
           }
         }
       }

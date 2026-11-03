@@ -104,6 +104,10 @@ struct LineStatsView: View {
   let stats: LineStats
   /// The guesses a just-solved word puzzle took, picked out in the distribution.
   var highlight: Int?
+  /// The time a just-finished puzzle took.
+  var time: TimeInterval?
+
+  @AppStorage(SettingsKey.showTimer) private var showTimer = true
 
   var body: some View {
     ScrollView {
@@ -114,6 +118,14 @@ struct LineStatsView: View {
             value: percent(stats.successRate), label: stats.line.kind == .word ? "Won" : "Starred")
           Figure(value: "\(stats.currentStreak)", label: "Streak")
           Figure(value: "\(stats.bestStreak)", label: "Best streak")
+        }
+        if showTimer, time != nil || stats.bestTime != nil {
+          HStack(alignment: .top) {
+            if let time {
+              Figure(value: formattedTime(time), label: "Time")
+            }
+            Figure(value: stats.bestTime.map(formattedTime) ?? "–", label: "Best time")
+          }
         }
         if stats.line.kind == .word {
           GuessDistribution(counts: stats.guessCounts, highlight: highlight)
@@ -193,6 +205,7 @@ private struct GuessDistribution: View {
 struct LineStatsSheet: View {
   let line: PuzzleLine
   var highlight: Int?
+  var time: TimeInterval?
 
   @Query private var progress: [PuzzleProgress]
   @Environment(\.puzzleBank) private var bank
@@ -202,7 +215,7 @@ struct LineStatsSheet: View {
     NavigationStack {
       Group {
         if let bank, let stats = StatsBook.current(progress, bank: bank)[line] {
-          LineStatsView(stats: stats, highlight: highlight)
+          LineStatsView(stats: stats, highlight: highlight, time: time)
         } else {
           ContentUnavailableView("No stats yet", systemImage: "chart.bar")
         }

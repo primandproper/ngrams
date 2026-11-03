@@ -110,6 +110,8 @@
     <string name="starred">Starred</string>
     <string name="streak">Streak</string>
     <string name="best_streak">Best streak</string>
+    <string name="time">Time</string>
+    <string name="best_time">Best time</string>
     <string name="guesses">Guesses</string>
     <string name="no_stats">No stats yet</string>
     <string name="streaks_count_solves">Streaks count solves on the puzzle\'s own day.</string>
@@ -130,6 +132,8 @@
     <!-- Settings -->
     <string name="hard_mode">Hard mode</string>
     <string name="game_hard_mode">%s hard mode</string>
+    <string name="show_timer">Show timer</string>
+    <string name="show_timer_footer">Times are kept either way, so turning this back on shows them all.</string>
     <string name="acknowledgements">Acknowledgements</string>
     <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess.</string>
     <string name="tiles_hard_mode_rule">Found targets leave the board, so their tiles can\'t spell other words. Finding the last target ends the board.</string>

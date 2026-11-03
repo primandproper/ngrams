@@ -3,7 +3,9 @@ package software.primandproper.ngrams
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -45,6 +47,9 @@ class AppContainer(
         Room.databaseBuilder(context, NgramsDatabase::class.java, "ngrams.db").build()
 
     val progress = ProgressStore(database, logger.withName("ProgressStore"))
+
+    /** For saves that have to outlive the screen that started them, like the time on a puzzle just left. */
+    val saves = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val settings = SettingsStore(context, logger.withName("Settings"))
 
     /** A day debug builds can pin as today, so screenshots don't depend on when they're taken. */

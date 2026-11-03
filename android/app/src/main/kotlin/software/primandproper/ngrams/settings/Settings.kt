@@ -40,6 +40,8 @@ data class Settings(
     /** The languages each game's hard mode is on for. */
     val hardModes: Map<PuzzleKind, Set<Language>> = emptyMap(),
     val pangramFoundOrder: FoundWordOrder = FoundWordOrder.ALPHABETICAL,
+    /** Whether puzzles show their time. Times are kept either way. */
+    val showTimer: Boolean = true,
 ) {
     /** Whether puzzles in [language] are shown: every language until the player chooses. */
     fun plays(language: Language): Boolean = languages?.contains(language) ?: true
@@ -89,6 +91,7 @@ class SettingsStore(
         val languages = stringPreferencesKey("languages")
         val grouping = stringPreferencesKey("homeGrouping")
         val pangramFoundOrder = stringPreferencesKey("pangramFoundOrder")
+        val showTimer = booleanPreferencesKey("showTimer")
     }
 
     val settings: Flow<Settings> =
@@ -111,6 +114,7 @@ class SettingsStore(
             hardModes = PuzzleKind.entries.associateWith { kind -> this[hardModeKey(kind)]?.let(::languagesFrom).orEmpty() },
             pangramFoundOrder =
                 FoundWordOrder.entries.firstOrNull { it.code == this[Keys.pangramFoundOrder] } ?: FoundWordOrder.ALPHABETICAL,
+            showTimer = this[Keys.showTimer] ?: true,
         )
 
     suspend fun setLanguages(languages: Set<Language>) = edit { it[Keys.languages] = languageCodes(languages) }
@@ -128,6 +132,8 @@ class SettingsStore(
     }
 
     suspend fun setPangramFoundOrder(order: FoundWordOrder) = edit { it[Keys.pangramFoundOrder] = order.code }
+
+    suspend fun setShowTimer(show: Boolean) = edit { it[Keys.showTimer] = show }
 
     private suspend fun edit(change: (MutablePreferences) -> Unit) {
         try {

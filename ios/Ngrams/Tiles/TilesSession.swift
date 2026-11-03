@@ -29,6 +29,7 @@ final class TilesSession {
   /// The order the board shows tiles in, unsolved tiles first. Shuffling changes only this.
   private(set) var order: [Int]
   private(set) var feedback: Feedback?
+  let timer: PuzzleTimer
 
   private let store: ProgressStore
   private let logger: any Logger
@@ -43,6 +44,7 @@ final class TilesSession {
     self.key = key
     self.store = store
     self.logger = logger
+    timer = PuzzleTimer(key: key, store: store, logger: logger)
 
     var game: TilesGame
     do {
@@ -104,7 +106,9 @@ final class TilesSession {
     case .found(let word):
       feedback = Feedback(kind: .found(word))
       do {
-        try store.append(word.word, for: key, completes: game.earnedStar)
+        let (stretches, now) = timer.entry(completing: game.earnedStar)
+        try store.append(
+          word.word, for: key, completes: game.earnedStar, stretches: stretches, at: now)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

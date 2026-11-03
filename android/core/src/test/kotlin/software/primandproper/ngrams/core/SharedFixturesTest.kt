@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.test.assertEquals
@@ -27,6 +28,14 @@ class SharedFixturesTest {
     private val JsonElement.ints get() = jsonArray.map { it.jsonPrimitive.int }
 
     private operator fun JsonElement.get(key: String): JsonElement = jsonObject.getValue(key)
+
+    /** `[start, end]` pairs of ISO 8601 instants. */
+    private val JsonElement.stretches get() =
+        jsonArray.map {
+            PlayStretch(Instant.parse(it.jsonArray[0].string), Instant.parse(it.jsonArray[1].string))
+        }
+
+    private fun JsonObject.optional(key: String): JsonElement? = this[key]?.takeIf { it != JsonNull }
 
     private val day = PuzzleDay.parse("2027-01-01")!!
 
@@ -186,6 +195,8 @@ class SharedFixturesTest {
                         ),
                         it["entries"].strings,
                         it["completedAt"].takeIf { at -> at != JsonNull }?.let { at -> Instant.parse(at.string) },
+                        it.jsonObject.optional("stretches")?.stretches.orEmpty(),
+                        it.jsonObject.optional("timed")?.jsonPrimitive?.boolean ?: false,
                     )
                 }
             val stats = StatsBook.compute(records, bank, PuzzleDay.parse(scenario["today"].string)!!, zone)
@@ -205,7 +216,29 @@ class SharedFixturesTest {
                     listOf(actual.played, actual.decided, actual.successes, actual.currentStreak, actual.bestStreak) + actual.guessCounts,
                     scenario["name"].string,
                 )
+                assertEquals(
+                    expected.jsonObject.optional("bestTime")?.let { Duration.ofSeconds(it.jsonPrimitive.int.toLong()) },
+                    actual.bestTime,
+                    scenario["name"].string,
+                )
             }
+        }
+    }
+
+    @Test
+    fun `times puzzles the way the iOS app does`() {
+        val fixture = fixture("time.json")
+
+        for (case in fixture.getValue("merges").jsonArray) {
+            assertEquals(case["merged"].stretches, PlayTime.merged(case["saved"].stretches, case["new"].stretches), case["name"].string)
+        }
+        for (case in fixture.getValue("active").jsonArray) {
+            val completedAt = case.jsonObject.optional("completedAt")?.let { Instant.parse(it.string) }
+            assertEquals(
+                Duration.ofSeconds(case["seconds"].jsonPrimitive.int.toLong()),
+                PlayTime.active(case["stretches"].stretches, completedAt),
+                case["name"].string,
+            )
         }
     }
 

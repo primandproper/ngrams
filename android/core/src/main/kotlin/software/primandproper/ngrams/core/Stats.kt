@@ -1,5 +1,6 @@
 package software.primandproper.ngrams.core
 
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
@@ -26,6 +27,19 @@ data class PlayRecord(
     val entries: List<String>,
     /** When a word puzzle ended or a board earned its star; for older records, when it was last played. */
     val completedAt: Instant?,
+    val stretches: List<PlayStretch> = emptyList(),
+    /** Whether play was timed from the first entry. */
+    val timed: Boolean = false,
+) {
+    /** The puzzle's time, or null if it wasn't timed from the start. */
+    val time: Duration? get() = if (timed) PlayTime.active(stretches, completedAt) else null
+}
+
+/** A started puzzle's saved timing. */
+data class PuzzleTiming(
+    val stretches: List<PlayStretch>,
+    val completedAt: Instant?,
+    val timed: Boolean,
 )
 
 /** A line's results across every day up to today. */
@@ -42,6 +56,8 @@ data class LineStats(
     val bestStreak: Int = 0,
     /** Word puzzles solved in each number of guesses: the first count is for one guess. */
     val guessCounts: List<Int> = List(WordGame.MAX_GUESSES) { 0 },
+    /** The fastest timed success. */
+    val bestTime: Duration? = null,
 ) {
     val successRate: Double? get() = if (decided == 0) null else successes.toDouble() / decided
 }
@@ -56,6 +72,7 @@ object StatsBook {
         /** Guesses used, for a solved word puzzle. */
         val guesses: Int? = null,
         val completedAt: Instant? = null,
+        val time: Duration? = null,
     )
 
     /**
@@ -89,6 +106,11 @@ object StatsBook {
                                 ?.takeIf { it - 1 in lineStats.guessCounts.indices }
                                 ?.let { guesses -> lineStats.guessCounts.mapIndexed { i, c -> if (i == guesses - 1) c + 1 else c } }
                                 ?: lineStats.guessCounts,
+                        bestTime =
+                            outcome.time
+                                ?.takeIf { outcome.succeeded }
+                                ?.let { time -> lineStats.bestTime?.let { minOf(it, time) } ?: time }
+                                ?: lineStats.bestTime,
                     )
 
                 val onTime =
@@ -121,6 +143,7 @@ object StatsBook {
                 lost = status == Status.Lost,
                 guesses = (status as? Status.Won)?.guesses,
                 completedAt = record.completedAt,
+                time = record.time,
             )
     }
 
@@ -132,7 +155,14 @@ object StatsBook {
         record ?: return line to Outcome()
         val game = TilesGame(puzzle, record.entries)
         val started = game.found.isNotEmpty()
-        return line to Outcome(started = started, decided = started, succeeded = game.earnedStar, completedAt = record.completedAt)
+        return line to
+            Outcome(
+                started = started,
+                decided = started,
+                succeeded = game.earnedStar,
+                completedAt = record.completedAt,
+                time = record.time,
+            )
     }
 
     private fun outcome(
@@ -143,6 +173,13 @@ object StatsBook {
         record ?: return line to Outcome()
         val game = PangramGame(puzzle, record.entries)
         val started = game.found.isNotEmpty()
-        return line to Outcome(started = started, decided = started, succeeded = game.earnedStar, completedAt = record.completedAt)
+        return line to
+            Outcome(
+                started = started,
+                decided = started,
+                succeeded = game.earnedStar,
+                completedAt = record.completedAt,
+                time = record.time,
+            )
     }
 }

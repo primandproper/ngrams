@@ -85,7 +85,7 @@ struct WordView: View {
       let puzzle = session.game.puzzle
       LineStatsSheet(
         line: PuzzleLine(language: puzzle.language, kind: .word, n: puzzle.n),
-        highlight: solvedIn)
+        highlight: solvedIn, time: session.timer.elapsed)
     }
     .toolbar {
       if session.game.isOver {
@@ -105,6 +105,7 @@ struct WordView: View {
       }
     }
     .animation(theme.animation.normal, value: session.feedback)
+    .timed(by: session.timer)
   }
 
   private var solvedIn: Int? {

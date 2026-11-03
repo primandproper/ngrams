@@ -72,7 +72,9 @@ struct TilesView: View {
     }
     .sheet(isPresented: $showingStats) {
       let puzzle = session.game.puzzle
-      LineStatsSheet(line: PuzzleLine(language: puzzle.language, kind: .tiles, n: puzzle.n))
+      LineStatsSheet(
+        line: PuzzleLine(language: puzzle.language, kind: .tiles, n: puzzle.n),
+        time: session.timer.elapsed)
     }
     .toolbar {
       if !session.game.found.isEmpty {
@@ -92,6 +94,7 @@ struct TilesView: View {
       }
     }
     .animation(theme.animation.normal, value: session.feedback)
+    .timed(by: session.timer)
   }
 
   private var board: some View {

@@ -78,6 +78,7 @@ import software.primandproper.ngrams.core.TilesLayout
 import software.primandproper.ngrams.core.TilesSubmission
 import software.primandproper.ngrams.core.TilesWord
 import software.primandproper.ngrams.core.layoutSeed
+import software.primandproper.ngrams.progress.PuzzleTimer
 import kotlin.random.Random
 
 sealed interface TilesState {
@@ -117,6 +118,7 @@ class TilesViewModel(
             .withValue("day", day)
             .withValue("n", n)
             .withValue("lang", language.code)
+    val timer = PuzzleTimer(key, container.progress, container.saves, logger)
     private val _state = MutableStateFlow<TilesState>(TilesState.Loading)
     val state: StateFlow<TilesState> = _state
 
@@ -130,6 +132,7 @@ class TilesViewModel(
     private suspend fun load() {
         try {
             val puzzle = container.bank().tilesPuzzles(day).first { it.language == key.language && it.n == key.n }
+            timer.load()
             // Tiles reads its hard mode live, like the iOS app, rather than fixing it per board.
             val solvedTilesLeave = container.settings.settings.first().hardMode(PuzzleKind.TILES, key.language)
             val (game, feedback) =
@@ -200,9 +203,10 @@ class TilesViewModel(
         word: TilesWord,
         game: TilesGame,
     ) {
+        val (stretches, at) = timer.entry(completes = game.earnedStar)
         viewModelScope.launch {
             try {
-                container.progress.append(word.word, key, completes = game.earnedStar)
+                container.progress.append(word.word, key, completes = game.earnedStar, stretches = stretches, at = at)
             } catch (e: Exception) {
                 logger.withValue("word", word.word).error("saving a found word", e)
                 play { it.copy(feedback = Feedback(R.string.couldnt_save_word)) }
@@ -228,6 +232,8 @@ fun TilesScreen(
     onBack: () -> Unit,
 ) {
     val model: TilesViewModel = viewModel { TilesViewModel(container, language, n, day) }
+    val showTimer = showsTimer(container)
+    val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
     val stats by model.stats.collectAsStateWithLifecycle()
     val playing = state as? TilesState.Playing
@@ -247,7 +253,7 @@ fun TilesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${language.flag} ${PuzzleKind.TILES.displayName(interfaceLanguage)} · $n") },
+                title = { TimedTitle("${language.flag} ${PuzzleKind.TILES.displayName(interfaceLanguage)} · $n", model.timer, showTimer) },
                 navigationIcon = {
                     BackButton(onBack)
                 },
@@ -264,13 +270,16 @@ fun TilesScreen(
             when (val current = state) {
                 TilesState.Loading -> CircularProgressIndicator()
                 TilesState.Failed -> Text(stringResource(R.string.couldnt_load_board))
-                is TilesState.Playing -> Board(current, model)
+                is TilesState.Playing -> {
+                    RunTimer(model.timer)
+                    Board(current, model)
+                }
             }
         }
     }
 
     if (showingStats && playing != null) {
-        LineStatsSheet(PuzzleLine(language, PuzzleKind.TILES, n), stats) {
+        LineStatsSheet(PuzzleLine(language, PuzzleKind.TILES, n), stats, time = timing.elapsed, showTimer = showTimer) {
             showingStats = false
         }
     }

@@ -166,6 +166,15 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   it.
 - Stats are worked out from saved progress each time, never stored, so they can't drift from
   what was played. Progress keeps when each puzzle was completed for the on-day rule.
+- Puzzles are timed by active time: only while the puzzle is on screen with the app in front.
+  Progress keeps every stretch of play as a start and an end, even after a puzzle is finished,
+  and a puzzle's time is the stretches added up to its completion, worked out like stats rather
+  than stored. Time before the first guess or word is held in memory and saved with it, so
+  opening a puzzle and leaving never starts it, and the open stretch is saved every 30 seconds,
+  which is the most a crash can lose. A puzzle started before timing existed has no time
+  (`timed` is false on its progress). The clock shows under each game's title, the finished
+  time in the stats sheet, and the best timed success per line on the stats screen. "Show
+  timer" in Settings hides all of it without stopping the timing (2026-11-02).
 
 ## Languages
 

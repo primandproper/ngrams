@@ -1,5 +1,7 @@
 package software.primandproper.ngrams.progress
 
+import androidx.room.AutoMigration
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -13,10 +15,12 @@ import androidx.room.TypeConverters
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.LongArraySerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.PlayRecord
+import software.primandproper.ngrams.core.PlayStretch
 import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
@@ -42,6 +46,13 @@ data class PuzzleProgress(
     /** Epoch milliseconds when a Password puzzle ended, which decides streaks. */
     val completedAt: Long? = null,
     val updatedAt: Long,
+    /** Every stretch of play, kept even after the puzzle is finished. See [software.primandproper.ngrams.core.PlayTime]. */
+    @ColumnInfo(defaultValue = "[]") val stretches: List<PlayStretch> = emptyList(),
+    /**
+     * Whether play was timed from the first entry. Puzzles started before timing existed stay
+     * untimed, so they never show a time that leaves out their start.
+     */
+    @ColumnInfo(defaultValue = "0") val timed: Boolean = false,
 ) {
     /**
      * The plain values stats read, or null if a field doesn't parse (saved by a build that knew a
@@ -53,7 +64,13 @@ data class PuzzleProgress(
             val language = Language.fromCode(language) ?: return null
             val kind = PuzzleKind.fromCode(kind) ?: return null
             val day = PuzzleDay.parse(day) ?: return null
-            return PlayRecord(ProgressKey(language, kind, n, day), entries, Instant.ofEpochMilli(completedAt ?: updatedAt))
+            return PlayRecord(
+                ProgressKey(language, kind, n, day),
+                entries,
+                Instant.ofEpochMilli(completedAt ?: updatedAt),
+                stretches,
+                timed,
+            )
         }
 }
 
@@ -93,9 +110,21 @@ class Converters {
 
     @TypeConverter
     fun toEntries(json: String): List<String> = Json.decodeFromString(strings, json)
+
+    /** Stretches as `[start, end]` pairs of epoch milliseconds, the precision the store's clock keeps. */
+    private val stretchPairs = ListSerializer(LongArraySerializer())
+
+    @TypeConverter
+    fun fromStretches(stretches: List<PlayStretch>): String =
+        Json.encodeToString(stretchPairs, stretches.map { longArrayOf(it.start.toEpochMilli(), it.end.toEpochMilli()) })
+
+    @TypeConverter
+    fun toStretches(json: String): List<PlayStretch> =
+        Json.decodeFromString(stretchPairs, json).map { PlayStretch(Instant.ofEpochMilli(it[0]), Instant.ofEpochMilli(it[1])) }
 }
 
-@Database(entities = [PuzzleProgress::class], version = 1)
+// Version 2 adds stretches and timed, both with defaults, so Room migrates from the exported schemas.
+@Database(entities = [PuzzleProgress::class], version = 2, autoMigrations = [AutoMigration(from = 1, to = 2)])
 @TypeConverters(Converters::class)
 abstract class NgramsDatabase : RoomDatabase() {
     abstract fun progress(): ProgressDao

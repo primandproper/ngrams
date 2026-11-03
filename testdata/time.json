@@ -1,0 +1,39 @@
+{
+  "description": "Puzzle timing. A stretch is a [start, end] pair of time on screen with the app in front. merges: saved stretches with new ones folded in. A new stretch starting when a saved one does keeps the later of the two ends; any other is added; the result runs by start. active: the seconds on screen up to completedAt, or all of them when completedAt is null.",
+  "merges": [
+    {"name": "adds a new stretch",
+     "saved": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]],
+     "new": [["2027-01-01T11:00:00Z", "2027-01-01T11:00:30Z"]],
+     "merged": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"], ["2027-01-01T11:00:00Z", "2027-01-01T11:00:30Z"]]},
+    {"name": "extends a stretch saved while it was open",
+     "saved": [["2027-01-01T10:00:00Z", "2027-01-01T10:00:30Z"]],
+     "new": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]],
+     "merged": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]]},
+    {"name": "never shortens a saved stretch",
+     "saved": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]],
+     "new": [["2027-01-01T10:00:00Z", "2027-01-01T10:00:30Z"]],
+     "merged": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]]},
+    {"name": "keeps saved stretches the new ones leave out, in order",
+     "saved": [["2027-01-01T11:00:00Z", "2027-01-01T11:00:30Z"]],
+     "new": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]],
+     "merged": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"], ["2027-01-01T11:00:00Z", "2027-01-01T11:00:30Z"]]},
+    {"name": "saves the first stretches as they are",
+     "saved": [],
+     "new": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]],
+     "merged": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"]]}
+  ],
+  "active": [
+    {"name": "sums every stretch of an unfinished puzzle",
+     "stretches": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"], ["2027-01-01T11:00:00Z", "2027-01-01T11:01:30Z"]],
+     "completedAt": null, "seconds": 150},
+    {"name": "stops in the middle of the stretch the puzzle was finished in",
+     "stretches": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"], ["2027-01-01T11:00:00Z", "2027-01-01T11:05:00Z"]],
+     "completedAt": "2027-01-01T11:00:45Z", "seconds": 105},
+    {"name": "leaves out play after the puzzle was finished",
+     "stretches": [["2027-01-01T10:00:00Z", "2027-01-01T10:01:00Z"], ["2027-01-01T12:00:00Z", "2027-01-01T12:10:00Z"]],
+     "completedAt": "2027-01-01T10:01:00Z", "seconds": 60},
+    {"name": "is zero with nothing timed",
+     "stretches": [],
+     "completedAt": null, "seconds": 0}
+  ]
+}

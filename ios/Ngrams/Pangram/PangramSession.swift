@@ -34,6 +34,7 @@ final class PangramSession {
   /// Every letter but the center, in the order the wheel shows them. Shuffling changes only this.
   private(set) var outer: [Character]
   private(set) var feedback: Feedback?
+  let timer: PuzzleTimer
 
   private let store: ProgressStore
   private let logger: any Logger
@@ -50,6 +51,7 @@ final class PangramSession {
     self.key = key
     self.store = store
     self.logger = logger
+    timer = PuzzleTimer(key: key, store: store, logger: logger)
 
     do {
       game = PangramGame(
@@ -99,8 +101,10 @@ final class PangramSession {
           ? .foundBonusPangram(word)
           : .found(word, pangram: game.puzzle.pangrams.contains(word.word)))
       do {
+        let (stretches, now) = timer.entry(completing: game.earnedStar)
         try store.append(
-          word.word, for: key, hardMode: game.hardMode, completes: game.earnedStar)
+          word.word, for: key, hardMode: game.hardMode, completes: game.earnedStar,
+          stretches: stretches, at: now)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

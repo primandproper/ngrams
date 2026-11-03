@@ -65,7 +65,9 @@ struct PangramView: View {
     }
     .sheet(isPresented: $showingStats) {
       let puzzle = session.game.puzzle
-      LineStatsSheet(line: PuzzleLine(language: puzzle.language, kind: .pangram, n: puzzle.n))
+      LineStatsSheet(
+        line: PuzzleLine(language: puzzle.language, kind: .pangram, n: puzzle.n),
+        time: session.timer.elapsed)
     }
     .toolbar {
       if !session.game.found.isEmpty {
@@ -85,6 +87,7 @@ struct PangramView: View {
       }
     }
     .animation(theme.animation.normal, value: session.feedback)
+    .timed(by: session.timer)
   }
 
   private var controls: some View {

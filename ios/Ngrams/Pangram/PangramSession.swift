@@ -54,9 +54,11 @@ final class PangramSession {
     timer = PuzzleTimer(key: key, store: store, logger: logger)
 
     do {
+      let assistance = try store.assistance(for: key)
       game = PangramGame(
         puzzle: puzzle, foundWords: try store.entries(for: key),
-        hardMode: try store.hardMode(for: key) ?? hardMode)
+        hardMode: try store.hardMode(for: key) ?? hardMode, hints: assistance?.hints ?? [],
+        gaveUp: assistance?.gaveUp ?? false)
     } catch {
       logger.error("loading pangram progress", error)
       game = PangramGame(puzzle: puzzle, hardMode: hardMode)

@@ -38,10 +38,16 @@ final class PuzzleProgress {
   /// Whether play was timed from the first entry. Puzzles started before timing existed stay
   /// untimed, so they never show a time that leaves out their start.
   var timed = false
+  /// Hints taken, oldest first, in each game's own terms. Kept apart from `entries`, which stats
+  /// read as guesses or found words.
+  var hints: [String] = []
+  /// Whether the player had the puzzle solved for them, which gives up the win or the star.
+  var gaveUp = false
 
   init(
     key: ProgressKey, entries: [String] = [], hardMode: Bool = false, completedAt: Date? = nil,
-    updatedAt: Date = .now, stretches: [PlayStretch] = [], timed: Bool = false
+    updatedAt: Date = .now, stretches: [PlayStretch] = [], timed: Bool = false,
+    hints: [String] = [], gaveUp: Bool = false
   ) {
     self.language = key.language.rawValue
     self.kind = key.kind.rawValue
@@ -53,6 +59,8 @@ final class PuzzleProgress {
     self.updatedAt = updatedAt
     self.stretches = stretches
     self.timed = timed
+    self.hints = hints
+    self.gaveUp = gaveUp
   }
 
   /// The plain values stats read, or nil if a field doesn't parse (saved by a build that knew a
@@ -65,7 +73,8 @@ final class PuzzleProgress {
     }
     return PlayRecord(
       key: ProgressKey(language: language, kind: kind, n: n, day: day), entries: entries,
-      completedAt: completedAt ?? updatedAt, stretches: stretches, timed: timed)
+      completedAt: completedAt ?? updatedAt, stretches: stretches, timed: timed, hints: hints,
+      gaveUp: gaveUp)
   }
 
   static func matching(_ key: ProgressKey) -> Predicate<PuzzleProgress> {
@@ -137,6 +146,47 @@ final class ProgressStore {
       .debug("saved \(key.kind.rawValue) progress")
   }
 
+  /// The hints a puzzle has taken and whether it was solved for the player, or nil if nothing's
+  /// been saved for it yet.
+  func assistance(for key: ProgressKey) throws -> Assistance? {
+    try fetch(key).map { Assistance(hints: $0.hints, gaveUp: $0.gaveUp) }
+  }
+
+  /// Saves a hint, folding in `stretches`. A hint starts the puzzle the way a first entry does:
+  /// with nothing saved yet, it records `hardMode` and starts the puzzle timed.
+  func take(
+    hint: String, for key: ProgressKey, hardMode: Bool = false, stretches: [PlayStretch] = [],
+    at now: Date = .now
+  ) throws {
+    let progress = try fetchOrStart(key, hardMode: hardMode, at: now)
+    progress.hints.append(hint)
+    progress.stretches = PlayTime.merged(progress.stretches, stretches)
+    progress.updatedAt = now
+    try context.save()
+    logger.withValue("day", key.day.description).withValue("n", key.n)
+      .debug("saved a \(key.kind.rawValue) hint")
+  }
+
+  /// Saves that the player had the puzzle solved for them, appending the `entries` that finish
+  /// it (a board's remaining words; none for Password) and recording when, as a finishing entry
+  /// would.
+  func giveUp(
+    adding entries: [String] = [], for key: ProgressKey, hardMode: Bool = false,
+    stretches: [PlayStretch] = [], at now: Date = .now
+  ) throws {
+    let progress = try fetchOrStart(key, hardMode: hardMode, at: now)
+    progress.entries.append(contentsOf: entries)
+    progress.gaveUp = true
+    progress.stretches = PlayTime.merged(progress.stretches, stretches)
+    progress.updatedAt = now
+    if progress.completedAt == nil {
+      progress.completedAt = now
+    }
+    try context.save()
+    logger.withValue("day", key.day.description).withValue("n", key.n)
+      .info("solved \(key.kind.rawValue) for the player")
+  }
+
   /// Folds `stretches` into a started puzzle's and saves. A puzzle with nothing saved yet keeps
   /// its stretches in memory until its first entry, so opening a puzzle never starts it.
   func save(_ stretches: [PlayStretch], for key: ProgressKey) throws {
@@ -145,6 +195,19 @@ final class ProgressStore {
     }
     progress.stretches = PlayTime.merged(progress.stretches, stretches)
     try context.save()
+  }
+
+  /// The puzzle's saved progress, or new progress inserted for it, started the way a first
+  /// entry starts it.
+  private func fetchOrStart(_ key: ProgressKey, hardMode: Bool, at now: Date) throws
+    -> PuzzleProgress
+  {
+    if let progress = try fetch(key) {
+      return progress
+    }
+    let progress = PuzzleProgress(key: key, hardMode: hardMode, updatedAt: now, timed: true)
+    context.insert(progress)
+    return progress
   }
 
   private func fetch(_ key: ProgressKey) throws -> PuzzleProgress? {

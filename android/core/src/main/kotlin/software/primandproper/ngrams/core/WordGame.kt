@@ -61,6 +61,10 @@ class WordGame private constructor(
     val guesses: List<String>,
     /** Letters typed toward the next guess. */
     val current: String,
+    /** Hints taken, oldest first, each in the game's own terms. A hint never changes the result. */
+    val hints: List<String>,
+    /** Whether the player had the puzzle solved for them, which gives up the win. */
+    val gaveUp: Boolean,
 ) {
     /** The result of submitting: the game after it, and what happened. */
     data class Submitted(
@@ -72,6 +76,8 @@ class WordGame private constructor(
         get() =
             when {
                 guesses.lastOrNull() == puzzle.answer -> Status.Won(guesses.size)
+                // A puzzle solved for the player is lost, whatever guesses were left.
+                gaveUp -> Status.Lost
                 guesses.size >= MAX_GUESSES -> Status.Lost
                 else -> Status.Playing
             }
@@ -92,6 +98,11 @@ class WordGame private constructor(
             }
             return best
         }
+
+    fun takeHint(hint: String): WordGame = if (isOver) this else copy(hints = hints + hint)
+
+    /** Solves the puzzle for the player, as a loss. A puzzle that's over stays as it was. */
+    fun giveUp(): WordGame = if (isOver) this else copy(current = "", gaveUp = true)
 
     fun type(letter: Char): WordGame = if (!isOver && current.length < puzzle.n) copy(current = current + letter) else this
 
@@ -155,27 +166,31 @@ class WordGame private constructor(
     private fun copy(
         guesses: List<String> = this.guesses,
         current: String = this.current,
-    ): WordGame = WordGame(puzzle, hardMode, guesses, current)
+        hints: List<String> = this.hints,
+        gaveUp: Boolean = this.gaveUp,
+    ): WordGame = WordGame(puzzle, hardMode, guesses, current, hints, gaveUp)
 
     companion object {
         const val MAX_GUESSES = 6
 
         /**
-         * Starts a puzzle, restoring [guesses] from saved progress. Saved guesses the puzzle can't
-         * hold (the wrong length, or past the end) are dropped.
+         * Starts a puzzle, restoring [guesses], [hints] and [gaveUp] from saved progress. Saved
+         * guesses the puzzle can't hold (the wrong length, or past the end) are dropped.
          */
         operator fun invoke(
             puzzle: WordPuzzle,
             guesses: List<String> = emptyList(),
             hardMode: Boolean = false,
+            hints: List<String> = emptyList(),
+            gaveUp: Boolean = false,
         ): WordGame {
-            var game = WordGame(puzzle, hardMode, emptyList(), "")
+            var game = WordGame(puzzle, hardMode, emptyList(), "", hints, gaveUp = false)
             for (guess in guesses) {
                 if (game.status == Status.Playing && guess.length == puzzle.n) {
                     game = game.copy(guesses = game.guesses + guess)
                 }
             }
-            return game
+            return if (gaveUp && game.status == Status.Playing) game.copy(gaveUp = true) else game
         }
 
         /**

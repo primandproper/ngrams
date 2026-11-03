@@ -200,7 +200,8 @@ struct SharedFixturesTests {
           entries: try #require(record["entries"] as? [String]),
           completedAt: (record["completedAt"] as? String).flatMap(instants.date(from:)),
           stretches: try stretches(record["stretches"] as? [[String]] ?? []),
-          timed: record["timed"] as? Bool ?? false)
+          timed: record["timed"] as? Bool ?? false, hints: record["hints"] as? [String] ?? [],
+          gaveUp: record["gaveUp"] as? Bool ?? false)
       }
       let today = try #require(PuzzleDay(scenario["today"] as? String ?? ""))
       let stats = StatsBook.compute(records: records, bank: bank, today: today, calendar: calendar)
@@ -262,21 +263,24 @@ struct SharedFixturesTests {
     }
     func entries(_ game: Object) -> [String] { game["entries"] as? [String] ?? [] }
     func hard(_ game: Object) -> Bool { game["hardMode"] as? Bool ?? false }
+    func hints(_ game: Object) -> [String] { game["hints"] as? [String] ?? [] }
+    func gaveUp(_ game: Object) -> Bool { game["gaveUp"] as? Bool ?? false }
     func word(_ game: Object) throws -> WordGame {
       WordGame(
         puzzle: try #require(bank.wordPuzzles(on: day).first { matches(game, $0.language, $0.n) }),
-        guesses: entries(game), hardMode: hard(game))
+        guesses: entries(game), hardMode: hard(game), hints: hints(game), gaveUp: gaveUp(game))
     }
     func tiles(_ game: Object) throws -> TilesGame {
       TilesGame(
         puzzle: try #require(bank.tilesPuzzles(on: day).first { matches(game, $0.language, $0.n) }),
-        foundWords: entries(game), solvedTilesLeave: hard(game))
+        foundWords: entries(game), solvedTilesLeave: hard(game), hints: hints(game),
+        gaveUp: gaveUp(game))
     }
     func pangram(_ game: Object) throws -> PangramGame {
       PangramGame(
         puzzle: try #require(
           bank.pangramPuzzles(on: day).first { matches(game, $0.language, $0.n) }),
-        foundWords: entries(game), hardMode: hard(game))
+        foundWords: entries(game), hardMode: hard(game), hints: hints(game), gaveUp: gaveUp(game))
     }
 
     func interface(_ testCase: Object) -> Language {

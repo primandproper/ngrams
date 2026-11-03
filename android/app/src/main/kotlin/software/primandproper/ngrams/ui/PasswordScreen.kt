@@ -123,7 +123,15 @@ class PasswordViewModel(
             _state.value =
                 try {
                     val saved = container.progress.find(key)
-                    PasswordState.Playing(WordGame(puzzle, saved?.entries.orEmpty(), saved?.hardMode ?: hardMode))
+                    PasswordState.Playing(
+                        WordGame(
+                            puzzle,
+                            saved?.entries.orEmpty(),
+                            saved?.hardMode ?: hardMode,
+                            saved?.hints.orEmpty(),
+                            saved?.gaveUp ?: false,
+                        ),
+                    )
                 } catch (e: Exception) {
                     logger.error("loading Password progress", e)
                     PasswordState.Playing(WordGame(puzzle, hardMode = hardMode), Feedback(R.string.couldnt_load_progress))

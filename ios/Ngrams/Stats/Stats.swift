@@ -18,11 +18,20 @@ nonisolated struct PlayRecord: Sendable {
   var stretches: [PlayStretch] = []
   /// Whether play was timed from the first entry.
   var timed = false
+  var hints: [String] = []
+  /// Whether the player had the puzzle solved for them.
+  var gaveUp = false
 
   /// The puzzle's time, or nil if it wasn't timed from the start.
   var time: TimeInterval? {
     timed ? PlayTime.active(stretches, until: completedAt) : nil
   }
+}
+
+/// A started puzzle's hints, and whether it was solved for the player.
+nonisolated struct Assistance: Equatable, Sendable {
+  let hints: [String]
+  let gaveUp: Bool
 }
 
 /// A started puzzle's saved timing.
@@ -35,7 +44,7 @@ nonisolated struct PuzzleTiming: Equatable, Sendable {
 /// A line's results across every day up to today.
 nonisolated struct LineStats: Equatable, Sendable {
   let line: PuzzleLine
-  /// Puzzles with at least one guess or word.
+  /// Puzzles with at least one guess or word, or solved for the player.
   var played = 0
   /// What the success rate is out of: word puzzles that are over, won or lost, and boards
   /// played.
@@ -132,8 +141,8 @@ nonisolated enum StatsBook {
     if let record = records[
       ProgressKey(language: puzzle.language, kind: .word, n: puzzle.n, day: day)]
     {
-      let game = WordGame(puzzle: puzzle, guesses: record.entries)
-      outcome.started = !game.guesses.isEmpty
+      let game = WordGame(puzzle: puzzle, guesses: record.entries, gaveUp: record.gaveUp)
+      outcome.started = !game.guesses.isEmpty || game.gaveUp
       outcome.decided = game.isOver
       switch game.status {
       case .won(let guesses):
@@ -158,8 +167,8 @@ nonisolated enum StatsBook {
     if let record = records[
       ProgressKey(language: puzzle.language, kind: .tiles, n: puzzle.n, day: day)]
     {
-      let game = TilesGame(puzzle: puzzle, foundWords: record.entries)
-      outcome.started = !game.found.isEmpty
+      let game = TilesGame(puzzle: puzzle, foundWords: record.entries, gaveUp: record.gaveUp)
+      outcome.started = !game.found.isEmpty || game.gaveUp
       outcome.decided = outcome.started
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt
@@ -176,8 +185,8 @@ nonisolated enum StatsBook {
     if let record = records[
       ProgressKey(language: puzzle.language, kind: .pangram, n: puzzle.n, day: day)]
     {
-      let game = PangramGame(puzzle: puzzle, foundWords: record.entries)
-      outcome.started = !game.found.isEmpty
+      let game = PangramGame(puzzle: puzzle, foundWords: record.entries, gaveUp: record.gaveUp)
+      outcome.started = !game.found.isEmpty || game.gaveUp
       outcome.decided = outcome.started
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt

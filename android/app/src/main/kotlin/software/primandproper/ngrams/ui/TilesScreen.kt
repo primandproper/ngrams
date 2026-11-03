@@ -137,7 +137,8 @@ class TilesViewModel(
             val solvedTilesLeave = container.settings.settings.first().hardMode(PuzzleKind.TILES, key.language)
             val (game, feedback) =
                 try {
-                    TilesGame(puzzle, container.progress.find(key)?.entries.orEmpty(), solvedTilesLeave) to null
+                    val saved = container.progress.find(key)
+                    TilesGame(puzzle, saved?.entries.orEmpty(), solvedTilesLeave, saved?.hints.orEmpty(), saved?.gaveUp ?: false) to null
                 } catch (e: Exception) {
                     logger.error("loading tiles progress", e)
                     TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback(R.string.couldnt_load_progress)

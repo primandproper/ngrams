@@ -30,10 +30,19 @@ data class PlayRecord(
     val stretches: List<PlayStretch> = emptyList(),
     /** Whether play was timed from the first entry. */
     val timed: Boolean = false,
+    val hints: List<String> = emptyList(),
+    /** Whether the player had the puzzle solved for them. */
+    val gaveUp: Boolean = false,
 ) {
     /** The puzzle's time, or null if it wasn't timed from the start. */
     val time: Duration? get() = if (timed) PlayTime.active(stretches, completedAt) else null
 }
+
+/** A started puzzle's hints, and whether it was solved for the player. */
+data class Assistance(
+    val hints: List<String>,
+    val gaveUp: Boolean,
+)
 
 /** A started puzzle's saved timing. */
 data class PuzzleTiming(
@@ -45,7 +54,7 @@ data class PuzzleTiming(
 /** A line's results across every day up to today. */
 data class LineStats(
     val line: PuzzleLine,
-    /** Puzzles with at least one guess or word. */
+    /** Puzzles with at least one guess or word, or solved for the player. */
     val played: Int = 0,
     /** What the success rate is out of: word puzzles that are over, won or lost, and boards played. */
     val decided: Int = 0,
@@ -133,11 +142,11 @@ object StatsBook {
     ): Pair<PuzzleLine, Outcome> {
         val line = PuzzleLine(puzzle.language, PuzzleKind.WORD, puzzle.n)
         record ?: return line to Outcome()
-        val game = WordGame(puzzle, record.entries)
+        val game = WordGame(puzzle, record.entries, gaveUp = record.gaveUp)
         val status = game.status
         return line to
             Outcome(
-                started = game.guesses.isNotEmpty(),
+                started = game.guesses.isNotEmpty() || game.gaveUp,
                 decided = game.isOver,
                 succeeded = status is Status.Won,
                 lost = status == Status.Lost,
@@ -153,8 +162,8 @@ object StatsBook {
     ): Pair<PuzzleLine, Outcome> {
         val line = PuzzleLine(puzzle.language, PuzzleKind.TILES, puzzle.n)
         record ?: return line to Outcome()
-        val game = TilesGame(puzzle, record.entries)
-        val started = game.found.isNotEmpty()
+        val game = TilesGame(puzzle, record.entries, gaveUp = record.gaveUp)
+        val started = game.found.isNotEmpty() || game.gaveUp
         return line to
             Outcome(
                 started = started,
@@ -171,8 +180,8 @@ object StatsBook {
     ): Pair<PuzzleLine, Outcome> {
         val line = PuzzleLine(puzzle.language, PuzzleKind.PANGRAM, puzzle.n)
         record ?: return line to Outcome()
-        val game = PangramGame(puzzle, record.entries)
-        val started = game.found.isNotEmpty()
+        val game = PangramGame(puzzle, record.entries, gaveUp = record.gaveUp)
+        val started = game.found.isNotEmpty() || game.gaveUp
         return line to
             Outcome(
                 started = started,

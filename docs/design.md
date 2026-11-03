@@ -175,6 +175,16 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   (`timed` is false on its progress). The clock shows under each game's title, the finished
   time in the stats sheet, and the best timed success per line on the stats screen. "Show
   timer" in Settings hides all of it without stopping the timing (2026-11-02).
+- A player can take hints or have a puzzle solved. Hints are free but counted: progress keeps
+  each hint, in the game's own terms, in the order taken, apart from `entries` since stats read
+  those as guesses or found words, and share text adds the count (`💡2`). Taking a hint starts a
+  puzzle the way a first guess or word does, but a puzzle counts as played only once it has a
+  guess or word, or was solved. Solving finishes the puzzle without its win or star (`gaveUp`
+  on its progress, with `completedAt` set): a solved Password puzzle is lost (`X/6`, and its
+  streak ends) and its answer isn't saved as a guess, while a solved board saves the words that
+  finish it as found and moves to Completed on home without a star. Each game's hints and
+  solving are its own issue on epic #12; the epic records why the star, not the streak, pays
+  for a solve (2026-11-03).
 
 ## Languages
 

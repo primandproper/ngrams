@@ -44,20 +44,35 @@ nonisolated struct WordGame: Sendable {
   private(set) var guesses: [String] = []
   /// Letters typed toward the next guess.
   private(set) var current = ""
+  /// Hints taken, oldest first, each in the game's own terms. A hint never changes the result.
+  private(set) var hints: [String] = []
+  /// Whether the player had the puzzle solved for them, which gives up the win or the star.
+  private(set) var gaveUp = false
 
-  /// Starts a puzzle, restoring `guesses` from saved progress. Saved guesses the puzzle can't
-  /// hold (the wrong length, or past the end) are dropped.
-  init(puzzle: WordPuzzle, guesses: [String] = [], hardMode: Bool = false) {
+  /// Starts a puzzle, restoring `guesses`, `hints` and `gaveUp` from saved progress. Saved
+  /// guesses the puzzle can't hold (the wrong length, or past the end) are dropped.
+  init(
+    puzzle: WordPuzzle, guesses: [String] = [], hardMode: Bool = false, hints: [String] = [],
+    gaveUp: Bool = false
+  ) {
     self.puzzle = puzzle
     self.hardMode = hardMode
     for guess in guesses where status == .playing && guess.count == puzzle.n {
       self.guesses.append(guess)
     }
+    self.hints = hints
+    if status == .playing {
+      self.gaveUp = gaveUp
+    }
   }
 
+  /// A puzzle solved for the player is lost, whatever guesses were left.
   var status: Status {
     if guesses.last == puzzle.answer {
       return .won(guesses: guesses.count)
+    }
+    if gaveUp {
+      return .lost
     }
     return guesses.count >= Self.maxGuesses ? .lost : .playing
   }
@@ -78,6 +93,20 @@ nonisolated struct WordGame: Sendable {
       }
     }
     return best
+  }
+
+  mutating func take(hint: String) {
+    if !isOver {
+      hints.append(hint)
+    }
+  }
+
+  /// Solves the puzzle for the player, as a loss. A puzzle that's over stays as it was.
+  mutating func giveUp() {
+    if !isOver {
+      gaveUp = true
+      current = ""
+    }
   }
 
   mutating func type(_ letter: Character) {

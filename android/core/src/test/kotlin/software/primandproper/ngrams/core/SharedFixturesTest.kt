@@ -37,6 +37,10 @@ class SharedFixturesTest {
 
     private fun JsonObject.optional(key: String): JsonElement? = this[key]?.takeIf { it != JsonNull }
 
+    /** A saved puzzle's hints and whether it was solved for the player, empty or false when left out. */
+    private val JsonElement.hints get() = jsonObject.optional("hints")?.strings.orEmpty()
+    private val JsonElement.gaveUp get() = jsonObject.optional("gaveUp")?.jsonPrimitive?.boolean ?: false
+
     private val day = PuzzleDay.parse("2027-01-01")!!
 
     @Test
@@ -197,6 +201,8 @@ class SharedFixturesTest {
                         it["completedAt"].takeIf { at -> at != JsonNull }?.let { at -> Instant.parse(at.string) },
                         it.jsonObject.optional("stretches")?.stretches.orEmpty(),
                         it.jsonObject.optional("timed")?.jsonPrimitive?.boolean ?: false,
+                        it.hints,
+                        it.gaveUp,
                     )
                 }
             val stats = StatsBook.compute(records, bank, PuzzleDay.parse(scenario["today"].string)!!, zone)
@@ -259,6 +265,8 @@ class SharedFixturesTest {
                 bank.wordPuzzles(day).single { matches(game, it.language, it.n) },
                 game["entries"].strings,
                 game["hardMode"].jsonPrimitive.boolean,
+                game.hints,
+                game.gaveUp,
             )
 
         fun tiles(game: JsonElement) =
@@ -268,6 +276,8 @@ class SharedFixturesTest {
                 },
                 game["entries"].strings,
                 game["hardMode"].jsonPrimitive.boolean,
+                game.hints,
+                game.gaveUp,
             )
 
         fun pangram(game: JsonElement) =
@@ -277,6 +287,8 @@ class SharedFixturesTest {
                 },
                 game["entries"].strings,
                 game["hardMode"].jsonPrimitive.boolean,
+                game.hints,
+                game.gaveUp,
             )
 
         fun interfaceLanguage(case: JsonElement) = case.jsonObject["interface"]?.let { Language.fromCode(it.string) } ?: Language.EN

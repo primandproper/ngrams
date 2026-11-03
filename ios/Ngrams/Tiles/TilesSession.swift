@@ -48,9 +48,11 @@ final class TilesSession {
 
     var game: TilesGame
     do {
+      let assistance = try store.assistance(for: key)
       game = TilesGame(
         puzzle: puzzle, foundWords: try store.entries(for: key),
-        solvedTilesLeave: solvedTilesLeave)
+        solvedTilesLeave: solvedTilesLeave, hints: assistance?.hints ?? [],
+        gaveUp: assistance?.gaveUp ?? false)
     } catch {
       logger.error("loading tiles progress", error)
       game = TilesGame(puzzle: puzzle, solvedTilesLeave: solvedTilesLeave)

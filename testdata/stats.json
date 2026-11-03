@@ -1,5 +1,5 @@
 {
-  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. A record's stretches are [start, end] pairs of play, and timed says whether it was timed from its first move (false when left out). bestTime is the fastest timed success in seconds, null when there is none or left out. Only the lines listed are checked.",
+  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. A record's stretches are [start, end] pairs of play, and timed says whether it was timed from its first move (false when left out). gaveUp says the player had it solved for them, and hints lists the hints taken (both empty or false when left out). bestTime is the fastest timed success in seconds, null when there is none or left out. Only the lines listed are checked.",
   "timeZone": "America/Chicago",
   "bank": {"version": 1, "seed": 1, "days": [
     {"date": "2027-01-01", "puzzles": [
@@ -52,6 +52,16 @@
       {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["plaice"], "completedAt": "2027-01-01T06:00:00Z", "timed": true, "stretches": [["2027-01-01T05:58:00Z", "2027-01-01T06:10:00Z"]]}],
      "lines": [
        {"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 3, "currentStreak": 1, "bestStreak": 2, "guessCounts": [2, 1, 0, 0, 0, 0], "bestTime": 60},
-       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0], "bestTime": 120}]}
+       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0], "bestTime": 120}]},
+    {"name": "counts a puzzle solved for the player as a loss and a board solved for them as no star", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-01", "entries": ["llama"], "completedAt": "2027-01-01T18:00:00Z"},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-02", "entries": ["plaza"], "completedAt": "2027-01-02T18:00:00Z", "gaveUp": true},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-03", "entries": [], "completedAt": "2027-01-03T18:00:00Z", "gaveUp": true},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z", "hints": ["0", "1"]},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-05", "entries": [], "completedAt": null, "hints": ["2"]},
+      {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["pace", "plaice"], "completedAt": "2027-01-01T18:00:00Z", "gaveUp": true}],
+     "lines": [
+       {"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 2, "currentStreak": 1, "bestStreak": 1, "guessCounts": [2, 0, 0, 0, 0, 0]},
+       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 0, "currentStreak": 0, "bestStreak": 0, "guessCounts": [0, 0, 0, 0, 0, 0]}]}
   ]
 }

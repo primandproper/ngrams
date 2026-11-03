@@ -53,6 +53,10 @@ data class PuzzleProgress(
      * untimed, so they never show a time that leaves out their start.
      */
     @ColumnInfo(defaultValue = "0") val timed: Boolean = false,
+    /** Hints taken, oldest first, in each game's own terms. Kept apart from [entries], which stats read as guesses or found words. */
+    @ColumnInfo(defaultValue = "[]") val hints: List<String> = emptyList(),
+    /** Whether the player had the puzzle solved for them, which gives up the win or the star. */
+    @ColumnInfo(defaultValue = "0") val gaveUp: Boolean = false,
 ) {
     /**
      * The plain values stats read, or null if a field doesn't parse (saved by a build that knew a
@@ -70,6 +74,8 @@ data class PuzzleProgress(
                 Instant.ofEpochMilli(completedAt ?: updatedAt),
                 stretches,
                 timed,
+                hints,
+                gaveUp,
             )
         }
 }
@@ -123,8 +129,13 @@ class Converters {
         Json.decodeFromString(stretchPairs, json).map { PlayStretch(Instant.ofEpochMilli(it[0]), Instant.ofEpochMilli(it[1])) }
 }
 
-// Version 2 adds stretches and timed, both with defaults, so Room migrates from the exported schemas.
-@Database(entities = [PuzzleProgress::class], version = 2, autoMigrations = [AutoMigration(from = 1, to = 2)])
+// Each version adds columns with defaults, so Room migrates from the exported schemas: 2 adds
+// stretches and timed, 3 adds hints and gaveUp.
+@Database(
+    entities = [PuzzleProgress::class],
+    version = 3,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+)
 @TypeConverters(Converters::class)
 abstract class NgramsDatabase : RoomDatabase() {
     abstract fun progress(): ProgressDao

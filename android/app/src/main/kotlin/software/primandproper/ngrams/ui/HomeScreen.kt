@@ -104,7 +104,7 @@ sealed interface HomeEntry {
     val language: Language
     val n: Int
 
-    /** A Password puzzle is done once it's over, won or lost; a board once it has its star. */
+    /** A Password puzzle is done once it's over, won or lost; a board once it has its star or was solved for the player. */
     val isCompleted: Boolean
 
     val id: String get() = "${kind.code}-${language.code}-$n"
@@ -125,7 +125,7 @@ sealed interface HomeEntry {
         override val kind = PuzzleKind.TILES
         override val language get() = game.puzzle.language
         override val n get() = game.puzzle.n
-        override val isCompleted get() = game.earnedStar
+        override val isCompleted get() = game.earnedStar || game.gaveUp
     }
 
     data class Pangram(
@@ -134,7 +134,7 @@ sealed interface HomeEntry {
         override val kind = PuzzleKind.PANGRAM
         override val language get() = game.puzzle.language
         override val n get() = game.puzzle.n
-        override val isCompleted get() = game.earnedStar
+        override val isCompleted get() = game.earnedStar || game.gaveUp
     }
 }
 
@@ -205,15 +205,39 @@ class HomeViewModel(
             val entries =
                 bank.wordPuzzles(day).filter { settings.plays(it.language) }.map {
                     val record = saved(PuzzleKind.WORD, it.language, it.n)
-                    HomeEntry.Word(WordGame(it, record?.entries.orEmpty(), record?.hardMode ?: false))
+                    HomeEntry.Word(
+                        WordGame(
+                            it,
+                            record?.entries.orEmpty(),
+                            record?.hardMode ?: false,
+                            record?.hints.orEmpty(),
+                            record?.gaveUp ?: false,
+                        ),
+                    )
                 } +
                     bank.tilesPuzzles(day).filter { settings.plays(it.language) }.map {
                         val record = saved(PuzzleKind.TILES, it.language, it.n)
-                        HomeEntry.Tiles(TilesGame(it, record?.entries.orEmpty(), settings.hardMode(PuzzleKind.TILES, it.language)))
+                        HomeEntry.Tiles(
+                            TilesGame(
+                                it,
+                                record?.entries.orEmpty(),
+                                settings.hardMode(PuzzleKind.TILES, it.language),
+                                record?.hints.orEmpty(),
+                                record?.gaveUp ?: false,
+                            ),
+                        )
                     } +
                     bank.pangramPuzzles(day).filter { settings.plays(it.language) }.map {
                         val record = saved(PuzzleKind.PANGRAM, it.language, it.n)
-                        HomeEntry.Pangram(PangramGame(it, record?.entries.orEmpty(), record?.hardMode ?: false))
+                        HomeEntry.Pangram(
+                            PangramGame(
+                                it,
+                                record?.entries.orEmpty(),
+                                record?.hardMode ?: false,
+                                record?.hints.orEmpty(),
+                                record?.gaveUp ?: false,
+                            ),
+                        )
                     }
             val sorted =
                 entries.sortedWith(

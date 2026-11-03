@@ -48,6 +48,10 @@ class PangramGame private constructor(
     val found: List<PangramWord>,
     /** Letters typed toward the next word. */
     val current: String,
+    /** Hints taken, oldest first, each in the game's own terms. A hint never changes the result. */
+    val hints: List<String>,
+    /** Whether the player had the puzzle solved for them, which gives up the star. */
+    val gaveUp: Boolean,
 ) {
     data class Submitted(
         val game: PangramGame,
@@ -72,7 +76,13 @@ class PangramGame private constructor(
     val foundBonusPangrams: Int get() = found.count { puzzle.isBonusPangram(it.word) }
 
     /** A star takes every common pangram and the target score. */
-    val earnedStar: Boolean get() = foundPangrams == puzzle.pangrams.size && score >= puzzle.targetScore
+    val earnedStar: Boolean get() = !gaveUp && foundPangrams == puzzle.pangrams.size && score >= puzzle.targetScore
+
+    fun takeHint(hint: String): PangramGame = copy(hints = hints + hint)
+
+    /** Solves the board for the player, finding [words], and gives up its star. */
+    fun giveUp(words: List<String>): PangramGame =
+        copy(found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] }, gaveUp = true)
 
     fun type(letter: Char): PangramGame = copy(current = current + letter)
 
@@ -103,20 +113,24 @@ class PangramGame private constructor(
     private fun copy(
         found: List<PangramWord> = this.found,
         current: String = this.current,
-    ): PangramGame = PangramGame(puzzle, hardMode, found, current)
+        hints: List<String> = this.hints,
+        gaveUp: Boolean = this.gaveUp,
+    ): PangramGame = PangramGame(puzzle, hardMode, found, current, hints, gaveUp)
 
     companion object {
         /**
-         * Starts a board, restoring [foundWords] from saved progress. Saved words the board doesn't
+         * Starts a board, restoring [foundWords], [hints] and [gaveUp] from saved progress. Saved words the board doesn't
          * have (the bank was rebuilt since) are dropped, as are repeats.
          */
         operator fun invoke(
             puzzle: PangramPuzzle,
             foundWords: List<String> = emptyList(),
             hardMode: Boolean = false,
+            hints: List<String> = emptyList(),
+            gaveUp: Boolean = false,
         ): PangramGame {
             val byWord = puzzle.words.distinctBy { it.word }.associateBy { it.word }
-            return PangramGame(puzzle, hardMode, foundWords.distinct().mapNotNull { byWord[it] }, "")
+            return PangramGame(puzzle, hardMode, foundWords.distinct().mapNotNull { byWord[it] }, "", hints, gaveUp)
         }
     }
 }

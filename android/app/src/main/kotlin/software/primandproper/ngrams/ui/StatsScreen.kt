@@ -138,7 +138,7 @@ fun LineStatsScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (val stats = lines?.firstOrNull { it.line == line }) {
                 null -> Text(stringResource(R.string.no_stats), modifier = Modifier.padding(16.dp))
-                else -> LineStatsView(stats)
+                else -> LineStatsView(stats, showTimer = showsTimer(container))
             }
         }
     }

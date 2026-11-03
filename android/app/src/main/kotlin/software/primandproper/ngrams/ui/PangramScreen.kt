@@ -91,6 +91,7 @@ import software.primandproper.ngrams.core.SeededGenerator
 import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.layoutSeed
 import software.primandproper.ngrams.core.shuffle
+import software.primandproper.ngrams.progress.PuzzleTimer
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -127,6 +128,7 @@ class PangramViewModel(
             .withValue("day", day)
             .withValue("n", n)
             .withValue("lang", language.code)
+    val timer = PuzzleTimer(key, container.progress, container.saves, logger)
     private val _state = MutableStateFlow<PangramState>(PangramState.Loading)
     val state: StateFlow<PangramState> = _state
 
@@ -145,6 +147,7 @@ class PangramViewModel(
     private suspend fun load() {
         try {
             val puzzle = container.bank().pangramPuzzles(day).first { it.language == key.language && it.n == key.n }
+            timer.load()
             // The setting applies only until the first word is saved; after that the board keeps
             // the mode it was saved with.
             val hardMode = container.settings.settings.first().hardMode(PuzzleKind.PANGRAM, key.language)
@@ -218,9 +221,10 @@ class PangramViewModel(
         word: PangramWord,
         game: PangramGame,
     ) {
+        val (stretches, at) = timer.entry(completes = game.earnedStar)
         viewModelScope.launch {
             try {
-                container.progress.append(word.word, key, game.hardMode, completes = game.earnedStar)
+                container.progress.append(word.word, key, game.hardMode, completes = game.earnedStar, stretches = stretches, at = at)
             } catch (e: Exception) {
                 logger.withValue("word", word.word).error("saving a found word", e)
                 play { it.copy(feedback = Feedback(R.string.couldnt_save_word)) }
@@ -243,6 +247,8 @@ fun PangramScreen(
     onBack: () -> Unit,
 ) {
     val model: PangramViewModel = viewModel { PangramViewModel(container, language, n, day) }
+    val showTimer = showsTimer(container)
+    val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
     val stats by model.stats.collectAsStateWithLifecycle()
     val order by model.order.collectAsStateWithLifecycle()
@@ -263,7 +269,13 @@ fun PangramScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${language.flag} ${PuzzleKind.PANGRAM.displayName(interfaceLanguage)} · $n") },
+                title = {
+                    TimedTitle(
+                        "${language.flag} ${PuzzleKind.PANGRAM.displayName(interfaceLanguage)} · $n",
+                        model.timer,
+                        showTimer,
+                    )
+                },
                 navigationIcon = {
                     BackButton(onBack)
                 },
@@ -280,13 +292,18 @@ fun PangramScreen(
             when (val current = state) {
                 PangramState.Loading -> CircularProgressIndicator()
                 PangramState.Failed -> Text(stringResource(R.string.couldnt_load_board))
-                is PangramState.Playing -> Board(current, order, model)
+                is PangramState.Playing -> {
+                    RunTimer(model.timer)
+                    Board(current, order, model)
+                }
             }
         }
     }
 
     if (showingStats) {
-        LineStatsSheet(PuzzleLine(language, PuzzleKind.PANGRAM, n), stats) { showingStats = false }
+        LineStatsSheet(PuzzleLine(language, PuzzleKind.PANGRAM, n), stats, time = timing.elapsed, showTimer = showTimer) {
+            showingStats = false
+        }
     }
 }
 

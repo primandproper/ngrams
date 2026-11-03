@@ -1,5 +1,5 @@
 {
-  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. Only the lines listed are checked.",
+  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. A record's stretches are [start, end] pairs of play, and timed says whether it was timed from its first move (false when left out). bestTime is the fastest timed success in seconds, null when there is none or left out. Only the lines listed are checked.",
   "timeZone": "America/Chicago",
   "bank": {"version": 1, "seed": 1, "days": [
     {"date": "2027-01-01", "puzzles": [
@@ -43,6 +43,15 @@
      "lines": [{"kind": "word", "lang": "en", "n": 5, "played": 2, "decided": 2, "successes": 2, "currentStreak": 2, "bestStreak": 2, "guessCounts": [1, 1, 0, 0, 0, 0]}]},
     {"name": "counts a board's star as its success", "today": "2027-01-02", "records": [
       {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["plaice"], "completedAt": "2027-01-01T06:00:00Z"}],
-     "lines": [{"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0]}]}
+     "lines": [{"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0]}]},
+    {"name": "takes the fastest timed success as the best time", "today": "2027-01-05", "records": [
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-01", "entries": ["llama"], "completedAt": "2027-01-01T18:00:00Z", "timed": true, "stretches": [["2027-01-01T17:58:30Z", "2027-01-01T18:00:00Z"]]},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-02", "entries": ["plaza", "llama"], "completedAt": "2027-01-02T18:00:00Z", "timed": true, "stretches": [["2027-01-02T09:00:00Z", "2027-01-02T09:00:20Z"], ["2027-01-02T17:59:20Z", "2027-01-02T18:05:00Z"]]},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-03", "entries": ["cramp", "cramp", "cramp", "cramp", "cramp", "cramp"], "completedAt": "2027-01-03T18:00:00Z", "timed": true, "stretches": [["2027-01-03T17:59:50Z", "2027-01-03T18:00:00Z"]]},
+      {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-04", "entries": ["llama"], "completedAt": "2027-01-04T18:00:00Z", "stretches": [["2027-01-04T17:59:55Z", "2027-01-04T18:00:00Z"]]},
+      {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["plaice"], "completedAt": "2027-01-01T06:00:00Z", "timed": true, "stretches": [["2027-01-01T05:58:00Z", "2027-01-01T06:10:00Z"]]}],
+     "lines": [
+       {"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 3, "currentStreak": 1, "bestStreak": 2, "guessCounts": [2, 1, 0, 0, 0, 0], "bestTime": 60},
+       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 1, "currentStreak": 1, "bestStreak": 1, "guessCounts": [0, 0, 0, 0, 0, 0], "bestTime": 120}]}
   ]
 }

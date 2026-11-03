@@ -21,6 +21,9 @@ let smallPuzzle = TilesPuzzle(
 
 let testDay = PuzzleDay(year: 2027, month: 1, day: 1)
 
+/// Noon on `testDay`, UTC.
+let testInstant = Date(timeIntervalSince1970: 1_798_804_800)
+
 /// Bank JSON in the generator's format, with `puzzles` spliced into one day.
 func bankJSON(version: Int = 1, date: String = "2027-01-01", puzzles: [String]) -> Data {
   Data(

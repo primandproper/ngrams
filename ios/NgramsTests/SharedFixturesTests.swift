@@ -198,7 +198,9 @@ struct SharedFixturesTests {
             n: try #require(record["n"] as? Int),
             day: try #require(PuzzleDay(record["day"] as? String ?? ""))),
           entries: try #require(record["entries"] as? [String]),
-          completedAt: (record["completedAt"] as? String).flatMap(instants.date(from:)))
+          completedAt: (record["completedAt"] as? String).flatMap(instants.date(from:)),
+          stretches: try stretches(record["stretches"] as? [[String]] ?? []),
+          timed: record["timed"] as? Bool ?? false)
       }
       let today = try #require(PuzzleDay(scenario["today"] as? String ?? ""))
       let stats = StatsBook.compute(records: records, bank: bank, today: today, calendar: calendar)
@@ -215,7 +217,38 @@ struct SharedFixturesTests {
         #expect(actual.currentStreak == expected["currentStreak"] as? Int, "\(name)")
         #expect(actual.bestStreak == expected["bestStreak"] as? Int, "\(name)")
         #expect(actual.guessCounts == expected["guessCounts"] as? [Int], "\(name)")
+        #expect(actual.bestTime == expected["bestTime"] as? TimeInterval, "\(name)")
       }
+    }
+  }
+
+  @Test("times puzzles the way the Android app does")
+  func time() throws {
+    let fixture = try fixture("time")
+
+    for testCase in try cases(fixture, "merges") {
+      let name = try #require(testCase["name"] as? String)
+      let merged = PlayTime.merged(
+        try stretches(try #require(testCase["saved"] as? [[String]])),
+        try stretches(try #require(testCase["new"] as? [[String]])))
+      #expect(merged == (try stretches(try #require(testCase["merged"] as? [[String]]))), "\(name)")
+    }
+    for testCase in try cases(fixture, "active") {
+      let name = try #require(testCase["name"] as? String)
+      let active = PlayTime.active(
+        try stretches(try #require(testCase["stretches"] as? [[String]])),
+        until: (testCase["completedAt"] as? String).flatMap(ISO8601DateFormatter().date(from:)))
+      #expect(active == testCase["seconds"] as? TimeInterval, "\(name)")
+    }
+  }
+
+  /// `[start, end]` pairs of ISO 8601 instants.
+  private func stretches(_ pairs: [[String]]) throws -> [PlayStretch] {
+    let instants = ISO8601DateFormatter()
+    return try pairs.map { pair in
+      PlayStretch(
+        start: try #require(instants.date(from: pair[0])),
+        end: try #require(instants.date(from: pair[1])))
     }
   }
 

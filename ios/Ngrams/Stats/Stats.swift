@@ -15,6 +15,21 @@ nonisolated struct PlayRecord: Sendable {
   /// When a word puzzle ended or a board earned its star. Puzzles finished before this was
   /// saved carry the last time they were played instead, which for a word puzzle is the same.
   let completedAt: Date?
+  var stretches: [PlayStretch] = []
+  /// Whether play was timed from the first entry.
+  var timed = false
+
+  /// The puzzle's time, or nil if it wasn't timed from the start.
+  var time: TimeInterval? {
+    timed ? PlayTime.active(stretches, until: completedAt) : nil
+  }
+}
+
+/// A started puzzle's saved timing.
+nonisolated struct PuzzleTiming: Equatable, Sendable {
+  let stretches: [PlayStretch]
+  let completedAt: Date?
+  let timed: Bool
 }
 
 /// A line's results across every day up to today.
@@ -33,6 +48,8 @@ nonisolated struct LineStats: Equatable, Sendable {
   var bestStreak = 0
   /// Word puzzles solved in each number of guesses: the first count is for one guess.
   var guessCounts = Array(repeating: 0, count: WordGame.maxGuesses)
+  /// The fastest timed success, in seconds.
+  var bestTime: TimeInterval?
 
   init(line: PuzzleLine) {
     self.line = line
@@ -72,6 +89,9 @@ nonisolated enum StatsBook {
         if let guesses = outcome.guesses, lineStats.guessCounts.indices.contains(guesses - 1) {
           lineStats.guessCounts[guesses - 1] += 1
         }
+        if outcome.succeeded, let time = outcome.time {
+          lineStats.bestTime = min(lineStats.bestTime ?? time, time)
+        }
 
         let onTime =
           outcome.succeeded
@@ -101,6 +121,7 @@ nonisolated enum StatsBook {
     /// Guesses used, for a solved word puzzle.
     var guesses: Int?
     var completedAt: Date?
+    var time: TimeInterval?
   }
 
   private static func outcome(
@@ -124,6 +145,7 @@ nonisolated enum StatsBook {
         break
       }
       outcome.completedAt = record.completedAt
+      outcome.time = record.time
     }
     return (line, outcome)
   }
@@ -141,6 +163,7 @@ nonisolated enum StatsBook {
       outcome.decided = outcome.started
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt
+      outcome.time = record.time
     }
     return (line, outcome)
   }
@@ -158,6 +181,7 @@ nonisolated enum StatsBook {
       outcome.decided = outcome.started
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt
+      outcome.time = record.time
     }
     return (line, outcome)
   }

@@ -64,6 +64,56 @@ struct ProgressStoreTests {
 
     #expect(try store.hardMode(for: key) == true)
   }
+
+  @Test("starts a puzzle timed and saves its stretches with its first entry")
+  func savesStretchesWithFirstEntry() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let stretch = PlayStretch(start: testInstant, end: testInstant.addingTimeInterval(30))
+
+    try store.append("ab", for: key, stretches: [stretch], at: stretch.end)
+
+    #expect(
+      try store.timing(for: key)
+        == PuzzleTiming(stretches: [stretch], completedAt: nil, timed: true))
+  }
+
+  @Test("extends an open stretch rather than adding it again")
+  func extendsStretches() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let open = PlayStretch(start: testInstant, end: testInstant.addingTimeInterval(30))
+    try store.append("ab", for: key, stretches: [open], at: open.end)
+
+    let later = PlayStretch(start: open.start, end: open.end.addingTimeInterval(30))
+    try store.save([later], for: key)
+
+    #expect(try store.timing(for: key)?.stretches == [later])
+  }
+
+  @Test("saves no stretches for a puzzle with nothing saved yet")
+  func skipsUnstartedStretches() throws {
+    let context = try inMemoryContext()
+    let store = ProgressStore(context: context, observer: recordingObserver("test"))
+
+    try store.save(
+      [PlayStretch(start: testInstant, end: testInstant.addingTimeInterval(30))], for: key)
+
+    #expect(try context.fetch(FetchDescriptor<PuzzleProgress>()).isEmpty)
+  }
+
+  @Test("leaves a puzzle saved before timing existed untimed")
+  func keepsOldPuzzlesUntimed() throws {
+    let context = try inMemoryContext()
+    let store = ProgressStore(context: context, observer: recordingObserver("test"))
+    context.insert(PuzzleProgress(key: key, entries: ["ab"]))
+    try context.save()
+
+    try store.append(
+      "abcd", for: key,
+      stretches: [PlayStretch(start: testInstant, end: testInstant.addingTimeInterval(30))])
+
+    #expect(try store.timing(for: key)?.timed == false)
+    #expect(try store.timing(for: key)?.stretches.count == 1)
+  }
 }
 
 @Suite("TilesSession")

@@ -33,10 +33,15 @@ final class PuzzleProgress {
   /// toward a streak. Nil for puzzles finished before it was saved.
   var completedAt: Date?
   var updatedAt: Date
+  /// Every stretch of play, kept even after the puzzle is finished. See `PlayTime`.
+  var stretches: [PlayStretch] = []
+  /// Whether play was timed from the first entry. Puzzles started before timing existed stay
+  /// untimed, so they never show a time that leaves out their start.
+  var timed = false
 
   init(
     key: ProgressKey, entries: [String] = [], hardMode: Bool = false, completedAt: Date? = nil,
-    updatedAt: Date = .now
+    updatedAt: Date = .now, stretches: [PlayStretch] = [], timed: Bool = false
   ) {
     self.language = key.language.rawValue
     self.kind = key.kind.rawValue
@@ -46,6 +51,8 @@ final class PuzzleProgress {
     self.hardMode = hardMode
     self.completedAt = completedAt
     self.updatedAt = updatedAt
+    self.stretches = stretches
+    self.timed = timed
   }
 
   /// The plain values stats read, or nil if a field doesn't parse (saved by a build that knew a
@@ -58,7 +65,7 @@ final class PuzzleProgress {
     }
     return PlayRecord(
       key: ProgressKey(language: language, kind: kind, n: n, day: day), entries: entries,
-      completedAt: completedAt ?? updatedAt)
+      completedAt: completedAt ?? updatedAt, stretches: stretches, timed: timed)
   }
 
   static func matching(_ key: ProgressKey) -> Predicate<PuzzleProgress> {
@@ -97,16 +104,24 @@ final class ProgressStore {
     try fetch(key)?.hardMode
   }
 
-  /// Appends one entry and saves. Appending rather than replacing means a failed read can never
-  /// turn into a write that drops earlier entries. The first entry records `hardMode`; later
-  /// ones leave it alone, so a puzzle keeps the mode it started in. The first entry that
-  /// `completes` the puzzle records when.
+  /// What a puzzle's time is worked out from, or nil if nothing's been saved for it yet.
+  func timing(for key: ProgressKey) throws -> PuzzleTiming? {
+    try fetch(key).map {
+      PuzzleTiming(stretches: $0.stretches, completedAt: $0.completedAt, timed: $0.timed)
+    }
+  }
+
+  /// Appends one entry and saves, folding in `stretches`. Appending rather than replacing means a
+  /// failed read can never turn into a write that drops earlier entries. The first entry records
+  /// `hardMode` and starts the puzzle timed; later ones leave both alone, so a puzzle keeps the
+  /// mode it started in. The first entry that `completes` the puzzle records when.
   func append(
-    _ entry: String, for key: ProgressKey, hardMode: Bool = false, completes: Bool = false
+    _ entry: String, for key: ProgressKey, hardMode: Bool = false, completes: Bool = false,
+    stretches: [PlayStretch] = [], at now: Date = .now
   ) throws {
-    let now = Date.now
     if let progress = try fetch(key) {
       progress.entries.append(entry)
+      progress.stretches = PlayTime.merged(progress.stretches, stretches)
       progress.updatedAt = now
       if completes, progress.completedAt == nil {
         progress.completedAt = now
@@ -115,11 +130,21 @@ final class ProgressStore {
       context.insert(
         PuzzleProgress(
           key: key, entries: [entry], hardMode: hardMode, completedAt: completes ? now : nil,
-          updatedAt: now))
+          updatedAt: now, stretches: PlayTime.merged([], stretches), timed: true))
     }
     try context.save()
     logger.withValue("day", key.day.description).withValue("n", key.n)
       .debug("saved \(key.kind.rawValue) progress")
+  }
+
+  /// Folds `stretches` into a started puzzle's and saves. A puzzle with nothing saved yet keeps
+  /// its stretches in memory until its first entry, so opening a puzzle never starts it.
+  func save(_ stretches: [PlayStretch], for key: ProgressKey) throws {
+    guard let progress = try fetch(key) else {
+      return
+    }
+    progress.stretches = PlayTime.merged(progress.stretches, stretches)
+    try context.save()
   }
 
   private func fetch(_ key: ProgressKey) throws -> PuzzleProgress? {

@@ -71,6 +71,7 @@ import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.Status
 import software.primandproper.ngrams.core.Submission
 import software.primandproper.ngrams.core.WordGame
+import software.primandproper.ngrams.progress.PuzzleTimer
 
 sealed interface PasswordState {
     data object Loading : PasswordState
@@ -99,6 +100,7 @@ class PasswordViewModel(
             .withValue("day", day)
             .withValue("n", n)
             .withValue("lang", language.code)
+    val timer = PuzzleTimer(key, container.progress, container.saves, logger)
     private val _state = MutableStateFlow<PasswordState>(PasswordState.Loading)
     val state: StateFlow<PasswordState> = _state
     private var list: GuessList? = null
@@ -114,6 +116,7 @@ class PasswordViewModel(
         try {
             val puzzle = container.bank().wordPuzzles(day).first { it.language == key.language && it.n == key.n }
             list = container.guessList(key.language, key.n)
+            timer.load()
             // The setting applies only until the first guess is saved; after that the puzzle keeps
             // the mode it was saved with.
             val hardMode = container.settings.settings.first().hardMode(PuzzleKind.WORD, key.language)
@@ -145,9 +148,10 @@ class PasswordViewModel(
         val (game, submission) = playing.game.submit(list)
         _state.value = PasswordState.Playing(game, feedback(submission), justFinished = !playing.game.isOver && game.isOver)
         if (submission is Submission.Guessed) {
+            val (stretches, at) = timer.entry(completes = game.isOver)
             viewModelScope.launch {
                 try {
-                    container.progress.append(submission.guess, key, game.hardMode, completes = game.isOver)
+                    container.progress.append(submission.guess, key, game.hardMode, completes = game.isOver, stretches = stretches, at = at)
                 } catch (e: Exception) {
                     logger.error("saving a guess", e)
                     _state.update {
@@ -206,6 +210,8 @@ fun PasswordScreen(
     onBack: () -> Unit,
 ) {
     val model: PasswordViewModel = viewModel { PasswordViewModel(container, language, n, day) }
+    val showTimer = showsTimer(container)
+    val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
     val stats by model.stats.collectAsStateWithLifecycle()
     val playing = state as? PasswordState.Playing
@@ -225,7 +231,7 @@ fun PasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${language.flag} ${PuzzleKind.WORD.displayName(interfaceLanguage)} · $n") },
+                title = { TimedTitle("${language.flag} ${PuzzleKind.WORD.displayName(interfaceLanguage)} · $n", model.timer, showTimer) },
                 navigationIcon = {
                     BackButton(onBack)
                 },
@@ -242,7 +248,8 @@ fun PasswordScreen(
             when (val current = state) {
                 PasswordState.Loading -> CircularProgressIndicator()
                 PasswordState.Failed -> Text(stringResource(R.string.couldnt_load_puzzle))
-                is PasswordState.Playing ->
+                is PasswordState.Playing -> {
+                    RunTimer(model.timer)
                     Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         GuessGrid(current.game)
                         Spacer(Modifier.weight(1f))
@@ -257,6 +264,7 @@ fun PasswordScreen(
                             onEnter = model::submit,
                         )
                     }
+                }
             }
         }
     }
@@ -266,6 +274,8 @@ fun PasswordScreen(
             line = PuzzleLine(language, PuzzleKind.WORD, n),
             stats = stats,
             highlight = (playing.game.status as? Status.Won)?.guesses,
+            time = timing.elapsed,
+            showTimer = showTimer,
             onDismiss = { showingStats = false },
         )
     }

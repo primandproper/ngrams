@@ -27,6 +27,7 @@ final class WordSession {
   let key: ProgressKey
   private(set) var game: WordGame
   private(set) var feedback: Feedback?
+  let timer: PuzzleTimer
 
   private let list: GuessList
   private let store: ProgressStore
@@ -45,6 +46,7 @@ final class WordSession {
     self.list = list
     self.store = store
     self.logger = logger
+    timer = PuzzleTimer(key: key, store: store, logger: logger)
 
     do {
       game = WordGame(
@@ -80,7 +82,10 @@ final class WordSession {
       feedback = Feedback(kind: .blocked)
     case .guessed(let guess):
       do {
-        try store.append(guess, for: key, hardMode: game.hardMode, completes: game.isOver)
+        let (stretches, now) = timer.entry(completing: game.isOver)
+        try store.append(
+          guess, for: key, hardMode: game.hardMode, completes: game.isOver, stretches: stretches,
+          at: now)
       } catch {
         logger.error("saving a guess", error)
         feedback = Feedback(kind: .saveFailed)

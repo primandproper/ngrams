@@ -19,7 +19,8 @@ final class PrototypeSwitches {
   var pangramPulse = true
   var pangramShake = true
   var pangramFoundPop = true
-  var pangramBurst = true
+  // Off after playing: no particle bursts (2026-11-02).
+  var pangramBurst = false
   var pangramSpin = true
   // Shared
   var scoreCountUp = true
@@ -114,33 +115,44 @@ private struct PrototypePill: ViewModifier {
   @Environment(\.prototype) private var switches
   @State private var showing = false
 
+  /// Off once the verdict was in, so the phone build plays like the real thing.
+  private static let shown = false
+
   func body(content: Content) -> some View {
     #if DEBUG
-      content
-        .overlay(alignment: .bottomLeading) {
-          Button {
-            showing = true
-          } label: {
-            Label {
-              Text(verbatim: "Prototype")
-            } icon: {
-              Image(systemName: "slider.horizontal.3")
-            }
-            .font(.caption.weight(.bold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .foregroundStyle(.white)
-            .background(.purple, in: .capsule)
-            .shadow(radius: 4)
-          }
-          .padding(.leading, 12)
-          .padding(.bottom, 4)
-        }
-        .sheet(isPresented: $showing) {
-          PrototypePanel(switches: switches)
-        }
+      if Self.shown {
+        pill(content)
+      } else {
+        content
+      }
     #else
       content
     #endif
+  }
+
+  private func pill(_ content: Content) -> some View {
+    content
+      .overlay(alignment: .bottomLeading) {
+        Button {
+          showing = true
+        } label: {
+          Label {
+            Text(verbatim: "Prototype")
+          } icon: {
+            Image(systemName: "slider.horizontal.3")
+          }
+          .font(.caption.weight(.bold))
+          .padding(.horizontal, 10)
+          .padding(.vertical, 6)
+          .foregroundStyle(.white)
+          .background(.purple, in: .capsule)
+          .shadow(radius: 4)
+        }
+        .padding(.leading, 12)
+        .padding(.bottom, 4)
+      }
+      .sheet(isPresented: $showing) {
+        PrototypePanel(switches: switches)
+      }
   }
 }

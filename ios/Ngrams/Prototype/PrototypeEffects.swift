@@ -172,11 +172,9 @@ private struct StarCelebration: ViewModifier {
 
   func body(content: Content) -> some View {
     if switches.starCelebration {
+      // No particle burst: dropped after playing (2026-11-02).
       content
         .animation(.bouncy(duration: switches.time(0.5), extraBounce: 0.25), value: earned)
-        .overlay {
-          Burst(trigger: earned ? 1 : 0, color: theme.colors.tertiary, count: 24, radius: 180)
-        }
     } else {
       content
     }

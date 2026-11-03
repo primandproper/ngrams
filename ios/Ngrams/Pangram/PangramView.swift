@@ -42,14 +42,42 @@ struct PangramView: View {
 
   @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
+  // PROTOTYPE
+  @Environment(\.prototype) private var prototype
+  @State private var help = PangramHelp()
+  @State private var misses = 0
+  @State private var pangramsFound = 0
+  @State private var spins = 0
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
         ScoreHeader(game: session.game)
         CurrentWord(game: session.game)
+          .prototypeShake(misses, enabled: prototype.pangramShake)
+        let clues = help.open(session.game)
+        if !clues.isEmpty {
+          HStack {
+            ForEach(clues, id: \.self) { clue in
+              Text(verbatim: clue)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(theme.colors.tertiary.opacity(0.2), in: .capsule)
+            }
+          }
+          .transition(.opacity)
+        }
         LetterWheel(
-          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type)
+          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type,
+          spins: spins
+        )
+        .overlay {
+          if prototype.pangramBurst {
+            Burst(trigger: pangramsFound, color: theme.colors.primary, count: 22, radius: 170)
+          }
+        }
+        .disabled(help.solving)
         controls
         FoundWords(game: session.game)
       }
@@ -88,6 +116,34 @@ struct PangramView: View {
     }
     .animation(theme.animation.normal, value: session.feedback)
     .timed(by: session.timer)
+    // PROTOTYPE
+    .toolbar {
+      if !session.game.earnedStar {
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: help.used, disabled: help.solving,
+            onHint: { withAnimation { help.hint(session.game) } },
+            onSolve: { Task { await help.solve(session, pace: prototype.time(0.35)) } })
+        }
+      }
+    }
+    .onChange(of: session.feedback) { _, feedback in
+      switch feedback?.kind {
+      case .found(_, pangram: true), .foundBonusPangram: pangramsFound += 1
+      case .tooShort, .missingCenter, .notAWord, .alreadyFound, .needsPangram, .blocked:
+        misses += 1
+      default: break
+      }
+    }
+    .sensoryFeedback(trigger: misses) { _, _ in prototype.haptics ? .error : nil }
+    .sensoryFeedback(trigger: pangramsFound) { _, _ in prototype.haptics ? .success : nil }
+    .sensoryFeedback(trigger: session.game.found.count) { _, _ in
+      prototype.haptics ? .impact(weight: .medium) : nil
+    }
+    .sensoryFeedback(trigger: session.game.current) { old, new in
+      prototype.haptics && new.count > old.count ? .selection : nil
+    }
+    .prototypePill()
   }
 
   private var controls: some View {
@@ -100,7 +156,15 @@ struct PangramView: View {
       }
       .disabled(session.game.current.isEmpty)
       Button("Shuffle", systemImage: "shuffle") {
-        withAnimation(theme.animation.normal) { session.shuffle() }
+        // PROTOTYPE: the ring spins once around while the letters swap.
+        if prototype.pangramSpin {
+          withAnimation(.spring(response: prototype.time(0.7), dampingFraction: 0.8)) {
+            spins += 1
+            session.shuffle()
+          }
+        } else {
+          withAnimation(theme.animation.normal) { session.shuffle() }
+        }
       }
       .accessibilityIdentifier("shuffle")
       .labelStyle(.iconOnly)
@@ -130,6 +194,7 @@ private struct ScoreHeader: View {
       HStack(alignment: .firstTextBaseline) {
         Text("\(game.score)")
           .font(.largeTitle.weight(.bold).monospacedDigit())
+          .prototypeCountUp(game.score)
         Text("/ \(game.puzzle.targetScore)")
           .foregroundStyle(.secondary)
         Spacer()
@@ -137,16 +202,19 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(max(game.puzzle.targetScore, 1)), 1))
+        .prototypeCountUp(game.score)
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(theme.colors.tertiary)
+          .transition(.scale(scale: 0.2).combined(with: .opacity))
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every pangram for the star")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
     }
+    .prototypeStar(game.earnedStar)
   }
 
   /// The common pangrams the star needs, then any bonus ones apart, so a bonus find never looks
@@ -187,8 +255,11 @@ private struct LetterWheel: View {
   let center: Character
   let outer: [Character]
   let onLetter: (Character) -> Void
+  // PROTOTYPE: full turns the ring has spun through, one per shuffle.
+  let spins: Int
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.prototype) private var prototype
 
   static let centerRadius: CGFloat = 46
   static let ringWidth: CGFloat = 90
@@ -198,9 +269,12 @@ private struct LetterWheel: View {
   var body: some View {
     let span = Angle.degrees(360 / Double(max(outer.count, 1)))
     ZStack {
-      ForEach(Array(outer.enumerated()), id: \.element) { index, letter in
-        WedgeKey(letter: letter, span: span, rotation: span * Double(index)) { onLetter(letter) }
+      ZStack {
+        ForEach(Array(outer.enumerated()), id: \.element) { index, letter in
+          WedgeKey(letter: letter, span: span, rotation: span * Double(index)) { onLetter(letter) }
+        }
       }
+      .rotationEffect(.degrees(Double(spins) * 360))
       Button {
         onLetter(center)
       } label: {
@@ -211,7 +285,7 @@ private struct LetterWheel: View {
           .background(theme.colors.primary, in: .circle)
           .contentShape(.circle)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(PulseStyle(enabled: prototype.pangramPulse))
       .accessibilityLabel("\(String(center).uppercased()), center")
     }
     .frame(width: 2 * Self.radius, height: 2 * Self.radius)
@@ -226,6 +300,7 @@ private struct LetterWheel: View {
     let action: () -> Void
 
     @Environment(\.dsTheme) private var theme
+    @Environment(\.prototype) private var prototype
 
     var body: some View {
       let wedge = Wedge(
@@ -243,7 +318,7 @@ private struct LetterWheel: View {
           }
           .contentShape([.interaction, .accessibility], wedge)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(PulseStyle(enabled: prototype.pangramPulse))
       .rotationEffect(rotation)
       .accessibilityLabel(String(letter).uppercased())
     }
@@ -280,6 +355,7 @@ private struct FoundWords: View {
 
   @AppStorage(SettingsKey.pangramFoundOrder) private var order = FoundWordOrder.alphabetical
   @Environment(\.dsTheme) private var theme
+  @Environment(\.prototype) private var prototype
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -312,8 +388,14 @@ private struct FoundWords: View {
               .font(.caption2)
               .foregroundStyle(.secondary)
           }
+          .transition(
+            prototype.pangramFoundPop
+              ? .scale(scale: 0.2).combined(with: .opacity) : .identity)
         }
       }
+      .animation(
+        prototype.pangramFoundPop ? .bouncy(duration: prototype.time(0.45), extraBounce: 0.2) : nil,
+        value: game.found.count)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
   }

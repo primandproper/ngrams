@@ -61,15 +61,19 @@ struct WordView: View {
 
   @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
+  // PROTOTYPE
+  @Environment(\.prototype) private var prototype
+  @State private var help = WordHelp()
+  @State private var shakes = 0
 
   var body: some View {
     VStack(spacing: 16) {
-      GuessGrid(game: session.game)
+      GuessGrid(game: session.game, hints: help.hints, shakes: shakes)
       Spacer(minLength: 0)
       ResultLine(game: session.game)
       Keyboard(
         language: session.game.puzzle.language, marks: session.game.letterMarks,
-        disabled: session.game.isOver,
+        disabled: session.game.isOver || help.solving,
         onLetter: session.type, onDelete: session.deleteLetter, onEnter: session.submit)
     }
     .padding()
@@ -92,8 +96,28 @@ struct WordView: View {
         ToolbarItem(placement: .topBarTrailing) {
           ShareLink(item: ShareText.word(session.game, on: session.key.day))
         }
+      } else {
+        // PROTOTYPE
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: help.used, disabled: help.solving, onHint: { help.hint(session.game) },
+            onSolve: { Task { await help.solve(session, pace: prototype.time(0.25)) } })
+        }
       }
     }
+    // PROTOTYPE: a rejected guess shakes the row and buzzes.
+    .onChange(of: session.feedback) { _, feedback in
+      switch feedback?.kind {
+      case .tooShort, .notAWord, .missingHint, .blocked: shakes += 1
+      default: break
+      }
+    }
+    .sensoryFeedback(trigger: shakes) { _, _ in prototype.haptics ? .error : nil }
+    .sensoryFeedback(trigger: session.game.guesses.count) { _, _ in
+      prototype.haptics ? (solvedIn != nil ? .success : .impact(weight: .light)) : nil
+    }
+    .sensoryFeedback(trigger: help.used) { _, _ in prototype.haptics ? .selection : nil }
+    .prototypePill()
     .overlay(alignment: .top) {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)
@@ -118,21 +142,43 @@ struct WordView: View {
 
 private struct GuessGrid: View {
   let game: WordGame
+  // PROTOTYPE
+  let hints: [Int: Character]
+  let shakes: Int
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.prototype) private var prototype
 
   var body: some View {
     let marks = game.marks
+    let won = solvedRow != nil ? 1 : 0
     VStack(spacing: 6) {
       ForEach(0..<WordGame.maxGuesses, id: \.self) { row in
         HStack(spacing: 6) {
           ForEach(0..<game.puzzle.n, id: \.self) { column in
-            LetterCell(letter: letter(row: row, column: column), mark: mark(marks, row, column))
+            LetterCell(
+              letter: letter(row: row, column: column), mark: mark(marks, row, column),
+              hint: row == game.guesses.count && !game.isOver ? hints[column] : nil,
+              flipDelay: Double(column) * 0.12
+            )
+            .prototypeHop(
+              row == solvedRow ? won : 0,
+              delay: Double(game.puzzle.n) * 0.12 + 0.35 + Double(column) * 0.08,
+              enabled: prototype.wordBounce)
           }
         }
+        .prototypeShake(row == game.guesses.count ? shakes : 0, enabled: prototype.wordShake)
       }
     }
     .animation(theme.animation.normal, value: game.guesses)
+  }
+
+  /// The row that solved the puzzle, if it's solved.
+  private var solvedRow: Int? {
+    if case .won(let guesses) = game.status {
+      return guesses - 1
+    }
+    return nil
   }
 
   private func letter(row: Int, column: Int) -> Character? {
@@ -179,20 +225,55 @@ private struct LetterCell: View {
   let letter: Character?
   /// Nil until the letter's guess is submitted.
   let mark: LetterMark?
+  // PROTOTYPE: a hinted letter pencilled into an empty cell, and the flip that shows a mark.
+  let hint: Character?
+  let flipDelay: Double
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.prototype) private var prototype
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shownMark: LetterMark?
+  @State private var angle = 0.0
+
+  init(letter: Character?, mark: LetterMark?, hint: Character?, flipDelay: Double) {
+    self.letter = letter
+    self.mark = mark
+    self.hint = hint
+    self.flipDelay = flipDelay
+    _shownMark = State(initialValue: mark)
+  }
 
   var body: some View {
+    let mark = shownMark
     let fill = mark?.fill(in: theme)
-    Text(letter.map { String($0).uppercased() } ?? " ")
+    Text(letter.map { String($0).uppercased() } ?? hint.map { String($0).uppercased() } ?? " ")
       .font(.title.weight(.bold))
       .frame(width: Self.size, height: Self.size)
-      .foregroundStyle(foreground)
+      .foregroundStyle(
+        letter == nil && hint != nil ? theme.colors.primary.opacity(0.45) : foreground
+      )
       .background(fill ?? .clear, in: .rect(cornerRadius: theme.radius.md))
       .overlay {
         if fill == nil {
           RoundedRectangle(cornerRadius: theme.radius.md)
-            .strokeBorder(border, lineWidth: 2)
+            .strokeBorder(
+              letter == nil && hint != nil ? theme.colors.primary.opacity(0.6) : border,
+              style: StrokeStyle(lineWidth: 2, dash: letter == nil && hint != nil ? [5, 4] : []))
+        }
+      }
+      .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0))
+      .onChange(of: self.mark) { old, new in
+        guard old == nil, new != nil, prototype.wordFlip, !reduceMotion else {
+          shownMark = new
+          return
+        }
+        Task {
+          let half = prototype.time(0.18)
+          try? await Task.sleep(for: .seconds(prototype.time(flipDelay)))
+          withAnimation(.easeIn(duration: half)) { angle = 90 }
+          try? await Task.sleep(for: .seconds(half))
+          shownMark = new
+          withAnimation(.easeOut(duration: half)) { angle = 0 }
         }
       }
       .accessibilityLabel(
@@ -201,7 +282,7 @@ private struct LetterCell: View {
   }
 
   private var foreground: Color {
-    switch mark {
+    switch shownMark {
     case .absent: theme.colors.textSecondary
     case .correct, .present: theme.colors.textOnPrimary
     case nil: theme.colors.textPrimary
@@ -209,7 +290,7 @@ private struct LetterCell: View {
   }
 
   private var border: Color {
-    if mark == .absent || letter == nil {
+    if shownMark == .absent || letter == nil {
       return theme.colors.border
     }
     return theme.colors.secondary

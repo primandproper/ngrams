@@ -42,6 +42,10 @@ struct TilesView: View {
 
   @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
+  // PROTOTYPE
+  @Environment(\.prototype) private var prototype
+  @State private var help = TilesHelp()
+  @State private var misses = 0
 
   /// One column per tile in a target, so every board is a full rectangle and a solved target
   /// fills exactly one row.
@@ -95,6 +99,30 @@ struct TilesView: View {
     }
     .animation(theme.animation.normal, value: session.feedback)
     .timed(by: session.timer)
+    // PROTOTYPE
+    .toolbar {
+      if !session.game.earnedStar {
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: help.used, disabled: help.solving, onHint: { help.hint(session.game) },
+            onSolve: { Task { await help.solve(session, pace: prototype.time(0.3)) } })
+        }
+      }
+    }
+    .onChange(of: session.feedback) { _, feedback in
+      switch feedback?.kind {
+      case .notAWord, .alreadyFound, .blocked: misses += 1
+      default: break
+      }
+    }
+    .sensoryFeedback(trigger: misses) { _, _ in prototype.haptics ? .error : nil }
+    .sensoryFeedback(trigger: session.game.found.count) { _, _ in
+      prototype.haptics ? .success : nil
+    }
+    .sensoryFeedback(trigger: session.game.selection) { _, _ in
+      prototype.haptics ? .selection : nil
+    }
+    .prototypePill()
   }
 
   private var board: some View {
@@ -103,19 +131,26 @@ struct TilesView: View {
         .font(.title2.weight(.semibold).monospaced())
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Current word")
+        .prototypeShake(misses, enabled: prototype.tilesShake)
 
       LazyVGrid(columns: columns, spacing: 8) {
         ForEach(session.boardTiles, id: \.self) { tile in
           TileButton(
             text: session.game.puzzle.tiles[tile],
             position: session.game.selection.firstIndex(of: tile),
-            solved: session.game.solvedTiles.contains(tile)
+            solved: session.game.solvedTiles.contains(tile),
+            hinted: help.lit(session.game).contains(tile)
           ) {
             session.tap(tile)
           }
         }
       }
-      .animation(theme.animation.normal, value: session.boardTiles)
+      .animation(
+        prototype.tilesSpring
+          ? .spring(response: prototype.time(0.5), dampingFraction: 0.62) : theme.animation.normal,
+        value: session.boardTiles
+      )
+      .disabled(help.solving)
     }
   }
 
@@ -144,6 +179,7 @@ private struct ScoreHeader: View {
       HStack(alignment: .firstTextBaseline) {
         Text("\(game.score)")
           .font(.largeTitle.weight(.bold).monospacedDigit())
+          .prototypeCountUp(game.score)
         Text("/ \(game.puzzle.targetScore)")
           .foregroundStyle(.secondary)
         Spacer()
@@ -151,16 +187,19 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(game.puzzle.targetScore), 1))
+        .prototypeCountUp(game.score)
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(theme.colors.tertiary)
+          .transition(.scale(scale: 0.2).combined(with: .opacity))
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every target for the star")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
     }
+    .prototypeStar(game.earnedStar)
   }
 }
 
@@ -202,9 +241,17 @@ private struct TileButton: View {
   /// Where this tile sits in the current word, if it's selected.
   let position: Int?
   let solved: Bool
+  // PROTOTYPE
+  let hinted: Bool
   let action: () -> Void
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.prototype) private var prototype
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  private var lifted: Bool {
+    position != nil && prototype.tilesLift && !reduceMotion
+  }
 
   private var background: Color {
     if position != nil {
@@ -232,6 +279,23 @@ private struct TileButton: View {
               .padding(4)
           }
         }
+        .overlay {
+          if hinted, position == nil {
+            RoundedRectangle(cornerRadius: theme.radius.lg)
+              .strokeBorder(
+                theme.colors.tertiary, style: StrokeStyle(lineWidth: 3, dash: [6, 4])
+              )
+              .phaseAnimator([0.4, 1.0]) { ring, opacity in
+                ring.opacity(reduceMotion ? 1 : opacity)
+              } animation: { _ in
+                .easeInOut(duration: prototype.time(0.7))
+              }
+          }
+        }
+        .scaleEffect(lifted ? 1.07 : 1)
+        .offset(y: lifted ? -4 : 0)
+        .shadow(color: .black.opacity(lifted ? 0.25 : 0), radius: lifted ? 6 : 0, y: lifted ? 4 : 0)
+        .animation(.spring(response: prototype.time(0.3), dampingFraction: 0.6), value: lifted)
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(position == nil ? [] : .isSelected)

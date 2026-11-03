@@ -36,5 +36,5 @@ celebration, and haptics.
 
 ## Verdict
 
-_To fill in after playing: which hints and animations stay, which go, and what the shared
-animation layer in platform-ui should hold._
+Played on the phone (2026-11-02). Every hint, Solve, and animation stays except the burst on
+finding a pangram. The star celebration's burst is a separate switch and wasn't called out.

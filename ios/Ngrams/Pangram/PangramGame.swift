@@ -21,6 +21,10 @@ nonisolated struct PangramGame: Sendable {
   let puzzle: PangramPuzzle
   /// Whether the first word found has to be a pangram.
   let hardMode: Bool
+  /// Hints taken, oldest first, each in the game's own terms. A hint never changes the result.
+  private(set) var hints: [String] = []
+  /// Whether the player had the puzzle solved for them, which gives up the star.
+  private(set) var gaveUp = false
   /// Words found so far, oldest first.
   private(set) var found: [PangramWord] = []
   /// Letters typed toward the next word.
@@ -28,9 +32,14 @@ nonisolated struct PangramGame: Sendable {
 
   private let words: [String: PangramWord]
 
-  /// Starts a board, restoring `foundWords` from saved progress. Saved words the board doesn't
-  /// have (the bank was rebuilt since) are dropped.
-  init(puzzle: PangramPuzzle, foundWords: [String] = [], hardMode: Bool = false) {
+  /// Starts a board, restoring `foundWords`, `hints` and `gaveUp` from saved progress. Saved
+  /// words the board doesn't have (the bank was rebuilt since) are dropped.
+  init(
+    puzzle: PangramPuzzle, foundWords: [String] = [], hardMode: Bool = false,
+    hints: [String] = [], gaveUp: Bool = false
+  ) {
+    self.hints = hints
+    self.gaveUp = gaveUp
     self.puzzle = puzzle
     self.hardMode = hardMode
     let words = Dictionary(
@@ -71,7 +80,22 @@ nonisolated struct PangramGame: Sendable {
 
   /// A star takes every common pangram and the target score.
   var earnedStar: Bool {
-    foundPangrams == puzzle.pangrams.count && score >= puzzle.targetScore
+    !gaveUp && foundPangrams == puzzle.pangrams.count && score >= puzzle.targetScore
+  }
+
+  mutating func take(hint: String) {
+    hints.append(hint)
+  }
+
+  /// Solves the board for the player, finding `words`, and gives up its star.
+  mutating func giveUp(finding words: [String]) {
+    var seen = Set(foundWords)
+    for word in words where seen.insert(word).inserted {
+      if let match = self.words[word] {
+        found.append(match)
+      }
+    }
+    gaveUp = true
   }
 
   mutating func type(_ letter: Character) {

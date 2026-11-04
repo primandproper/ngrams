@@ -170,12 +170,13 @@ private enum Entry: Identifiable {
     }
   }
 
-  /// A word puzzle is done once it's over, won or lost; a board once it has its star.
+  /// A word puzzle is done once it's over, won or lost; a board once it has its star or was
+  /// solved for the player.
   var isCompleted: Bool {
     switch self {
     case .word(let game): game.isOver
-    case .tiles(let game): game.earnedStar
-    case .pangram(let game): game.earnedStar
+    case .tiles(let game): game.earnedStar || game.gaveUp
+    case .pangram(let game): game.earnedStar || game.gaveUp
     }
   }
 
@@ -235,19 +236,23 @@ private struct DayList: View {
       let record = saved(.word, puzzle.language, puzzle.n)
       return .word(
         WordGame(
-          puzzle: puzzle, guesses: record?.entries ?? [], hardMode: record?.hardMode ?? false))
+          puzzle: puzzle, guesses: record?.entries ?? [], hardMode: record?.hardMode ?? false,
+          hints: record?.hints ?? [], gaveUp: record?.gaveUp ?? false))
     }
     let tilesEntries: [Entry] = tiles.map { puzzle in
-      .tiles(
+      let record = saved(.tiles, puzzle.language, puzzle.n)
+      return .tiles(
         TilesGame(
-          puzzle: puzzle, foundWords: saved(.tiles, puzzle.language, puzzle.n)?.entries ?? [],
-          solvedTilesLeave: tilesHardModes.languages.contains(puzzle.language)))
+          puzzle: puzzle, foundWords: record?.entries ?? [],
+          solvedTilesLeave: tilesHardModes.languages.contains(puzzle.language),
+          hints: record?.hints ?? [], gaveUp: record?.gaveUp ?? false))
     }
     let pangramEntries: [Entry] = pangrams.map { puzzle in
       let record = saved(.pangram, puzzle.language, puzzle.n)
       return .pangram(
         PangramGame(
-          puzzle: puzzle, foundWords: record?.entries ?? [], hardMode: record?.hardMode ?? false))
+          puzzle: puzzle, foundWords: record?.entries ?? [], hardMode: record?.hardMode ?? false,
+          hints: record?.hints ?? [], gaveUp: record?.gaveUp ?? false))
     }
     let all = wordEntries + tilesEntries + pangramEntries
     return all.sorted { $0.precedes($1, groupedBy: grouping) }

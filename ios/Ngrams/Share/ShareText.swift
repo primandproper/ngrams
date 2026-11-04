@@ -1,7 +1,7 @@
 import Foundation
 
 /// Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
-/// marks a result played in hard mode, and a ⭐ one that earned its star. Written in the sharer's
+/// marks a result played in hard mode, a ⭐ one that earned its star, and 💡 the hints taken. Written in the sharer's
 /// interface language; testdata/share.json holds both apps to the same text.
 nonisolated enum ShareText {
   /// Appended to every share: one page for both stores, so a share works whoever receives it.
@@ -59,19 +59,19 @@ nonisolated enum ShareText {
       let results: [(PuzzleKind, [String])] = [
         (
           .word,
-          words.filter { $0.puzzle.language == language && !$0.guesses.isEmpty }
+          words.filter { $0.puzzle.language == language && (!$0.guesses.isEmpty || $0.gaveUp) }
             .sorted { $0.puzzle.n < $1.puzzle.n }
             .map { "n=\($0.puzzle.n) \(result($0))" }
         ),
         (
           .tiles,
-          tiles.filter { $0.puzzle.language == language && !$0.found.isEmpty }
+          tiles.filter { $0.puzzle.language == language && (!$0.found.isEmpty || $0.gaveUp) }
             .sorted { $0.puzzle.n < $1.puzzle.n }
             .map { "n=\($0.puzzle.n) \(result($0))" }
         ),
         (
           .pangram,
-          pangrams.filter { $0.puzzle.language == language && !$0.found.isEmpty }
+          pangrams.filter { $0.puzzle.language == language && (!$0.found.isEmpty || $0.gaveUp) }
             .sorted { $0.puzzle.n < $1.puzzle.n }
             .map { "n=\($0.puzzle.n) \(result($0))" }
         ),
@@ -104,20 +104,22 @@ nonisolated enum ShareText {
       case .playing: "\(game.guesses.count)"
       }
     return "\(guesses)/\(WordGame.maxGuesses)"
-      + marks(hard: game.hardMode, star: game.status != .lost && game.isOver)
+      + marks(
+        hard: game.hardMode, star: game.status != .lost && game.isOver, hints: game.hints.count)
   }
 
   private static func result(_ game: TilesGame) -> String {
     "\(game.score)/\(game.puzzle.targetScore)"
-      + marks(hard: game.solvedTilesLeave, star: game.earnedStar)
+      + marks(hard: game.solvedTilesLeave, star: game.earnedStar, hints: game.hints.count)
   }
 
   private static func result(_ game: PangramGame) -> String {
-    "\(game.score)/\(game.puzzle.targetScore)" + marks(hard: game.hardMode, star: game.earnedStar)
+    "\(game.score)/\(game.puzzle.targetScore)"
+      + marks(hard: game.hardMode, star: game.earnedStar, hints: game.hints.count)
   }
 
-  private static func marks(hard: Bool, star: Bool) -> String {
-    (hard ? "*" : "") + (star ? " ⭐" : "")
+  private static func marks(hard: Bool, star: Bool, hints: Int) -> String {
+    (hard ? "*" : "") + (star ? " ⭐" : "") + (hints > 0 ? " 💡\(hints)" : "")
   }
 
   /// Ten segments, full once `score` reaches `target`.

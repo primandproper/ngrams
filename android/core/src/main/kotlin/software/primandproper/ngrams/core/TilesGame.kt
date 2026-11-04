@@ -32,6 +32,10 @@ class TilesGame private constructor(
     val found: List<TilesWord>,
     /** Selected tile indices, in the order they were tapped. */
     val selection: List<Int>,
+    /** Hints taken, oldest first, each in the game's own terms. A hint never changes the result. */
+    val hints: List<String>,
+    /** Whether the player had the puzzle solved for them, which gives up the star. */
+    val gaveUp: Boolean,
 ) {
     data class Submitted(
         val game: TilesGame,
@@ -59,7 +63,13 @@ class TilesGame private constructor(
     val score: Int get() = found.sumOf { it.points } + if (allTargetsFound) puzzle.bonus else 0
 
     /** A star takes every target and the target score. */
-    val earnedStar: Boolean get() = allTargetsFound && score >= puzzle.targetScore
+    val earnedStar: Boolean get() = !gaveUp && allTargetsFound && score >= puzzle.targetScore
+
+    fun takeHint(hint: String): TilesGame = copy(hints = hints + hint)
+
+    /** Solves the board for the player, finding [words], and gives up its star. */
+    fun giveUp(words: List<String>): TilesGame =
+        copy(found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] }, gaveUp = true)
 
     /**
      * Selects a tile, or deselects it if it's already selected. A word holds at most `n` tiles,
@@ -95,21 +105,25 @@ class TilesGame private constructor(
     private fun copy(
         found: List<TilesWord> = this.found,
         selection: List<Int> = this.selection,
-    ): TilesGame = TilesGame(puzzle, solvedTilesLeave, found, selection)
+        hints: List<String> = this.hints,
+        gaveUp: Boolean = this.gaveUp,
+    ): TilesGame = TilesGame(puzzle, solvedTilesLeave, found, selection, hints, gaveUp)
 
     companion object {
         /**
-         * Starts a board, restoring [foundWords] from saved progress. Saved words the board doesn't
+         * Starts a board, restoring [foundWords], [hints] and [gaveUp] from saved progress. Saved words the board doesn't
          * have (the bank was rebuilt since) are dropped, as are repeats.
          */
         operator fun invoke(
             puzzle: TilesPuzzle,
             foundWords: List<String> = emptyList(),
             solvedTilesLeave: Boolean = false,
+            hints: List<String> = emptyList(),
+            gaveUp: Boolean = false,
         ): TilesGame {
             val byWord = puzzle.words.distinctBy { it.word }.associateBy { it.word }
             val found = foundWords.distinct().mapNotNull { byWord[it] }
-            return TilesGame(puzzle, solvedTilesLeave, found, emptyList())
+            return TilesGame(puzzle, solvedTilesLeave, found, emptyList(), hints, gaveUp)
         }
     }
 }

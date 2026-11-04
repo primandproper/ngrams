@@ -9,6 +9,10 @@ nonisolated struct TilesGame: Sendable {
   }
 
   let puzzle: TilesPuzzle
+  /// Hints taken, oldest first, each in the game's own terms. A hint never changes the result.
+  private(set) var hints: [String] = []
+  /// Whether the player had the puzzle solved for them, which gives up the star.
+  private(set) var gaveUp = false
   /// Words found so far, oldest first.
   private(set) var found: [TilesWord] = []
   /// Selected tile indices, in the order they were tapped.
@@ -20,9 +24,14 @@ nonisolated struct TilesGame: Sendable {
   private let words: [String: TilesWord]
   private let targetIndex: [String: Int]
 
-  /// Starts a board, restoring `foundWords` from saved progress. Saved words the board doesn't
-  /// have (the bank was rebuilt since) are dropped.
-  init(puzzle: TilesPuzzle, foundWords: [String] = [], solvedTilesLeave: Bool = false) {
+  /// Starts a board, restoring `foundWords`, `hints` and `gaveUp` from saved progress. Saved
+  /// words the board doesn't have (the bank was rebuilt since) are dropped.
+  init(
+    puzzle: TilesPuzzle, foundWords: [String] = [], solvedTilesLeave: Bool = false,
+    hints: [String] = [], gaveUp: Bool = false
+  ) {
+    self.hints = hints
+    self.gaveUp = gaveUp
     self.puzzle = puzzle
     self.solvedTilesLeave = solvedTilesLeave
     let words = Dictionary(
@@ -71,7 +80,22 @@ nonisolated struct TilesGame: Sendable {
 
   /// A star takes every target and the target score.
   var earnedStar: Bool {
-    allTargetsFound && score >= puzzle.targetScore
+    !gaveUp && allTargetsFound && score >= puzzle.targetScore
+  }
+
+  mutating func take(hint: String) {
+    hints.append(hint)
+  }
+
+  /// Solves the board for the player, finding `words`, and gives up its star.
+  mutating func giveUp(finding words: [String]) {
+    var seen = Set(foundWords)
+    for word in words where seen.insert(word).inserted {
+      if let match = self.words[word] {
+        found.append(match)
+      }
+    }
+    gaveUp = true
   }
 
   /// Selects a tile, or deselects it if it's already selected. A word holds at most `n` tiles,

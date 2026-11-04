@@ -49,9 +49,11 @@ final class WordSession {
     timer = PuzzleTimer(key: key, store: store, logger: logger)
 
     do {
+      let assistance = try store.assistance(for: key)
       game = WordGame(
         puzzle: puzzle, guesses: try store.entries(for: key),
-        hardMode: try store.hardMode(for: key) ?? hardMode)
+        hardMode: try store.hardMode(for: key) ?? hardMode, hints: assistance?.hints ?? [],
+        gaveUp: assistance?.gaveUp ?? false)
     } catch {
       logger.error("loading word progress", error)
       game = WordGame(puzzle: puzzle, hardMode: hardMode)

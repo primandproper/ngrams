@@ -154,7 +154,13 @@ class PangramViewModel(
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)
-                    PangramGame(puzzle, saved?.entries.orEmpty(), saved?.hardMode ?: hardMode) to null
+                    PangramGame(
+                        puzzle,
+                        saved?.entries.orEmpty(),
+                        saved?.hardMode ?: hardMode,
+                        saved?.hints.orEmpty(),
+                        saved?.gaveUp ?: false,
+                    ) to null
                 } catch (e: Exception) {
                     logger.error("loading pangram progress", e)
                     PangramGame(puzzle, hardMode = hardMode) to Feedback(R.string.couldnt_load_progress)

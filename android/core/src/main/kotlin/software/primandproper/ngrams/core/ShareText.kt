@@ -72,17 +72,17 @@ object ShareText {
                 listOf(
                     PuzzleKind.WORD to
                         words
-                            .filter { it.puzzle.language == language && it.guesses.isNotEmpty() }
+                            .filter { it.puzzle.language == language && (it.guesses.isNotEmpty() || it.gaveUp) }
                             .sortedBy { it.puzzle.n }
                             .map { "n=${it.puzzle.n} ${result(it)}" },
                     PuzzleKind.TILES to
                         tiles
-                            .filter { it.puzzle.language == language && it.found.isNotEmpty() }
+                            .filter { it.puzzle.language == language && (it.found.isNotEmpty() || it.gaveUp) }
                             .sortedBy { it.puzzle.n }
                             .map { "n=${it.puzzle.n} ${result(it)}" },
                     PuzzleKind.PANGRAM to
                         pangrams
-                            .filter { it.puzzle.language == language && it.found.isNotEmpty() }
+                            .filter { it.puzzle.language == language && (it.found.isNotEmpty() || it.gaveUp) }
                             .sortedBy { it.puzzle.n }
                             .map { "n=${it.puzzle.n} ${result(it)}" },
                 )
@@ -114,17 +114,20 @@ object ShareText {
                 Status.Lost -> "X"
                 Status.Playing -> "${game.guesses.size}"
             }
-        return "$guesses/${WordGame.MAX_GUESSES}" + marks(game.hardMode, game.status is Status.Won)
+        return "$guesses/${WordGame.MAX_GUESSES}" + marks(game.hardMode, game.status is Status.Won, game.hints.size)
     }
 
-    private fun result(game: TilesGame): String = "${game.score}/${game.puzzle.targetScore}" + marks(game.solvedTilesLeave, game.earnedStar)
+    private fun result(game: TilesGame): String =
+        "${game.score}/${game.puzzle.targetScore}" + marks(game.solvedTilesLeave, game.earnedStar, game.hints.size)
 
-    private fun result(game: PangramGame): String = "${game.score}/${game.puzzle.targetScore}" + marks(game.hardMode, game.earnedStar)
+    private fun result(game: PangramGame): String =
+        "${game.score}/${game.puzzle.targetScore}" + marks(game.hardMode, game.earnedStar, game.hints.size)
 
     private fun marks(
         hard: Boolean,
         star: Boolean,
-    ): String = (if (hard) "*" else "") + (if (star) " ⭐" else "")
+        hints: Int,
+    ): String = (if (hard) "*" else "") + (if (star) " ⭐" else "") + (if (hints > 0) " 💡$hints" else "")
 
     /** Ten segments, full once [score] reaches [target]. */
     private fun bar(

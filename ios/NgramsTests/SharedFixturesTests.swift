@@ -76,12 +76,15 @@ struct SharedFixturesTests {
 
     for testCase in try cases(fixture, "states") {
       let found = try #require(testCase["found"] as? [String])
-      let game = TilesGame(puzzle: try puzzle(testCase), foundWords: found)
+      let solvedTilesLeave = testCase["solvedTilesLeave"] as? Bool ?? false
+      let game = TilesGame(
+        puzzle: try puzzle(testCase), foundWords: found, solvedTilesLeave: solvedTilesLeave)
       #expect(game.foundWords == testCase["foundWords"] as? [String], "\(found)")
       #expect(game.score == testCase["score"] as? Int, "\(found)")
       #expect(game.solvedTargets == testCase["solvedTargets"] as? [Int], "\(found)")
       #expect(game.allTargetsFound == testCase["allTargetsFound"] as? Bool, "\(found)")
       #expect(game.earnedStar == testCase["earnedStar"] as? Bool, "\(found)")
+      #expect(game.isOver == testCase["isOver"] as? Bool, "\(found) leave=\(solvedTilesLeave)")
     }
     for testCase in try cases(fixture, "submissions") {
       let found = try #require(testCase["found"] as? [String])

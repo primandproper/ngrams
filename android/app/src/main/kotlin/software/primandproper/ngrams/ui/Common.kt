@@ -150,7 +150,10 @@ fun ShareAction(text: String) {
     }
 }
 
-/** A board's score against its target, its progress toward the star's other half, and the star. */
+/**
+ * A board's score against its target, its progress toward the star's other half, and the star. [ended] says why a board
+ * that can't be played further has no star.
+ */
 @Composable
 fun ScoreHeader(
     score: Int,
@@ -158,6 +161,7 @@ fun ScoreHeader(
     progress: String,
     earnedStar: Boolean,
     missing: String,
+    ended: String? = null,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
@@ -177,6 +181,8 @@ fun ScoreHeader(
                     modifier = Modifier.padding(start = 4.dp),
                 )
             }
+        } else if (ended != null) {
+            Text(ended, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         } else if (score >= target) {
             Text(missing, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }

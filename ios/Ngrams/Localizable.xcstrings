@@ -849,6 +849,16 @@
         }
       }
     },
+    "No words left" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No quedan palabras"
+          }
+        }
+      }
+    },
     "Not enough letters" : {
       "localizations" : {
         "es" : {

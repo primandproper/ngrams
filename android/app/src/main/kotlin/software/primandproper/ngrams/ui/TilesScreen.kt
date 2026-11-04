@@ -191,7 +191,7 @@ class TilesViewModel(
                 is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text))
                 TilesSubmission.Empty -> null
             }
-        val justFinished = !playing.game.earnedStar && game.earnedStar
+        val justFinished = !playing.game.isOver && game.isOver
         _state.value = playing.copy(game = game, feedback = feedback ?: playing.feedback, justFinished = justFinished)
         when (submission) {
             is TilesSubmission.Found -> save(submission.word, game)
@@ -204,10 +204,10 @@ class TilesViewModel(
         word: TilesWord,
         game: TilesGame,
     ) {
-        val (stretches, at) = timer.entry(completes = game.earnedStar)
+        val (stretches, at) = timer.entry(completes = game.isOver)
         viewModelScope.launch {
             try {
-                container.progress.append(word.word, key, completes = game.earnedStar, stretches = stretches, at = at)
+                container.progress.append(word.word, key, completes = game.isOver, stretches = stretches, at = at)
             } catch (e: Exception) {
                 logger.withValue("word", word.word).error("saving a found word", e)
                 play { it.copy(feedback = Feedback(R.string.couldnt_save_word)) }
@@ -310,6 +310,7 @@ private fun Board(
                 ),
             earnedStar = game.earnedStar,
             missing = stringResource(R.string.tiles_star_missing),
+            ended = if (game.hasWordsLeft) null else stringResource(R.string.tiles_no_words_left),
         )
         if (game.solvedTilesLeave) {
             SolvedTargets(game)

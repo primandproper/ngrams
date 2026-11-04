@@ -108,9 +108,9 @@ final class TilesSession {
     case .found(let word):
       feedback = Feedback(kind: .found(word))
       do {
-        let (stretches, now) = timer.entry(completing: game.earnedStar)
+        let (stretches, now) = timer.entry(completing: game.isOver)
         try store.append(
-          word.word, for: key, completes: game.earnedStar, stretches: stretches, at: now)
+          word.word, for: key, completes: game.isOver, stretches: stretches, at: now)
       } catch {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)

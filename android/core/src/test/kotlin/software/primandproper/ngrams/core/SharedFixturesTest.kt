@@ -89,13 +89,15 @@ class SharedFixturesTest {
         fun puzzle(case: JsonElement) = bank.tilesPuzzles(day).single { it.language.code == case["lang"].string }
 
         for (case in fixture.getValue("states").jsonArray) {
-            val game = TilesGame(puzzle(case), case["found"].strings)
-            val label = "${case["lang"].string} ${case["found"].strings}"
+            val solvedTilesLeave = case.jsonObject["solvedTilesLeave"]?.jsonPrimitive?.boolean ?: false
+            val game = TilesGame(puzzle(case), case["found"].strings, solvedTilesLeave)
+            val label = "${case["lang"].string} ${case["found"].strings} leave=$solvedTilesLeave"
             assertEquals(case["foundWords"].strings, game.foundWords, label)
             assertEquals(case["score"].jsonPrimitive.int, game.score, label)
             assertEquals(case["solvedTargets"].ints, game.solvedTargets, label)
             assertEquals(case["allTargetsFound"].jsonPrimitive.boolean, game.allTargetsFound, label)
             assertEquals(case["earnedStar"].jsonPrimitive.boolean, game.earnedStar, label)
+            assertEquals(case["isOver"].jsonPrimitive.boolean, game.isOver, label)
         }
         for (case in fixture.getValue("submissions").jsonArray) {
             var game = TilesGame(puzzle(case), case["found"].strings, case["solvedTilesLeave"].jsonPrimitive.boolean)

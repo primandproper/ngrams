@@ -65,6 +65,20 @@ class TilesGame private constructor(
     /** A star takes every target and the target score. */
     val earnedStar: Boolean get() = !gaveUp && allTargetsFound && score >= puzzle.targetScore
 
+    /**
+     * Whether an unfound word can still be spelled from the tiles left on the board. Once solved tiles leave, finding
+     * every target leaves none.
+     */
+    val hasWordsLeft: Boolean
+        get() {
+            val found = foundWords.toSet()
+            val gone = if (solvedTilesLeave) solvedTiles else emptySet()
+            return puzzle.words.any { it.word !in found && it.tiles.none { tile -> tile in gone } }
+        }
+
+    /** A board is over once it has its star, was solved for the player, or has no words left. */
+    val isOver: Boolean get() = earnedStar || gaveUp || !hasWordsLeft
+
     fun takeHint(hint: String): TilesGame = copy(hints = hints + hint)
 
     /** Solves the board for the player, finding [words], and gives up its star. */

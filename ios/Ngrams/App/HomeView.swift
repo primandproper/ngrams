@@ -170,12 +170,12 @@ private enum Entry: Identifiable {
     }
   }
 
-  /// A word puzzle is done once it's over, won or lost; a board once it has its star or was
-  /// solved for the player.
+  /// A word puzzle or a tiles board is done once it's over; a pangram board once it has its star
+  /// or was solved for the player.
   var isCompleted: Bool {
     switch self {
     case .word(let game): game.isOver
-    case .tiles(let game): game.earnedStar || game.gaveUp
+    case .tiles(let game): game.isOver
     case .pangram(let game): game.earnedStar || game.gaveUp
     }
   }

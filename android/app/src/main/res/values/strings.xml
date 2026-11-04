@@ -83,6 +83,7 @@
     <string name="clear">Clear</string>
     <string name="submit">Submit</string>
     <string name="tiles_star_missing">Find every target for the star</string>
+    <string name="tiles_no_words_left">No words left</string>
     <plurals name="targets_progress">
         <item quantity="one">%1$d of %2$d target</item>
         <item quantity="other">%1$d of %2$d targets</item>

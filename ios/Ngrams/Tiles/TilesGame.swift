@@ -83,6 +83,19 @@ nonisolated struct TilesGame: Sendable {
     !gaveUp && allTargetsFound && score >= puzzle.targetScore
   }
 
+  /// Whether an unfound word can still be spelled from the tiles left on the board. Once solved
+  /// tiles leave, finding every target leaves none.
+  var hasWordsLeft: Bool {
+    let found = Set(foundWords)
+    let gone = solvedTilesLeave ? solvedTiles : []
+    return puzzle.words.contains { !found.contains($0.word) && gone.isDisjoint(with: $0.tiles) }
+  }
+
+  /// A board is over once it has its star, was solved for the player, or has no words left.
+  var isOver: Bool {
+    earnedStar || gaveUp || !hasWordsLeft
+  }
+
   mutating func take(hint: String) {
     hints.append(hint)
   }

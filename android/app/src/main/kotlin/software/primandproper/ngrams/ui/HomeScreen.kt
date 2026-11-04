@@ -125,7 +125,7 @@ sealed interface HomeEntry {
         override val kind = PuzzleKind.TILES
         override val language get() = game.puzzle.language
         override val n get() = game.puzzle.n
-        override val isCompleted get() = game.earnedStar || game.gaveUp
+        override val isCompleted get() = game.isOver
     }
 
     data class Pangram(

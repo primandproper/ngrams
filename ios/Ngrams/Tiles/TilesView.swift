@@ -62,8 +62,8 @@ struct TilesView: View {
       }
       .padding()
     }
-    .onChange(of: session.game.earnedStar) { hadStar, hasStar in
-      if !hadStar, hasStar {
+    .onChange(of: session.game.isOver) { wasOver, isOver in
+      if !wasOver, isOver {
         Task {
           try? await Task.sleep(for: .seconds(1))
           showingStats = true
@@ -155,6 +155,10 @@ private struct ScoreHeader: View {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(theme.colors.tertiary)
+      } else if !game.hasWordsLeft {
+        Text("No words left")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every target for the star")
           .font(.subheadline)

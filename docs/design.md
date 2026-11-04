@@ -89,6 +89,10 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   usable in other words. A "hard mode" setting takes them off the board instead. Since
   every tile belongs to a target, finishing the last target empties the board, so in hard mode
   the 20 points beyond the targets and bonus have to come before the last target.
+- A board is over once it has its star, was solved for the player, or has no unfound word
+  left to spell from the tiles still on it. The last case is a hard-mode board emptied short
+  of the target score, or every word found. An over board stops its time and moves to
+  Completed, but only the star counts as a success (2026-11-04).
 - Scoring borrows the original's curve. Quartiles (per Apple's help page, checked 2026-10-23)
   scores 1, 2, 4, and 8 points for words of 1 to 4 tiles, adds 40 for finding all five
   Quartiles, and calls 100 points "Expert". Here a word of k tiles scores 2^(k-1) at every N,
@@ -136,8 +140,8 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   one is on.
   Grouping by N mixes games whose N means different things (tiles per word, letters per answer,
   letters per board); that's accepted, since it's the player's choice. Completed puzzles move
-  to a "Completed" section at the bottom: a `tiles` or `pangram` board once it has its star, a
-  `word` puzzle once it's over.
+  to a "Completed" section at the bottom: a `tiles` board or `word` puzzle once it's over, a
+  `pangram` board once it has its star.
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.

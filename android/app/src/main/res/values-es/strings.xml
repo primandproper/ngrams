@@ -9,6 +9,7 @@
     <string name="star_earned">Estrella ganada</string>
     <string name="enter">Enviar</string>
     <string name="delete">Borrar</string>
+    <string name="clear_row">Borrar la fila</string>
     <string name="shuffle">Revolver</string>
     <string name="current_word">Palabra actual %s</string>
     <string name="already_found">Ya encontraste %s</string>
@@ -83,6 +84,7 @@
     <string name="clear">Limpiar</string>
     <string name="submit">Enviar</string>
     <string name="tiles_star_missing">Encuentra todos los objetivos para ganar la estrella</string>
+    <string name="word_points_targets_earn_star">%1$s +%2$d\nEncontrar todos los objetivos ya te da la estrella</string>
     <string name="tiles_no_words_left">No quedan palabras</string>
     <plurals name="targets_progress">
         <item quantity="one">%1$d de %2$d objetivo</item>
@@ -142,7 +144,7 @@
     <string name="show_timer">Mostrar cronómetro</string>
     <string name="show_timer_footer">Los tiempos se guardan de todos modos, así que al volver a activarlo los verás todos.</string>
     <string name="acknowledgements">Créditos</string>
-    <string name="word_hard_mode_rule">Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí y las letras que están en la palabra aparecen en algún lado. Un reto conserva el modo que tenía en su primer intento.</string>
+    <string name="word_hard_mode_rule">Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento.</string>
     <string name="tiles_hard_mode_rule">Los objetivos encontrados salen del tablero, así que sus fichas no sirven para otras palabras. Encontrar el último objetivo termina el tablero.</string>
     <string name="pangram_hard_mode_rule">La primera palabra de un tablero tiene que ser un pangrama. Un tablero conserva el modo que tenía en su primera palabra.</string>
     <string name="word_lists">Listas de palabras</string>
@@ -153,4 +155,20 @@
     <string name="credit_source">El código fuente de esta app y su banco de retos.</string>
     <string name="license_public_domain">Dominio público</string>
     <string name="license_source">MIT, retos CC BY-SA 4.0</string>
+    <string name="help">Ayuda</string>
+    <string name="hint">Pista</string>
+    <plurals name="hint_used">
+        <item quantity="one">Pista (%d usada)</item>
+        <item quantity="many">Pista (%d usadas)</item>
+        <item quantity="other">Pista (%d usadas)</item>
+    </plurals>
+    <string name="solve_menu">Resolver…</string>
+    <string name="solve_title">¿Resolver este reto?</string>
+    <string name="solve">Resolver</string>
+    <string name="solve_word_warning">Resolverlo cuenta como derrota y termina tu racha.</string>
+    <string name="solve_board_warning">Resolverlo te quita la estrella.</string>
+    <string name="couldnt_save_progress">No se pudo guardar tu progreso</string>
+    <string name="hinted_letter">Pista: %1$s</string>
+    <string name="hinted_tile">Con pista</string>
+    <string name="clue">%1$s… · %2$d letras</string>
 </resources>

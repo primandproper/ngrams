@@ -98,6 +98,7 @@ class SharedFixturesTest {
             assertEquals(case["allTargetsFound"].jsonPrimitive.boolean, game.allTargetsFound, label)
             assertEquals(case["earnedStar"].jsonPrimitive.boolean, game.earnedStar, label)
             assertEquals(case["isOver"].jsonPrimitive.boolean, game.isOver, label)
+            assertEquals(case["targetsEarnStar"].jsonPrimitive.boolean, game.targetsEarnStar, label)
         }
         for (case in fixture.getValue("submissions").jsonArray) {
             var game = TilesGame(puzzle(case), case["found"].strings, case["solvedTilesLeave"].jsonPrimitive.boolean)
@@ -165,7 +166,7 @@ class SharedFixturesTest {
     }
 
     @Test
-    fun `hints hard mode guesses the way the iOS app does`() {
+    fun `plays Password hard mode the way the iOS app does`() {
         val fixture = fixture("word_hints.json")
         val answer = fixture.getValue("answer").string
         val puzzle = WordPuzzle(Language.EN, answer.length, answer)
@@ -180,6 +181,52 @@ class SharedFixturesTest {
                     }
                 }
             assertEquals(expected, hint, "${case["guess"].string} after ${case["guesses"].strings}")
+        }
+        for (case in fixture.getValue("typing").jsonArray) {
+            val typed = case["typed"].string
+            var game = WordGame(puzzle, case["guesses"].strings, hardMode = case["hardMode"].jsonPrimitive.boolean)
+            for (letter in typed) {
+                game = game.type(letter)
+            }
+            assertEquals(case["current"].string, game.current, "'$typed' after ${case["guesses"].strings}")
+        }
+    }
+
+    @Test
+    fun `hints and solves the way the iOS app does`() {
+        val fixture = fixture("help.json")
+        val bank = bank(fixture)
+
+        val word = fixture.getValue("word")
+        val answer = word["answer"].string
+        val wordPuzzle = WordPuzzle(Language.EN, answer.length, answer)
+        for (case in word["cases"].jsonArray) {
+            val game = WordGame(wordPuzzle, case["guesses"].strings, hints = case["hints"].strings)
+            val label = "${case["hints"].strings} after ${case["guesses"].strings}"
+            assertEquals(case.jsonObject.optional("next")?.jsonPrimitive?.int, game.nextHint, label)
+            assertEquals(
+                case["pencilled"].jsonObject.map { (spot, letter) -> spot.toInt() to letter.string.single() }.toMap(),
+                game.pencilled,
+                label,
+            )
+        }
+
+        val tilesPuzzle = bank.tilesPuzzles(day).single()
+        for (case in fixture.getValue("tiles").jsonArray) {
+            val game = TilesGame(tilesPuzzle, case["found"].strings, hints = case["hints"].strings)
+            val label = "${case["hints"].strings} after ${case["found"].strings}"
+            assertEquals(case.jsonObject.optional("next")?.jsonPrimitive?.int, game.nextHint, label)
+            assertEquals(case["lit"].ints.toSet(), game.lit, label)
+            assertEquals(case["solution"].strings, game.solution, label)
+        }
+
+        val pangramPuzzle = bank.pangramPuzzles(day).single()
+        for (case in fixture.getValue("pangram").jsonArray) {
+            val game = PangramGame(pangramPuzzle, case["found"].strings, hints = case["hints"].strings)
+            val label = "${case["hints"].strings} after ${case["found"].strings}"
+            assertEquals(case.jsonObject.optional("next")?.string, game.nextHint, label)
+            assertEquals(case["clues"].strings, game.clues.map { it.word }, label)
+            assertEquals(case["solution"].strings, game.solution, label)
         }
     }
 

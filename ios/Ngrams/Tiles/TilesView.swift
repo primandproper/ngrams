@@ -62,8 +62,8 @@ struct TilesView: View {
       }
       .padding()
     }
-    .onChange(of: session.game.isOver) { wasOver, isOver in
-      if !wasOver, isOver {
+    .onChange(of: session.finished) { wasFinished, finished in
+      if !wasFinished, finished {
         Task {
           try? await Task.sleep(for: .seconds(1))
           showingStats = true
@@ -82,12 +82,22 @@ struct TilesView: View {
           ShareLink(item: ShareText.tiles(session.game, on: session.key.day))
         }
       }
+      if !session.game.isOver || session.solving {
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: session.game.hints.count, canHint: session.game.nextHint != nil,
+            solveWarning: "Solving gives up the star.", onHint: session.takeHint,
+            onSolve: { Task { await session.solve() } }
+          )
+          .disabled(session.solving)
+        }
+      }
     }
     .overlay(alignment: .top) {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)
           .task(id: feedback.id) {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: .seconds(feedback.kind.isStarNotice ? 3 : 1.5))
             withAnimation(theme.animation.normal) { session.dismissFeedback(feedback) }
           }
           .transition(.move(edge: .top).combined(with: .opacity))
@@ -109,26 +119,29 @@ struct TilesView: View {
           TileButton(
             text: session.game.puzzle.tiles[tile],
             position: session.game.selection.firstIndex(of: tile),
-            solved: session.game.solvedTiles.contains(tile)
+            solved: session.game.solvedTiles.contains(tile),
+            hinted: session.game.lit.contains(tile)
           ) {
             session.tap(tile)
           }
         }
       }
       .animation(theme.animation.normal, value: session.boardTiles)
+      .disabled(session.solving)
     }
   }
 
   private var controls: some View {
     HStack {
       Button("Shuffle", systemImage: "shuffle") { session.shuffle() }
+        .disabled(session.solving)
       Spacer()
       Button("Clear") { session.clear() }
-        .disabled(session.game.selection.isEmpty)
+        .disabled(session.game.selection.isEmpty || session.solving)
       Button("Submit") { session.submit() }
         .accessibilityIdentifier("submit")
         .buttonStyle(.borderedProminent)
-        .disabled(session.game.selection.isEmpty)
+        .disabled(session.game.selection.isEmpty || session.solving)
     }
     .buttonStyle(.bordered)
   }
@@ -159,7 +172,7 @@ private struct ScoreHeader: View {
         Text("No words left")
           .font(.subheadline)
           .foregroundStyle(.secondary)
-      } else if game.score >= game.puzzle.targetScore {
+      } else if game.targetsEarnStar {
         Text("Find every target for the star")
           .font(.subheadline)
           .foregroundStyle(.secondary)
@@ -206,9 +219,12 @@ private struct TileButton: View {
   /// Where this tile sits in the current word, if it's selected.
   let position: Int?
   let solved: Bool
+  /// Whether a hint has lit this tile.
+  let hinted: Bool
   let action: () -> Void
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private var background: Color {
     if position != nil {
@@ -236,9 +252,21 @@ private struct TileButton: View {
               .padding(4)
           }
         }
+        .overlay {
+          if hinted, position == nil {
+            RoundedRectangle(cornerRadius: theme.radius.lg)
+              .strokeBorder(theme.colors.tertiary, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+              .phaseAnimator([0.4, 1.0]) { ring, opacity in
+                ring.opacity(reduceMotion ? 1 : opacity)
+              } animation: { _ in
+                .easeInOut(duration: 0.7)
+              }
+          }
+        }
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(position == nil ? [] : .isSelected)
+    .accessibilityHint(hinted ? Text("Hinted") : Text(verbatim: ""))
   }
 }
 
@@ -264,21 +292,38 @@ private struct FoundWords: View {
   }
 }
 
+extension TilesSession.Feedback.Kind {
+  /// Whether this feedback also says the targets left would earn the star.
+  var isStarNotice: Bool {
+    if case .found(_, targetsEarnStar: true) = self {
+      return true
+    }
+    return false
+  }
+}
+
 private struct FeedbackBanner: View {
   let feedback: TilesSession.Feedback
 
   var body: some View {
-    Text(message)
-      .font(.subheadline.weight(.semibold))
-      .padding(.horizontal, 16)
-      .padding(.vertical, 8)
-      .background(.thinMaterial, in: .capsule)
-      .padding(.top, 8)
+    VStack(spacing: 2) {
+      Text(message)
+      if feedback.kind.isStarNotice {
+        Text("Every target now earns the star")
+      }
+    }
+    .font(.subheadline.weight(.semibold))
+    .multilineTextAlignment(.center)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 8)
+    .background(.thinMaterial, in: .capsule)
+    .padding(.top, 8)
   }
 
   private var message: String {
     switch feedback.kind {
-    case .found(let word): "\(word.shown) +\(word.points)"
+    case .found(let word, _): "\(word.shown) +\(word.points)"
+    case .helpSaveFailed: String(localized: "Couldn't save your progress")
     case .alreadyFound(let word): String(localized: "Already found \(word.shown)")
     case .blocked: String(localized: "How dare you")
     case .notAWord(let text): String(localized: "\(text) isn't on the list")

@@ -85,6 +85,7 @@ struct SharedFixturesTests {
       #expect(game.allTargetsFound == testCase["allTargetsFound"] as? Bool, "\(found)")
       #expect(game.earnedStar == testCase["earnedStar"] as? Bool, "\(found)")
       #expect(game.isOver == testCase["isOver"] as? Bool, "\(found) leave=\(solvedTilesLeave)")
+      #expect(game.targetsEarnStar == testCase["targetsEarnStar"] as? Bool, "\(found)")
     }
     for testCase in try cases(fixture, "submissions") {
       let found = try #require(testCase["found"] as? [String])
@@ -158,7 +159,7 @@ struct SharedFixturesTests {
     }
   }
 
-  @Test("hints hard mode guesses the way the Android app does")
+  @Test("plays Password hard mode the way the Android app does")
   func hints() throws {
     let fixture = try fixture("word_hints")
     let answer = try #require(fixture["answer"] as? String)
@@ -179,6 +180,56 @@ struct SharedFixturesTests {
         }
       let game = WordGame(puzzle: puzzle, guesses: guesses, hardMode: true)
       #expect(game.missingHint(in: guess) == expected, "\(guess) after \(guesses)")
+    }
+    for testCase in try cases(fixture, "typing") {
+      let guesses = try #require(testCase["guesses"] as? [String])
+      let typed = try #require(testCase["typed"] as? String)
+      var game = WordGame(
+        puzzle: puzzle, guesses: guesses, hardMode: try #require(testCase["hardMode"] as? Bool))
+      for letter in typed {
+        game.type(letter)
+      }
+      #expect(game.current == testCase["current"] as? String, "'\(typed)' after \(guesses)")
+    }
+  }
+
+  @Test("hints and solves the way the Android app does")
+  func help() throws {
+    let fixture = try fixture("help")
+    let bank = try bank(fixture)
+
+    let word = try #require(fixture["word"] as? Object)
+    let answer = try #require(word["answer"] as? String)
+    let wordPuzzle = WordPuzzle(language: .en, n: answer.count, answer: answer, display: nil)
+    for testCase in try cases(word, "cases") {
+      let guesses = try #require(testCase["guesses"] as? [String])
+      let hints = try #require(testCase["hints"] as? [String])
+      let game = WordGame(puzzle: wordPuzzle, guesses: guesses, hints: hints)
+      let pencilled = try #require(testCase["pencilled"] as? [String: String])
+      #expect(game.nextHint == testCase["next"] as? Int, "\(hints) after \(guesses)")
+      #expect(
+        Dictionary(uniqueKeysWithValues: game.pencilled.map { (String($0), String($1)) })
+          == pencilled, "\(hints) after \(guesses)")
+    }
+
+    let tilesPuzzle = try #require(bank.tilesPuzzles(on: day).first)
+    for testCase in try cases(fixture, "tiles") {
+      let found = try #require(testCase["found"] as? [String])
+      let hints = try #require(testCase["hints"] as? [String])
+      let game = TilesGame(puzzle: tilesPuzzle, foundWords: found, hints: hints)
+      #expect(game.nextHint == testCase["next"] as? Int, "\(hints) after \(found)")
+      #expect(game.lit == Set(try #require(testCase["lit"] as? [Int])), "\(hints) after \(found)")
+      #expect(game.solution == testCase["solution"] as? [String], "\(found)")
+    }
+
+    let pangramPuzzle = try #require(bank.pangramPuzzles(on: day).first)
+    for testCase in try cases(fixture, "pangram") {
+      let found = try #require(testCase["found"] as? [String])
+      let hints = try #require(testCase["hints"] as? [String])
+      let game = PangramGame(puzzle: pangramPuzzle, foundWords: found, hints: hints)
+      #expect(game.nextHint == testCase["next"] as? String, "\(hints) after \(found)")
+      #expect(game.clues.map(\.word) == testCase["clues"] as? [String], "\(hints) after \(found)")
+      #expect(game.solution == testCase["solution"] as? [String], "\(found)")
     }
   }
 

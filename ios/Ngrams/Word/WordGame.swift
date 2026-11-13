@@ -95,6 +95,34 @@ nonisolated struct WordGame: Sendable {
     return best
   }
 
+  /// The spot the next hint reveals: the leftmost one neither shown correct by a guess nor
+  /// hinted already. Nil once every spot is known or the puzzle is over.
+  var nextHint: Int? {
+    guard !isOver else {
+      return nil
+    }
+    var known = Set(pencilled.keys)
+    for marks in marks {
+      for (spot, mark) in marks.enumerated() where mark == .correct {
+        known.insert(spot)
+      }
+    }
+    return (0..<puzzle.n).first { !known.contains($0) }
+  }
+
+  /// The answer's letters hints have revealed, by spot. Hints are saved as spots; any that
+  /// isn't a spot in this puzzle is skipped.
+  var pencilled: [Int: Character] {
+    let answer = Array(puzzle.answer)
+    var letters: [Int: Character] = [:]
+    for hint in hints {
+      if let spot = Int(hint), answer.indices.contains(spot) {
+        letters[spot] = answer[spot]
+      }
+    }
+    return letters
+  }
+
   mutating func take(hint: String) {
     if !isOver {
       hints.append(hint)
@@ -109,8 +137,14 @@ nonisolated struct WordGame: Sendable {
     }
   }
 
+  /// Whether hard mode keeps `letter` from being typed: an earlier guess showed it isn't in the
+  /// answer anywhere.
+  func isRuledOut(_ letter: Character) -> Bool {
+    hardMode && letterMarks[letter] == .absent
+  }
+
   mutating func type(_ letter: Character) {
-    if !isOver, current.count < puzzle.n {
+    if !isOver, current.count < puzzle.n, !isRuledOut(letter) {
       current.append(letter)
     }
   }
@@ -119,6 +153,10 @@ nonisolated struct WordGame: Sendable {
     if !current.isEmpty {
       current.removeLast()
     }
+  }
+
+  mutating func clearLetters() {
+    current = ""
   }
 
   /// Checks the typed letters against `list`. A guess the list rejects stays typed, so it can

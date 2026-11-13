@@ -58,12 +58,17 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   plurals and conjugations included. A blocked word gets "How dare you", as in `tiles`.
 - The app has its own keyboard; the Spanish one adds Ñ. A lost puzzle shows the answer with
   its accents.
+- Holding Delete clears the row being typed. Tapping a cell to retype just that letter was
+  considered and rejected: it makes cycling one spot through the alphabet cheap, which helps
+  brute force a word more than it helps fix a typo (2026-11-13).
 - Solving earns the star. A puzzle is completed once it's over, won or lost, and its row
   shows the guesses used ("4/6", "X/6").
 - A "hard mode" setting makes every guess use the hints so far, by the original's rule: a
   correct letter stays in its spot, and a found letter appears at least as many times as any
-  earlier guess showed it. Absent letters stay allowed. A refused guess says which hint it
-  left out ("2nd letter must be R", "Guess must contain E").
+  earlier guess showed it. A refused guess says which hint it left out ("2nd letter must be
+  R", "Guess must contain E"). Unlike the original, hard mode also keeps a letter a guess
+  showed absent from being typed at all, so no guess can spend a turn on one. A letter absent
+  in one spot but found in another (a doubled letter) stays typeable (2026-11-13).
 
 ### `tiles`
 
@@ -84,7 +89,11 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   (about 1 in 300 at N=4, so microseconds), seeding the first by board so it's stable across
   launches. Shuffle redraws the unsolved tiles; solving a target leaves the rest to slide up
   as in the original.
-- A board's star takes every target and the target score.
+- A board's star takes every target and the target score. The word that first makes the
+  targets still unfound enough for the star (the score so far, their points, and the bonus
+  reach the target score) says so in its banner ("Every target now earns the star"), and the
+  header says "Find every target for the star" from then on. It matters most in hard mode,
+  where the points beyond the targets have to come before the last one (2026-11-13).
 - As in the original, a found target's tiles lock into a row at the top of the board and stay
   usable in other words. A "hard mode" setting takes them off the board instead. Since
   every tile belongs to a target, finishing the last target empties the board, so in hard mode
@@ -189,6 +198,21 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   finish it as found and moves to Completed on home without a star. Each game's hints and
   solving are its own issue on epic #12; the epic records why the star, not the streak, pays
   for a solve (2026-11-03).
+- Every game's toolbar has a help button (Hint, and Solve… behind a confirmation saying what
+  solving costs) while the puzzle is in play: until a Password puzzle or a `tiles` board is
+  over, and until a `pangram` board has its star. Which hint comes next and what Solve finds
+  are game rules, so `testdata/help.json` holds both apps to them (2026-11-13).
+  - Password: a hint pencils the leftmost unknown letter (not shown correct, not hinted) into
+    its spot in the row being typed, dashed, and typing covers it; it's saved as the spot.
+    Solve clears the row, types the answer, and shows it as a final row, all correct, though
+    it isn't saved as a guess.
+  - `tiles`: a hint rings the next tile of an unfound target in the target's order, stopping a
+    tile short of the whole target before moving to the next one; it's saved as the tile, and
+    rings clear when their target is found. Solve builds each unfound target a tile at a time.
+  - `pangram`: a hint adds a chip with an unfound word's first two letters and length
+    ("PL… · 6 letters"), common pangrams first, then by points; it's saved as the word, and the
+    chip goes when the word is found. Solve spells common pangrams, then the highest scoring
+    words, until the board has its pangrams and target score.
 
 ## Languages
 

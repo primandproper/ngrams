@@ -99,14 +99,44 @@ class WordGame private constructor(
             return best
         }
 
+    /**
+     * The spot the next hint reveals: the leftmost one neither shown correct by a guess nor hinted already. Null once
+     * every spot is known or the puzzle is over.
+     */
+    val nextHint: Int?
+        get() {
+            if (isOver) {
+                return null
+            }
+            val known = pencilled.keys.toMutableSet()
+            for (guessMarks in marks) {
+                guessMarks.forEachIndexed { spot, mark -> if (mark == LetterMark.CORRECT) known += spot }
+            }
+            return (0 until puzzle.n).firstOrNull { it !in known }
+        }
+
+    /** The answer's letters hints have revealed, by spot. Hints are saved as spots; any that isn't a spot in this puzzle is skipped. */
+    val pencilled: Map<Int, Char>
+        get() =
+            hints
+                .mapNotNull { it.toIntOrNull() }
+                .filter { it in puzzle.answer.indices }
+                .associateWith { puzzle.answer[it] }
+
     fun takeHint(hint: String): WordGame = if (isOver) this else copy(hints = hints + hint)
 
     /** Solves the puzzle for the player, as a loss. A puzzle that's over stays as it was. */
     fun giveUp(): WordGame = if (isOver) this else copy(current = "", gaveUp = true)
 
-    fun type(letter: Char): WordGame = if (!isOver && current.length < puzzle.n) copy(current = current + letter) else this
+    /** Whether hard mode keeps [letter] from being typed: an earlier guess showed it isn't in the answer anywhere. */
+    fun isRuledOut(letter: Char): Boolean = hardMode && letterMarks[letter] == LetterMark.ABSENT
+
+    fun type(letter: Char): WordGame =
+        if (!isOver && current.length < puzzle.n && !isRuledOut(letter)) copy(current = current + letter) else this
 
     fun deleteLetter(): WordGame = if (current.isEmpty()) this else copy(current = current.dropLast(1))
+
+    fun clearLetters(): WordGame = if (current.isEmpty()) this else copy(current = "")
 
     /** Checks the typed letters against [list]. A guess the list rejects stays typed, so it can be corrected. */
     fun submit(list: GuessList): Submitted {

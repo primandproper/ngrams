@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@… · %lld letters" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@… · %2$lld letras"
+          }
+        }
+      }
+    },
     "/ %lld" : {
       "shouldTranslate" : false
     },
@@ -520,6 +530,16 @@
         }
       }
     },
+    "Clear row" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar la fila"
+          }
+        }
+      }
+    },
     "Completed" : {
       "localizations" : {
         "es" : {
@@ -586,6 +606,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo guardar esa palabra"
+          }
+        }
+      }
+    },
+    "Couldn't save your progress" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar tu progreso"
           }
         }
       }
@@ -660,12 +690,22 @@
         }
       }
     },
-    "Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess." : {
+    "Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere, and letters not in the word can't be typed. A puzzle keeps the mode it had at its first guess." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí y las letras que están en la palabra aparecen en algún lado. Un reto conserva el modo que tenía en su primer intento."
+            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento."
+          }
+        }
+      }
+    },
+    "Every target now earns the star" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrar todos los objetivos ya te da la estrella"
           }
         }
       }
@@ -746,6 +786,84 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modo difícil"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda"
+          }
+        }
+      }
+    },
+    "Hint" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pista"
+          }
+        }
+      }
+    },
+    "Hint (%lld used)" : {
+      "localizations" : {
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usadas)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usada)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usadas)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Hint: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pista: %@"
+          }
+        }
+      }
+    },
+    "Hinted" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con pista"
+          }
+        }
+      }
+    },
+    "Hold to clear the row" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén presionado para borrar la fila"
           }
         }
       }
@@ -939,6 +1057,26 @@
         }
       }
     },
+    "Solve" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolver"
+          }
+        }
+      }
+    },
+    "Solve this puzzle?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Resolver este reto?"
+          }
+        }
+      }
+    },
     "Solved in %lld guesses" : {
       "localizations" : {
         "en" : {
@@ -981,6 +1119,36 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Solve…" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolver…"
+          }
+        }
+      }
+    },
+    "Solving counts as a loss and ends your streak." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolverlo cuenta como derrota y termina tu racha."
+          }
+        }
+      }
+    },
+    "Solving gives up the star." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolverlo te quita la estrella."
           }
         }
       }

@@ -1,5 +1,10 @@
 package software.primandproper.ngrams.ui
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -93,6 +99,8 @@ sealed interface TilesState {
         val feedback: Feedback? = null,
         /** Set by the word that earns the star, so its stats open once. */
         val justFinished: Boolean = false,
+        /** Whether the board is being solved for the player, a tile at a time. */
+        val solving: Boolean = false,
     ) : TilesState {
         /** Tiles on the board, `n` to a row: solved targets first in the order they were found, unless solved tiles leave the board, then the rest in board order. */
         val boardTiles: List<Int>
@@ -168,12 +176,67 @@ class TilesViewModel(
         _state.update { if (it is TilesState.Playing) move(it) else it }
     }
 
-    fun tap(tile: Int) = play { it.copy(game = it.game.toggle(tile)) }
+    /** A move the player makes, which waits out solving. */
+    private fun move(move: (TilesState.Playing) -> TilesState.Playing) = play { if (it.solving) it else move(it) }
 
-    fun clear() = play { it.copy(game = it.game.clearSelection()) }
+    fun tap(tile: Int) = move { it.copy(game = it.game.toggle(tile)) }
+
+    fun clear() = move { it.copy(game = it.game.clearSelection()) }
+
+    /** Lights the next tile of an unfound target, if there is one. */
+    fun takeHint() {
+        val playing = _state.value as? TilesState.Playing ?: return
+        val tile = playing.game.nextHint
+        if (playing.solving || tile == null) {
+            return
+        }
+        val hint = tile.toString()
+        _state.value = playing.copy(game = playing.game.takeHint(hint))
+        val (stretches, at) = timer.entry(completes = false)
+        viewModelScope.launch {
+            try {
+                container.progress.takeHint(hint, key, stretches = stretches, at = at)
+            } catch (e: Exception) {
+                logger.withValue("tile", tile).error("saving a hint", e)
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_progress)) }
+            }
+        }
+    }
+
+    /** Solves the board for the player, giving up its star: builds each unfound target a tile at a time, so the board slides as each one locks in. */
+    fun solve() {
+        val playing = _state.value as? TilesState.Playing ?: return
+        if (playing.solving || playing.game.isOver) {
+            return
+        }
+        _state.value = playing.copy(solving = true)
+        val words = playing.game.solution
+        viewModelScope.launch {
+            for (target in playing.game.unfoundTargets) {
+                play { it.copy(game = it.game.clearSelection()) }
+                for (tile in playing.game.puzzle.targets[target]) {
+                    play { it.copy(game = it.game.toggle(tile)) }
+                    delay(SOLVE_PACE_MS)
+                }
+                play { it.copy(game = it.game.giveUp(listOf(it.game.targetText(target)))) }
+                delay(SOLVE_PACE_MS * 2)
+            }
+            play { it.copy(solving = false, justFinished = true) }
+            val (stretches, at) = timer.entry(completes = true)
+            try {
+                container.progress.giveUp(key, words, stretches = stretches, at = at)
+            } catch (e: Exception) {
+                logger.error("saving a solve", e)
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_progress)) }
+            }
+        }
+    }
 
     fun shuffle() {
         val playing = _state.value as? TilesState.Playing ?: return
+        if (playing.solving) {
+            return
+        }
         viewModelScope.launch {
             val order = withContext(Dispatchers.Default) { arranged(playing.game, SeededGenerator(Random.nextLong().toULong())) }
             play { it.copy(order = order) }
@@ -182,10 +245,22 @@ class TilesViewModel(
 
     fun submit() {
         val playing = _state.value as? TilesState.Playing ?: return
+        if (playing.solving) {
+            return
+        }
         val (game, submission) = playing.game.submit()
         val feedback =
             when (submission) {
-                is TilesSubmission.Found -> Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
+                is TilesSubmission.Found ->
+                    if (!playing.game.targetsEarnStar && game.targetsEarnStar) {
+                        Feedback(
+                            R.string.word_points_targets_earn_star,
+                            listOf(submission.word.shown, submission.word.points),
+                            showFor = 3_000,
+                        )
+                    } else {
+                        Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
+                    }
                 is TilesSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
                 is TilesSubmission.Blocked -> Feedback(R.string.how_dare_you)
                 is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text))
@@ -219,6 +294,9 @@ class TilesViewModel(
 
     fun finishShown() = play { it.copy(justFinished = false) }
 }
+
+/** The wait between tiles as a board is solved for the player. */
+private const val SOLVE_PACE_MS = 300L
 
 /** The fill behind a solved target's tiles, the green the iOS app uses. */
 private val SolvedColor = Color(0x3334C759)
@@ -261,6 +339,16 @@ fun TilesScreen(
                 actions = {
                     if (playing != null && playing.game.found.isNotEmpty()) {
                         ShareAction(ShareText.tiles(playing.game, day, interfaceLanguage))
+                    }
+                    if (playing != null && (!playing.game.isOver || playing.solving)) {
+                        HelpAction(
+                            used = playing.game.hints.size,
+                            canHint = playing.game.nextHint != null,
+                            enabled = !playing.solving,
+                            solveWarning = stringResource(R.string.solve_board_warning),
+                            onHint = model::takeHint,
+                            onSolve = model::solve,
+                        )
                     }
                 },
             )
@@ -309,7 +397,7 @@ private fun Board(
                     game.puzzle.targets.size,
                 ),
             earnedStar = game.earnedStar,
-            missing = stringResource(R.string.tiles_star_missing),
+            missing = stringResource(R.string.tiles_star_missing).takeIf { game.targetsEarnStar },
             ended = if (game.hasWordsLeft) null else stringResource(R.string.tiles_no_words_left),
         )
         if (game.solvedTilesLeave) {
@@ -331,6 +419,7 @@ private fun Board(
                             text = game.puzzle.tiles[tile],
                             position = game.selection.indexOf(tile).takeIf { it >= 0 },
                             solved = tile in game.solvedTiles,
+                            hinted = tile in game.lit,
                             modifier = Modifier.weight(1f),
                         ) { model.tap(tile) }
                     }
@@ -339,14 +428,15 @@ private fun Board(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = model::shuffle) {
+            OutlinedButton(onClick = model::shuffle, enabled = !playing.solving) {
                 Icon(Icons.Filled.Shuffle, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.shuffle))
             }
             Spacer(Modifier.weight(1f))
-            OutlinedButton(onClick = model::clear, enabled = game.selection.isNotEmpty()) { Text(stringResource(R.string.clear)) }
-            Button(onClick = model::submit, enabled = game.selection.isNotEmpty()) { Text(stringResource(R.string.submit)) }
+            val canSubmit = game.selection.isNotEmpty() && !playing.solving
+            OutlinedButton(onClick = model::clear, enabled = canSubmit) { Text(stringResource(R.string.clear)) }
+            Button(onClick = model::submit, enabled = canSubmit) { Text(stringResource(R.string.submit)) }
         }
         FoundWords(game.found)
     }
@@ -358,13 +448,33 @@ private fun TileButton(
     /** Where this tile sits in the current word, if it's selected. */
     position: Int?,
     solved: Boolean,
+    /** Whether a hint has lit this tile. */
+    hinted: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
+    val shape = RoundedCornerShape(10.dp)
+    val ring =
+        if (hinted && position == null) {
+            val pulse by rememberInfiniteTransition(label = "hint").animateFloat(
+                initialValue = 0.4f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+                label = "hint ring",
+            )
+            Modifier.dashedBorder(StarColor.copy(alpha = pulse), shape, width = 3.dp, dash = 6.dp)
+        } else {
+            Modifier
+        }
+    val hintedLabel = stringResource(R.string.hinted_tile)
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 56.dp).semantics { selected = position != null },
-        shape = RoundedCornerShape(10.dp),
+        modifier =
+            modifier.heightIn(min = 56.dp).then(ring).semantics {
+                selected = position != null
+                if (hinted) stateDescription = hintedLabel
+            },
+        shape = shape,
         color =
             when {
                 position != null -> MaterialTheme.colorScheme.primary

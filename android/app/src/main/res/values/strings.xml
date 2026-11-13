@@ -13,6 +13,7 @@
     <string name="star_earned">Star earned</string>
     <string name="enter">Enter</string>
     <string name="delete">Delete</string>
+    <string name="clear_row">Clear row</string>
     <string name="shuffle">Shuffle</string>
     <string name="current_word">Current word %s</string>
     <string name="already_found">Already found %s</string>
@@ -83,6 +84,7 @@
     <string name="clear">Clear</string>
     <string name="submit">Submit</string>
     <string name="tiles_star_missing">Find every target for the star</string>
+    <string name="word_points_targets_earn_star">%1$s +%2$d\nEvery target now earns the star</string>
     <string name="tiles_no_words_left">No words left</string>
     <plurals name="targets_progress">
         <item quantity="one">%1$d of %2$d target</item>
@@ -136,7 +138,7 @@
     <string name="show_timer">Show timer</string>
     <string name="show_timer_footer">Times are kept either way, so turning this back on shows them all.</string>
     <string name="acknowledgements">Acknowledgements</string>
-    <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess.</string>
+    <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere, and letters not in the word can\'t be typed. A puzzle keeps the mode it had at its first guess.</string>
     <string name="tiles_hard_mode_rule">Found targets leave the board, so their tiles can\'t spell other words. Finding the last target ends the board.</string>
     <string name="pangram_hard_mode_rule">The first word on a board has to be a pangram. A board keeps the mode it had at its first word.</string>
     <string name="word_lists">Word lists</string>
@@ -147,4 +149,19 @@
     <string name="credit_source">This app\'s source and puzzle bank.</string>
     <string name="license_public_domain">Public domain</string>
     <string name="license_source">MIT, puzzles CC BY-SA 4.0</string>
+    <string name="help">Help</string>
+    <string name="hint">Hint</string>
+    <plurals name="hint_used">
+        <item quantity="one">Hint (%d used)</item>
+        <item quantity="other">Hint (%d used)</item>
+    </plurals>
+    <string name="solve_menu">Solve…</string>
+    <string name="solve_title">Solve this puzzle?</string>
+    <string name="solve">Solve</string>
+    <string name="solve_word_warning">Solving counts as a loss and ends your streak.</string>
+    <string name="solve_board_warning">Solving gives up the star.</string>
+    <string name="couldnt_save_progress">Couldn\'t save your progress</string>
+    <string name="hinted_letter">Hint: %1$s</string>
+    <string name="hinted_tile">Hinted</string>
+    <string name="clue">%1$s… · %2$d letters</string>
 </resources>

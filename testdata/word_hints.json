@@ -1,5 +1,5 @@
 {
-  "description": "Password hard mode: the first hint a guess leaves out after earlier guesses, or null when it uses them all. Correct letters out of their spot come first, then found letters with too few copies, both in the order revealed.",
+  "description": "Password hard mode. cases: the first hint a guess leaves out after earlier guesses, or null when it uses them all. Correct letters out of their spot come first, then found letters with too few copies, both in the order revealed. typing: letters typed after earlier guesses and the row they leave. In hard mode a letter an earlier guess showed absent everywhere can't be typed; one absent in one spot but found in another still can.",
   "answer": "llama",
   "cases": [
     {"guesses": ["plaza"], "guess": "label", "hint": {"kind": "position", "letter": "l", "index": 1}},
@@ -7,5 +7,11 @@
     {"guesses": ["lolls"], "guess": "loamy", "hint": {"kind": "letter", "letter": "l"}},
     {"guesses": ["label"], "guess": "llama", "hint": null},
     {"guesses": ["plaza"], "guess": "llama", "hint": null}
+  ],
+  "typing": [
+    {"hardMode": true, "guesses": ["plaza"], "typed": "pllzama", "current": "llama"},
+    {"hardMode": true, "guesses": ["lolls"], "typed": "losal", "current": "lal"},
+    {"hardMode": true, "guesses": [], "typed": "plaza", "current": "plaza"},
+    {"hardMode": false, "guesses": ["plaza"], "typed": "pz", "current": "pz"}
   ]
 }

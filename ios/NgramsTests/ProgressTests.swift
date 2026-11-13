@@ -133,10 +133,34 @@ struct TilesSessionTests {
     session.tap(1)
     session.submit()
 
-    #expect(session.feedback?.kind == .found(smallPuzzle.words[2]))
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[2], targetsEarnStar: false))
     #expect(try store.entries(for: key) == ["abcd"])
     let restored = self.session(store)
     #expect(restored.game.foundWords == ["abcd"])
+  }
+
+  @Test("says so once the targets left would earn the star")
+  func targetsEarnStar() throws {
+    let puzzle = TilesPuzzle(
+      language: .en, n: 2, tiles: smallPuzzle.tiles, targets: smallPuzzle.targets, bonus: 40,
+      targetScore: 46, words: smallPuzzle.words, blocked: [])
+    let session = TilesSession(
+      puzzle: puzzle, day: testDay, solvedTilesLeave: false,
+      store: ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test")),
+      observer: recordingObserver("test"))
+
+    session.tap(0)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[0], targetsEarnStar: false))
+
+    session.tap(2)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[1], targetsEarnStar: true))
+
+    session.tap(0)
+    session.tap(1)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[2], targetsEarnStar: false))
   }
 
   @Test("puts solved targets first on the board")
@@ -183,6 +207,25 @@ struct TilesSessionTests {
 
     #expect(session.boardTiles.sorted() == [0, 1, 2, 3])
     #expect(TilesLayout.isSpread(session.boardTiles, in: smallPuzzle))
+  }
+
+  @Test("saves hints, and solves the board without its star", arguments: [false, true])
+  func helps(solvedTilesLeave: Bool) async throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store, solvedTilesLeave: solvedTilesLeave)
+
+    session.takeHint()
+    #expect(session.game.lit == [0])
+    #expect(try store.assistance(for: key)?.hints == ["0"])
+
+    await session.solve(pace: .zero)
+
+    #expect(session.game.allTargetsFound)
+    #expect(!session.game.earnedStar)
+    #expect(session.finished)
+    #expect(try store.entries(for: key) == ["abcd", "efgh"])
+    #expect(try store.assistance(for: key) == Assistance(hints: ["0"], gaveUp: true))
+    #expect(self.session(store).game.isOver)
   }
 }
 
@@ -255,6 +298,37 @@ struct WordSessionTests {
     guess("label", in: session)
     #expect(session.feedback?.kind == .missingHint(.position("l", 1)))
     #expect(try store.entries(for: wordKey) == ["plaza"])
+  }
+
+  @Test("saves hints and restores them pencilled in")
+  func savesHints() throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+    guess("plaza", in: session)
+
+    for _ in 0..<3 {
+      session.takeHint()
+    }
+
+    #expect(session.game.hints == ["0", "3"])
+    #expect(try store.assistance(for: wordKey) == Assistance(hints: ["0", "3"], gaveUp: false))
+    #expect(self.session(store).game.pencilled == [0: "l", 3: "m"])
+  }
+
+  @Test("solves as a loss without saving the answer as a guess")
+  func solves() async throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+    guess("plaza", in: session)
+    session.type("c")
+
+    await session.solve(pace: .zero)
+
+    #expect(session.game.status == .lost)
+    #expect(session.finished)
+    #expect(try store.entries(for: wordKey) == ["plaza"])
+    #expect(try store.assistance(for: wordKey)?.gaveUp == true)
+    #expect(self.session(store).game.status == .lost)
   }
 }
 
@@ -334,5 +408,23 @@ struct PangramSessionTests {
     session.shuffle()
 
     #expect(session.outer.sorted() == Array("aceil"))
+  }
+
+  @Test("saves clues, and solves the board without its star")
+  func helps() async throws {
+    let store = ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test"))
+    let session = self.session(store)
+
+    session.takeHint()
+    #expect(session.game.clues.map(\.word) == ["plaice"])
+
+    await session.solve(pace: .zero)
+
+    #expect(session.game.foundPangrams == 1)
+    #expect(!session.game.earnedStar)
+    #expect(session.finished)
+    #expect(session.game.clues.isEmpty)
+    #expect(try store.entries(for: pangramKey) == session.game.foundWords)
+    #expect(try store.assistance(for: pangramKey) == Assistance(hints: ["plaice"], gaveUp: true))
   }
 }

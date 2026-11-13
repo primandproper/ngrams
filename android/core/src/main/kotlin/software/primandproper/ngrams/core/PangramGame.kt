@@ -78,15 +78,67 @@ class PangramGame private constructor(
     /** A star takes every common pangram and the target score. */
     val earnedStar: Boolean get() = !gaveUp && foundPangrams == puzzle.pangrams.size && score >= puzzle.targetScore
 
+    /** Whether the board has every common pangram and the target score, star or not. */
+    private val reachedStar: Boolean get() = foundPangrams == puzzle.pangrams.size && score >= puzzle.targetScore
+
+    /** The order hints clue words and solving spells them: common pangrams first, then by points, highest first, ties alphabetical. */
+    private val helpOrder: List<PangramWord>
+        get() =
+            puzzle.words.sortedWith(
+                compareByDescending<PangramWord> { it.word in puzzle.pangrams }
+                    .thenByDescending { it.points }
+                    .thenBy { it.word },
+            )
+
+    /** The word the next hint clues: the first in help order not found or clued already. Null once there's none left or the board is over. */
+    val nextHint: String?
+        get() {
+            if (earnedStar || gaveUp) {
+                return null
+            }
+            val taken = foundWords.toSet() + hints
+            return helpOrder.firstOrNull { it.word !in taken }?.word
+        }
+
+    /** The clued words still unfound, oldest clue first. */
+    val clues: List<PangramWord>
+        get() {
+            val found = foundWords.toSet()
+            return hints.distinct().filter { it !in found }.mapNotNull { words[it] }
+        }
+
+    /** The words solving spells, in help order, until the board has every common pangram and the target score. */
+    val solution: List<String>
+        get() {
+            var board = this
+            val spelled = mutableListOf<String>()
+            for (word in helpOrder) {
+                if (board.reachedStar) {
+                    break
+                }
+                if (word !in board.found) {
+                    board = board.copy(found = board.found + word)
+                    spelled += word.word
+                }
+            }
+            return spelled
+        }
+
     fun takeHint(hint: String): PangramGame = copy(hints = hints + hint)
 
     /** Solves the board for the player, finding [words], and gives up its star. */
     fun giveUp(words: List<String>): PangramGame =
-        copy(found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] }, gaveUp = true)
+        copy(
+            found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] },
+            current = "",
+            gaveUp = true,
+        )
 
     fun type(letter: Char): PangramGame = copy(current = current + letter)
 
     fun deleteLetter(): PangramGame = if (current.isEmpty()) this else copy(current = current.dropLast(1))
+
+    fun clearLetters(): PangramGame = if (current.isEmpty()) this else copy(current = "")
 
     /** Checks the typed letters as a word and clears them. */
     fun submit(): Submitted {

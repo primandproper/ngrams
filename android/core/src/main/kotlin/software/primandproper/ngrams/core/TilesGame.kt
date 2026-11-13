@@ -66,6 +66,24 @@ class TilesGame private constructor(
     val earnedStar: Boolean get() = !gaveUp && allTargetsFound && score >= puzzle.targetScore
 
     /**
+     * Whether finding every target still unfound would earn the star: the score so far, those targets' points, and the
+     * bonus reach the target score. It never turns false while targets are left, since finding one moves its points
+     * from what's left into the score.
+     */
+    val targetsEarnStar: Boolean
+        get() {
+            if (gaveUp || allTargetsFound) {
+                return false
+            }
+            val solved = solvedTargets.toSet()
+            val left = puzzle.targets.indices.filter { it !in solved }.sumOf { words[targetText(it)]?.points ?: 0 }
+            return score + left + puzzle.bonus >= puzzle.targetScore
+        }
+
+    /** A target's folded spelling: its tiles joined in order. */
+    fun targetText(target: Int): String = puzzle.targets[target].joinToString("") { puzzle.tiles[it] }
+
+    /**
      * Whether an unfound word can still be spelled from the tiles left on the board. Once solved tiles leave, finding
      * every target leaves none.
      */
@@ -79,11 +97,55 @@ class TilesGame private constructor(
     /** A board is over once it has its star, was solved for the player, or has no words left. */
     val isOver: Boolean get() = earnedStar || gaveUp || !hasWordsLeft
 
+    /** Hinted tiles, from the saved hints. Hints are saved as tiles; any that isn't a tile on this board is skipped. */
+    private val hintedTiles: List<Int> get() = hints.mapNotNull { it.toIntOrNull() }.filter { it in puzzle.tiles.indices }
+
+    /** The tiles hints have lit whose targets are still unfound. */
+    val lit: Set<Int>
+        get() {
+            val solved = solvedTiles
+            return hintedTiles.filter { it !in solved }.toSet()
+        }
+
+    /** Indices into the puzzle's targets of the targets still unfound, in target order. */
+    val unfoundTargets: List<Int>
+        get() {
+            val solved = solvedTargets.toSet()
+            return puzzle.targets.indices.filter { it !in solved }
+        }
+
+    /**
+     * The tile the next hint lights. A hint keeps lighting the first unfound target already lit, in the target's own
+     * order, until all but one of its tiles are lit, so a hint never gives a target away; then it starts on the first
+     * unfound target with none lit. Null once there's nothing left to light or the board is over.
+     */
+    val nextHint: Int?
+        get() {
+            if (isOver) {
+                return null
+            }
+            val lit = lit
+            val unfound = unfoundTargets
+
+            fun litCount(target: Int) = puzzle.targets[target].count { it in lit }
+            val target =
+                unfound.firstOrNull { litCount(it) > 0 && litCount(it) < puzzle.n - 1 }
+                    ?: unfound.firstOrNull { litCount(it) == 0 }
+            return target?.let { puzzle.targets[it].firstOrNull { tile -> tile !in lit } }
+        }
+
+    /** The words solving finds: every unfound target, in target order. */
+    val solution: List<String> get() = unfoundTargets.map(::targetText)
+
     fun takeHint(hint: String): TilesGame = copy(hints = hints + hint)
 
     /** Solves the board for the player, finding [words], and gives up its star. */
     fun giveUp(words: List<String>): TilesGame =
-        copy(found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] }, gaveUp = true)
+        copy(
+            found = found + words.distinct().filter { it !in foundWords }.mapNotNull { this.words[it] },
+            selection = emptyList(),
+            gaveUp = true,
+        )
 
     /**
      * Selects a tile, or deselects it if it's already selected. A word holds at most `n` tiles,

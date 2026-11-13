@@ -22,6 +22,7 @@ final class PangramSession {
       case notAWord(String)
       case needsPangram
       case saveFailed
+      case helpSaveFailed
       case loadFailed
     }
 
@@ -34,6 +35,8 @@ final class PangramSession {
   /// Every letter but the center, in the order the wheel shows them. Shuffling changes only this.
   private(set) var outer: [Character]
   private(set) var feedback: Feedback?
+  /// Whether the board is being solved for the player, a word at a time.
+  private(set) var solving = false
   let timer: PuzzleTimer
 
   private let store: ProgressStore
@@ -111,6 +114,58 @@ final class PangramSession {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)
       }
+    }
+  }
+
+  /// Whether the board has its star or was solved, and is done showing how, which opens its
+  /// stats.
+  var finished: Bool {
+    (game.earnedStar || game.gaveUp) && !solving
+  }
+
+  /// Clues the next unfound word, if there is one.
+  func takeHint() {
+    guard !solving, let word = game.nextHint else {
+      return
+    }
+    game.take(hint: word)
+    do {
+      let (stretches, now) = timer.entry(completing: false)
+      try store.take(
+        hint: word, for: key, hardMode: game.hardMode, stretches: stretches, at: now)
+    } catch {
+      logger.withValue("word", word).error("saving a hint", error)
+      feedback = Feedback(kind: .helpSaveFailed)
+    }
+  }
+
+  /// Solves the board for the player, giving up its star: spells each word of the solution a
+  /// letter `pace` apart.
+  func solve(pace: Duration = .milliseconds(80)) async {
+    guard !solving, !game.earnedStar, !game.gaveUp else {
+      return
+    }
+    solving = true
+    defer { solving = false }
+    let words = game.solution
+    while !game.current.isEmpty {
+      game.deleteLetter()
+    }
+    for word in words {
+      for letter in word {
+        game.type(letter)
+        try? await Task.sleep(for: pace)
+      }
+      game.giveUp(finding: [word])
+      try? await Task.sleep(for: pace * 6)
+    }
+    do {
+      let (stretches, now) = timer.entry(completing: true)
+      try store.giveUp(
+        adding: words, for: key, hardMode: game.hardMode, stretches: stretches, at: now)
+    } catch {
+      logger.error("saving a solve", error)
+      feedback = Feedback(kind: .helpSaveFailed)
     }
   }
 

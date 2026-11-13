@@ -83,12 +83,65 @@ nonisolated struct PangramGame: Sendable {
     !gaveUp && foundPangrams == puzzle.pangrams.count && score >= puzzle.targetScore
   }
 
+  /// Whether the board has every common pangram and the target score, star or not.
+  private var reachedStar: Bool {
+    foundPangrams == puzzle.pangrams.count && score >= puzzle.targetScore
+  }
+
+  /// The order hints clue words and solving spells them: common pangrams first, then by points,
+  /// highest first, ties alphabetical.
+  private var helpOrder: [PangramWord] {
+    puzzle.words.sorted { a, b in
+      let aPangram = puzzle.pangrams.contains(a.word)
+      let bPangram = puzzle.pangrams.contains(b.word)
+      if aPangram != bPangram {
+        return aPangram
+      }
+      return a.points != b.points ? a.points > b.points : a.word < b.word
+    }
+  }
+
+  /// The word the next hint clues: the first in help order not found or clued already. Nil
+  /// once there's none left or the board is over.
+  var nextHint: String? {
+    guard !earnedStar, !gaveUp else {
+      return nil
+    }
+    let taken = Set(foundWords).union(hints)
+    return helpOrder.first { !taken.contains($0.word) }?.word
+  }
+
+  /// The clued words still unfound, oldest clue first.
+  var clues: [PangramWord] {
+    let found = Set(foundWords)
+    var seen: Set<String> = []
+    return hints.compactMap { hint in
+      guard !found.contains(hint), seen.insert(hint).inserted else {
+        return nil
+      }
+      return words[hint]
+    }
+  }
+
+  /// The words solving spells, in help order, until the board has every common pangram and the
+  /// target score.
+  var solution: [String] {
+    var board = self
+    var spelled: [String] = []
+    for word in helpOrder where !board.reachedStar && !board.found.contains(word) {
+      board.found.append(word)
+      spelled.append(word.word)
+    }
+    return spelled
+  }
+
   mutating func take(hint: String) {
     hints.append(hint)
   }
 
   /// Solves the board for the player, finding `words`, and gives up its star.
   mutating func giveUp(finding words: [String]) {
+    current = ""
     var seen = Set(foundWords)
     for word in words where seen.insert(word).inserted {
       if let match = self.words[word] {

@@ -48,15 +48,19 @@ struct PangramView: View {
       VStack(spacing: 20) {
         ScoreHeader(game: session.game)
         CurrentWord(game: session.game)
+        Clues(words: session.game.clues)
         LetterWheel(
-          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type)
+          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type
+        )
+        .disabled(session.solving)
         controls
+          .disabled(session.solving)
         FoundWords(game: session.game)
       }
       .padding()
     }
-    .onChange(of: session.game.earnedStar) { hadStar, hasStar in
-      if !hadStar, hasStar {
+    .onChange(of: session.finished) { wasFinished, finished in
+      if !wasFinished, finished {
         Task {
           try? await Task.sleep(for: .seconds(1))
           showingStats = true
@@ -73,6 +77,16 @@ struct PangramView: View {
       if !session.game.found.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {
           ShareLink(item: ShareText.pangram(session.game, on: session.key.day))
+        }
+      }
+      if !(session.game.earnedStar || session.game.gaveUp) || session.solving {
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: session.game.hints.count, canHint: session.game.nextHint != nil,
+            solveWarning: "Solving gives up the star.", onHint: session.takeHint,
+            onSolve: { Task { await session.solve() } }
+          )
+          .disabled(session.solving)
         }
       }
     }
@@ -155,6 +169,28 @@ private struct ScoreHeader: View {
     let count = String(localized: "\(game.foundPangrams) of \(game.puzzle.pangrams.count) pangrams")
     let bonus = game.foundBonusPangrams
     return bonus == 0 ? count : String(localized: "\(count) · \(bonus) bonus")
+  }
+}
+
+/// A chip per clued word still unfound: its first two letters and its length.
+private struct Clues: View {
+  let words: [PangramWord]
+
+  @Environment(\.dsTheme) private var theme
+
+  var body: some View {
+    if !words.isEmpty {
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 6) {
+        ForEach(words, id: \.word) { word in
+          Text("\(String(word.shown.prefix(2)).uppercased())… · \(word.shown.count) letters")
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(theme.colors.tertiary.opacity(0.2), in: .capsule)
+        }
+      }
+      .transition(.opacity)
+    }
   }
 }
 
@@ -346,6 +382,7 @@ private struct FeedbackBanner: View {
     case .notAWord(let text): String(localized: "\(text.uppercased()) isn't on the list")
     case .needsPangram: String(localized: "Start with a pangram")
     case .saveFailed: String(localized: "Couldn't save that word")
+    case .helpSaveFailed: String(localized: "Couldn't save your progress")
     case .loadFailed: String(localized: "Couldn't load saved progress")
     }
   }

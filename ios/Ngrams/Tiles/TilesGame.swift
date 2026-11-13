@@ -115,12 +115,55 @@ nonisolated struct TilesGame: Sendable {
     earnedStar || gaveUp || !hasWordsLeft
   }
 
+  /// Hinted tiles, from the saved hints. Hints are saved as tiles; any that isn't a tile on
+  /// this board is skipped.
+  private var hintedTiles: [Int] {
+    hints.compactMap(Int.init).filter(puzzle.tiles.indices.contains)
+  }
+
+  /// The tiles hints have lit whose targets are still unfound.
+  var lit: Set<Int> {
+    let solved = solvedTiles
+    return Set(hintedTiles.filter { !solved.contains($0) })
+  }
+
+  /// The tile the next hint lights. A hint keeps lighting the first unfound target already lit,
+  /// in the target's own order, until all but one of its tiles are lit, so a hint never gives a
+  /// target away; then it starts on the first unfound target with none lit. Nil once there's
+  /// nothing left to light or the board is over.
+  var nextHint: Int? {
+    guard !isOver else {
+      return nil
+    }
+    let lit = self.lit
+    let unfound = unfoundTargets
+    func litCount(_ target: Int) -> Int {
+      puzzle.targets[target].count(where: lit.contains)
+    }
+    let target =
+      unfound.first { litCount($0) > 0 && litCount($0) < puzzle.n - 1 }
+      ?? unfound.first { litCount($0) == 0 }
+    return target.flatMap { target in puzzle.targets[target].first { !lit.contains($0) } }
+  }
+
+  /// Indices into `puzzle.targets` of the targets still unfound, in target order.
+  var unfoundTargets: [Int] {
+    let solved = Set(solvedTargets)
+    return puzzle.targets.indices.filter { !solved.contains($0) }
+  }
+
+  /// The words solving finds: every unfound target, in target order.
+  var solution: [String] {
+    unfoundTargets.map(targetText)
+  }
+
   mutating func take(hint: String) {
     hints.append(hint)
   }
 
   /// Solves the board for the player, finding `words`, and gives up its star.
   mutating func giveUp(finding words: [String]) {
+    selection.removeAll()
     var seen = Set(foundWords)
     for word in words where seen.insert(word).inserted {
       if let match = self.words[word] {

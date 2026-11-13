@@ -19,6 +19,7 @@ final class TilesSession {
       case blocked
       case notAWord(String)
       case saveFailed
+      case helpSaveFailed
       case loadFailed
     }
 
@@ -31,6 +32,8 @@ final class TilesSession {
   /// The order the board shows tiles in, unsolved tiles first. Shuffling changes only this.
   private(set) var order: [Int]
   private(set) var feedback: Feedback?
+  /// Whether the board is being solved for the player, a tile at a time.
+  private(set) var solving = false
   let timer: PuzzleTimer
 
   private let store: ProgressStore
@@ -119,6 +122,54 @@ final class TilesSession {
         logger.withValue("word", word.word).error("saving a found word", error)
         feedback = Feedback(kind: .saveFailed)
       }
+    }
+  }
+
+  /// Whether the board is over and done showing how, which opens its stats.
+  var finished: Bool {
+    game.isOver && !solving
+  }
+
+  /// Lights the next tile of an unfound target, if there is one.
+  func takeHint() {
+    guard !solving, let tile = game.nextHint else {
+      return
+    }
+    let hint = String(tile)
+    game.take(hint: hint)
+    do {
+      let (stretches, now) = timer.entry(completing: false)
+      try store.take(hint: hint, for: key, stretches: stretches, at: now)
+    } catch {
+      logger.withValue("tile", tile).error("saving a hint", error)
+      feedback = Feedback(kind: .helpSaveFailed)
+    }
+  }
+
+  /// Solves the board for the player, giving up its star: builds each unfound target `pace` a
+  /// tile, so the board slides as each one locks in.
+  func solve(pace: Duration = .milliseconds(300)) async {
+    guard !solving, !game.isOver else {
+      return
+    }
+    solving = true
+    defer { solving = false }
+    let words = game.solution
+    for target in game.unfoundTargets {
+      game.clearSelection()
+      for tile in game.puzzle.targets[target] {
+        game.toggle(tile)
+        try? await Task.sleep(for: pace)
+      }
+      game.giveUp(finding: [game.targetText(target)])
+      try? await Task.sleep(for: pace * 2)
+    }
+    do {
+      let (stretches, now) = timer.entry(completing: true)
+      try store.giveUp(adding: words, for: key, stretches: stretches, at: now)
+    } catch {
+      logger.error("saving a solve", error)
+      feedback = Feedback(kind: .helpSaveFailed)
     }
   }
 

@@ -69,13 +69,13 @@ struct WordView: View {
       ResultLine(game: session.game)
       Keyboard(
         language: session.game.puzzle.language, marks: session.game.letterMarks,
-        disabled: session.game.isOver,
+        disabled: session.game.isOver || session.solving,
         onLetter: session.type, onDelete: session.deleteLetter, onClear: session.clearLetters,
         onEnter: session.submit)
     }
     .padding()
-    .onChange(of: session.game.isOver) { wasOver, isOver in
-      if !wasOver, isOver {
+    .onChange(of: session.finished) { wasFinished, finished in
+      if !wasFinished, finished {
         Task {
           try? await Task.sleep(for: .seconds(1))
           showingStats = true
@@ -92,6 +92,15 @@ struct WordView: View {
       if session.game.isOver {
         ToolbarItem(placement: .topBarTrailing) {
           ShareLink(item: ShareText.word(session.game, on: session.key.day))
+        }
+      } else {
+        ToolbarItem(placement: .topBarTrailing) {
+          HelpMenu(
+            used: session.game.hints.count, canHint: session.game.nextHint != nil,
+            solveWarning: "Solving counts as a loss and ends your streak.",
+            onHint: session.takeHint, onSolve: { Task { await session.solve() } }
+          )
+          .disabled(session.solving)
         }
       }
     }
@@ -123,24 +132,33 @@ private struct GuessGrid: View {
   @Environment(\.dsTheme) private var theme
 
   var body: some View {
-    let marks = game.marks
+    let rows = self.rows
+    let marks = rows.map { WordGame.marks(for: $0, answer: game.puzzle.answer) }
+    let pencilled = game.isOver ? [:] : game.pencilled
     VStack(spacing: 6) {
       ForEach(0..<WordGame.maxGuesses, id: \.self) { row in
         HStack(spacing: 6) {
           ForEach(0..<game.puzzle.n, id: \.self) { column in
-            LetterCell(letter: letter(row: row, column: column), mark: mark(marks, row, column))
+            LetterCell(
+              letter: letter(rows, row: row, column: column), mark: mark(marks, row, column),
+              hint: row == rows.count ? pencilled[column] : nil)
           }
         }
       }
     }
-    .animation(theme.animation.normal, value: game.guesses)
+    .animation(theme.animation.normal, value: rows)
   }
 
-  private func letter(row: Int, column: Int) -> Character? {
+  /// The rows marked so far: the guesses, then the answer once it was solved for the player.
+  private var rows: [String] {
+    game.gaveUp ? game.guesses + [game.puzzle.answer] : game.guesses
+  }
+
+  private func letter(_ rows: [String], row: Int, column: Int) -> Character? {
     let text: String
-    if row < game.guesses.count {
-      text = game.guesses[row]
-    } else if row == game.guesses.count {
+    if row < rows.count {
+      text = rows[row]
+    } else if row == rows.count {
       text = game.current
     } else {
       return nil
@@ -180,25 +198,41 @@ private struct LetterCell: View {
   let letter: Character?
   /// Nil until the letter's guess is submitted.
   let mark: LetterMark?
+  /// A hinted letter, pencilled in until a typed letter covers it.
+  let hint: Character?
 
   @Environment(\.dsTheme) private var theme
 
+  private var pencilled: Character? {
+    letter == nil ? hint : nil
+  }
+
   var body: some View {
     let fill = mark?.fill(in: theme)
-    Text(letter.map { String($0).uppercased() } ?? " ")
+    Text((letter ?? pencilled).map { String($0).uppercased() } ?? " ")
       .font(.title.weight(.bold))
       .frame(width: Self.size, height: Self.size)
-      .foregroundStyle(foreground)
+      .foregroundStyle(pencilled == nil ? foreground : theme.colors.primary.opacity(0.45))
       .background(fill ?? .clear, in: .rect(cornerRadius: theme.radius.md))
       .overlay {
         if fill == nil {
           RoundedRectangle(cornerRadius: theme.radius.md)
-            .strokeBorder(border, lineWidth: 2)
+            .strokeBorder(
+              pencilled == nil ? border : theme.colors.primary.opacity(0.6),
+              style: StrokeStyle(lineWidth: 2, dash: pencilled == nil ? [] : [5, 4]))
         }
       }
-      .accessibilityLabel(
-        letter.map { "\(String($0).uppercased())\(mark.map { ", \($0.accessibilityName)" } ?? "")" }
-          ?? String(localized: "empty"))
+      .accessibilityLabel(accessibilityLabel)
+  }
+
+  private var accessibilityLabel: String {
+    if let letter {
+      return "\(String(letter).uppercased())\(mark.map { ", \($0.accessibilityName)" } ?? "")"
+    }
+    if let pencilled {
+      return String(localized: "Hint: \(String(pencilled).uppercased())")
+    }
+    return String(localized: "empty")
   }
 
   private var foreground: Color {
@@ -351,6 +385,7 @@ private struct FeedbackBanner: View {
     case .missingHint(.letter(let letter)):
       String(localized: "Guess must contain \(String(letter).uppercased())")
     case .saveFailed: String(localized: "Couldn't save that guess")
+    case .helpSaveFailed: String(localized: "Couldn't save your progress")
     case .loadFailed: String(localized: "Couldn't load saved progress")
     }
   }

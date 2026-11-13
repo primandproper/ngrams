@@ -1,6 +1,7 @@
 package software.primandproper.ngrams.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
@@ -109,8 +111,10 @@ sealed interface PangramState {
         /** Every letter but the center, in the order the wheel shows them. Shuffling changes only this. */
         val outer: List<Char>,
         val feedback: Feedback? = null,
-        /** Set by the word that earns the star, so its stats open once. */
+        /** Set by the word that earns the star, or by solving, so its stats open once. */
         val justFinished: Boolean = false,
+        /** Whether the board is being solved for the player, a word at a time. */
+        val solving: Boolean = false,
     ) : PangramState
 }
 
@@ -178,11 +182,62 @@ class PangramViewModel(
         _state.update { if (it is PangramState.Playing) move(it) else it }
     }
 
-    fun type(letter: Char) = play { it.copy(game = it.game.type(letter)) }
+    /** A move the player makes, which waits out solving. */
+    private fun move(move: (PangramState.Playing) -> PangramState.Playing) = play { if (it.solving) it else move(it) }
 
-    fun deleteLetter() = play { it.copy(game = it.game.deleteLetter()) }
+    fun type(letter: Char) = move { it.copy(game = it.game.type(letter)) }
 
-    fun shuffle() = play { it.copy(outer = it.outer.shuffled()) }
+    fun deleteLetter() = move { it.copy(game = it.game.deleteLetter()) }
+
+    fun shuffle() = move { it.copy(outer = it.outer.shuffled()) }
+
+    /** Clues the next unfound word, if there is one. */
+    fun takeHint() {
+        val playing = _state.value as? PangramState.Playing ?: return
+        val word = playing.game.nextHint
+        if (playing.solving || word == null) {
+            return
+        }
+        val game = playing.game.takeHint(word)
+        _state.value = playing.copy(game = game)
+        val (stretches, at) = timer.entry(completes = false)
+        viewModelScope.launch {
+            try {
+                container.progress.takeHint(word, key, game.hardMode, stretches, at)
+            } catch (e: Exception) {
+                logger.withValue("word", word).error("saving a hint", e)
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_progress)) }
+            }
+        }
+    }
+
+    /** Solves the board for the player, giving up its star: spells each word of the solution a letter at a time. */
+    fun solve() {
+        val playing = _state.value as? PangramState.Playing ?: return
+        if (playing.solving || playing.game.earnedStar || playing.game.gaveUp) {
+            return
+        }
+        val words = playing.game.solution
+        _state.value = playing.copy(game = playing.game.clearLetters(), solving = true)
+        viewModelScope.launch {
+            for (word in words) {
+                for (letter in word) {
+                    play { it.copy(game = it.game.type(letter)) }
+                    delay(SOLVE_PACE_MS)
+                }
+                play { it.copy(game = it.game.giveUp(listOf(word))) }
+                delay(SOLVE_PACE_MS * 6)
+            }
+            play { it.copy(solving = false, justFinished = true) }
+            val (stretches, at) = timer.entry(completes = true)
+            try {
+                container.progress.giveUp(key, words, playing.game.hardMode, stretches, at)
+            } catch (e: Exception) {
+                logger.error("saving a solve", e)
+                play { it.copy(feedback = Feedback(R.string.couldnt_save_progress)) }
+            }
+        }
+    }
 
     fun toggleOrder() {
         viewModelScope.launch {
@@ -194,6 +249,9 @@ class PangramViewModel(
 
     fun submit() {
         val playing = _state.value as? PangramState.Playing ?: return
+        if (playing.solving) {
+            return
+        }
         val (game, submission) = playing.game.submit()
         val puzzle = game.puzzle
         val feedback =
@@ -243,6 +301,9 @@ class PangramViewModel(
     fun finishShown() = play { it.copy(justFinished = false) }
 }
 
+/** The wait between letters as a board is solved for the player. */
+private const val SOLVE_PACE_MS = 80L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PangramScreen(
@@ -289,6 +350,16 @@ fun PangramScreen(
                     if (playing != null && playing.game.found.isNotEmpty()) {
                         ShareAction(ShareText.pangram(playing.game, day, interfaceLanguage))
                     }
+                    if (playing != null && (!(playing.game.earnedStar || playing.game.gaveUp) || playing.solving)) {
+                        HelpAction(
+                            used = playing.game.hints.size,
+                            canHint = playing.game.nextHint != null,
+                            enabled = !playing.solving,
+                            solveWarning = stringResource(R.string.solve_board_warning),
+                            onHint = model::takeHint,
+                            onSolve = model::solve,
+                        )
+                    }
                 },
             )
         },
@@ -333,6 +404,7 @@ private fun Board(
             missing = stringResource(R.string.pangram_star_missing).takeIf { game.score >= game.puzzle.targetScore },
         )
         CurrentWord(game)
+        Clues(game.clues)
         LetterWheel(game.puzzle.center, playing.outer, model::type)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = model::deleteLetter, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) {
@@ -357,6 +429,29 @@ private fun pangramCount(game: PangramGame): String {
     val total = game.puzzle.pangrams.size
     val count = pluralStringResource(R.plurals.pangrams_progress, total, game.foundPangrams, total)
     return if (game.foundBonusPangrams == 0) count else stringResource(R.string.pangram_bonus_count, count, game.foundBonusPangrams)
+}
+
+/** A chip per clued word still unfound: its first two letters and its length. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Clues(words: List<PangramWord>) {
+    if (words.isEmpty()) return
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        for (word in words) {
+            Text(
+                stringResource(R.string.clue, word.shown.take(2).uppercase(), word.shown.length),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier =
+                    Modifier
+                        .background(StarColor.copy(alpha = 0.2f), RoundedCornerShape(50))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+    }
 }
 
 @Composable

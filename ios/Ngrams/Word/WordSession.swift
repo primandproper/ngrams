@@ -17,6 +17,7 @@ final class WordSession {
       case notAWord(String)
       case missingHint(WordGame.Hint)
       case saveFailed
+      case helpSaveFailed
       case loadFailed
     }
 
@@ -27,6 +28,8 @@ final class WordSession {
   let key: ProgressKey
   private(set) var game: WordGame
   private(set) var feedback: Feedback?
+  /// Whether the puzzle is being solved for the player, a letter at a time.
+  private(set) var solving = false
   let timer: PuzzleTimer
 
   private let list: GuessList
@@ -96,6 +99,54 @@ final class WordSession {
         logger.error("saving a guess", error)
         feedback = Feedback(kind: .saveFailed)
       }
+    }
+  }
+
+  /// Whether the puzzle is over and done showing how, which opens its stats.
+  var finished: Bool {
+    game.isOver && !solving
+  }
+
+  /// Pencils in the next letter the player doesn't know, if there is one.
+  func takeHint() {
+    guard !solving, let spot = game.nextHint else {
+      return
+    }
+    let hint = String(spot)
+    game.take(hint: hint)
+    do {
+      let (stretches, now) = timer.entry(completing: false)
+      try store.take(
+        hint: hint, for: key, hardMode: game.hardMode, stretches: stretches, at: now)
+    } catch {
+      logger.withValue("spot", spot).error("saving a hint", error)
+      feedback = Feedback(kind: .helpSaveFailed)
+    }
+  }
+
+  /// Solves the puzzle for the player, as a loss: clears the row, types the answer `pace` apart,
+  /// then reveals it. The answer isn't saved as a guess.
+  func solve(pace: Duration = .milliseconds(250)) async {
+    guard !solving, !game.isOver else {
+      return
+    }
+    solving = true
+    defer { solving = false }
+    while !game.current.isEmpty {
+      game.deleteLetter()
+      try? await Task.sleep(for: pace / 2)
+    }
+    for letter in game.puzzle.answer {
+      game.type(letter)
+      try? await Task.sleep(for: pace)
+    }
+    game.giveUp()
+    do {
+      let (stretches, now) = timer.entry(completing: true)
+      try store.giveUp(for: key, hardMode: game.hardMode, stretches: stretches, at: now)
+    } catch {
+      logger.error("saving a solve", error)
+      feedback = Feedback(kind: .helpSaveFailed)
     }
   }
 

@@ -84,6 +84,8 @@ sealed interface PasswordState {
         val feedback: Feedback? = null,
         /** Set by the guess that ends the puzzle, so its stats open once. */
         val justFinished: Boolean = false,
+        /** Whether the puzzle is being solved for the player, a letter at a time. */
+        val solving: Boolean = false,
     ) : PasswordState
 }
 
@@ -147,14 +149,80 @@ class PasswordViewModel(
         _state.update { if (it is PasswordState.Playing) it.copy(game = move(it.game)) else it }
     }
 
-    fun type(letter: Char) = play { it.type(letter) }
+    /** A move the player makes, which waits out solving. */
+    private fun move(move: (WordGame) -> WordGame) {
+        _state.update { if (it is PasswordState.Playing && !it.solving) it.copy(game = move(it.game)) else it }
+    }
 
-    fun deleteLetter() = play { it.deleteLetter() }
+    fun type(letter: Char) = move { it.type(letter) }
 
-    fun clearLetters() = play { it.clearLetters() }
+    fun deleteLetter() = move { it.deleteLetter() }
+
+    fun clearLetters() = move { it.clearLetters() }
+
+    /** Pencils in the next letter the player doesn't know, if there is one. */
+    fun takeHint() {
+        val playing = _state.value as? PasswordState.Playing ?: return
+        val spot = playing.game.nextHint
+        if (playing.solving || spot == null) {
+            return
+        }
+        val hint = spot.toString()
+        val game = playing.game.takeHint(hint)
+        _state.value = playing.copy(game = game)
+        val (stretches, at) = timer.entry(completes = false)
+        viewModelScope.launch {
+            try {
+                container.progress.takeHint(hint, key, game.hardMode, stretches, at)
+            } catch (e: Exception) {
+                logger.withValue("spot", spot).error("saving a hint", e)
+                _state.update { if (it is PasswordState.Playing) it.copy(feedback = Feedback(R.string.couldnt_save_progress)) else it }
+            }
+        }
+    }
+
+    /** Solves the puzzle for the player, as a loss: clears the row, types the answer, then reveals it. The answer isn't saved as a guess. */
+    fun solve() {
+        val playing = _state.value as? PasswordState.Playing ?: return
+        if (playing.solving || playing.game.isOver) {
+            return
+        }
+        _state.value = playing.copy(solving = true)
+        viewModelScope.launch {
+            while ((_state.value as? PasswordState.Playing)?.game?.current?.isNotEmpty() == true) {
+                play { it.deleteLetter() }
+                delay(SOLVE_PACE_MS / 2)
+            }
+            for (letter in playing.game.puzzle.answer) {
+                play { it.type(letter) }
+                delay(SOLVE_PACE_MS)
+            }
+            _state.update {
+                if (it is PasswordState.Playing) {
+                    it.copy(
+                        game = it.game.giveUp(),
+                        solving = false,
+                        justFinished = true,
+                    )
+                } else {
+                    it
+                }
+            }
+            val (stretches, at) = timer.entry(completes = true)
+            try {
+                container.progress.giveUp(key, hardMode = playing.game.hardMode, stretches = stretches, at = at)
+            } catch (e: Exception) {
+                logger.error("saving a solve", e)
+                _state.update { if (it is PasswordState.Playing) it.copy(feedback = Feedback(R.string.couldnt_save_progress)) else it }
+            }
+        }
+    }
 
     fun submit() {
         val playing = _state.value as? PasswordState.Playing ?: return
+        if (playing.solving) {
+            return
+        }
         val list = list ?: return
         val (game, submission) = playing.game.submit(list)
         _state.value = PasswordState.Playing(game, feedback(submission), justFinished = !playing.game.isOver && game.isOver)
@@ -202,6 +270,9 @@ class PasswordViewModel(
         }
 }
 
+/** The wait between letters as a puzzle is solved for the player. */
+private const val SOLVE_PACE_MS = 250L
+
 /** English ordinals, correct through 20th, for the English hint; Spanish uses the number. */
 private fun ordinal(n: Int): String =
     when (n) {
@@ -247,8 +318,17 @@ fun PasswordScreen(
                     BackButton(onBack)
                 },
                 actions = {
-                    if (playing != null && playing.game.isOver) {
+                    if (playing != null && playing.game.isOver && !playing.solving) {
                         ShareAction(ShareText.word(playing.game, day, interfaceLanguage))
+                    } else if (playing != null) {
+                        HelpAction(
+                            used = playing.game.hints.size,
+                            canHint = playing.game.nextHint != null,
+                            enabled = !playing.solving,
+                            solveWarning = stringResource(R.string.solve_word_warning),
+                            onHint = model::takeHint,
+                            onSolve = model::solve,
+                        )
                     }
                 },
             )
@@ -269,7 +349,7 @@ fun PasswordScreen(
                         Keyboard(
                             language = language,
                             marks = current.game.letterMarks,
-                            enabled = !current.game.isOver,
+                            enabled = !current.game.isOver && !current.solving,
                             onLetter = model::type,
                             onDelete = model::deleteLetter,
                             onClear = model::clearLetters,
@@ -322,18 +402,25 @@ private fun spokenLetter(
 
 @Composable
 private fun GuessGrid(game: WordGame) {
-    val marks = game.marks
+    // The rows marked so far: the guesses, then the answer once it was solved for the player.
+    val rows = if (game.gaveUp) game.guesses + game.puzzle.answer else game.guesses
+    val marks = rows.map { WordGame.marks(it, game.puzzle.answer) }
+    val pencilled = if (game.isOver) emptyMap() else game.pencilled
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         for (row in 0 until WordGame.MAX_GUESSES) {
             val text =
                 when {
-                    row < game.guesses.size -> game.guesses[row]
-                    row == game.guesses.size -> game.current
+                    row < rows.size -> rows[row]
+                    row == rows.size -> game.current
                     else -> ""
                 }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (column in 0 until game.puzzle.n) {
-                    LetterCell(text.getOrNull(column), marks.getOrNull(row)?.getOrNull(column))
+                    LetterCell(
+                        text.getOrNull(column),
+                        marks.getOrNull(row)?.getOrNull(column),
+                        if (row == rows.size) pencilled[column] else null,
+                    )
                 }
             }
         }
@@ -344,13 +431,19 @@ private fun GuessGrid(game: WordGame) {
 private fun LetterCell(
     letter: Char?,
     mark: LetterMark?,
+    /** A hinted letter, pencilled in until a typed letter covers it. */
+    hint: Char?,
 ) {
+    val pencilled = if (letter == null) hint else null
     val colors = mark?.colors()
-    val description = spokenLetter(letter, mark)
+    val description =
+        if (pencilled != null) stringResource(R.string.hinted_letter, pencilled.uppercaseChar().toString()) else spokenLetter(letter, mark)
     val shape = RoundedCornerShape(8.dp)
+    val primary = MaterialTheme.colorScheme.primary
     val border =
         when {
             colors != null -> Color.Transparent
+            pencilled != null -> primary.copy(alpha = 0.6f)
             mark == LetterMark.ABSENT || letter == null -> MaterialTheme.colorScheme.outlineVariant
             else -> MaterialTheme.colorScheme.outline
         }
@@ -358,17 +451,21 @@ private fun LetterCell(
         Modifier
             .size(52.dp)
             .background(colors?.first ?: Color.Transparent, shape)
-            .border(2.dp, border, shape)
+            .then(if (pencilled != null) Modifier.dashedBorder(border, shape) else Modifier.border(2.dp, border, shape))
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            letter?.uppercaseChar()?.toString().orEmpty(),
+            (letter ?: pencilled)?.uppercaseChar()?.toString().orEmpty(),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color =
-                colors?.second
-                    ?: if (mark == LetterMark.ABSENT) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                when {
+                    colors != null -> colors.second
+                    pencilled != null -> primary.copy(alpha = 0.45f)
+                    mark == LetterMark.ABSENT -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
         )
     }
 }

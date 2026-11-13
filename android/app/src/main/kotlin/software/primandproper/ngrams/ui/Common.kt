@@ -21,9 +21,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Support
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Support
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,13 +40,24 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -47,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
@@ -131,6 +150,82 @@ fun StreakBadge(streak: Int) {
             Icon(Icons.Filled.LocalFireDepartment, contentDescription = null, tint = StarColor, modifier = Modifier.padding(end = 2.dp))
             Text("$streak", color = StarColor, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+/** A dashed border in [shape], drawn over the content, for what a hint has marked. */
+fun Modifier.dashedBorder(
+    color: Color,
+    shape: Shape,
+    width: Dp = 2.dp,
+    dash: Dp = 5.dp,
+    gap: Dp = 4.dp,
+): Modifier =
+    drawWithContent {
+        drawContent()
+        val stroke = width.toPx()
+        val outline = shape.createOutline(Size(size.width - stroke, size.height - stroke), layoutDirection, this)
+        translate(stroke / 2, stroke / 2) {
+            drawOutline(
+                outline,
+                color,
+                style = Stroke(stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash.toPx(), gap.toPx()))),
+            )
+        }
+    }
+
+/** A game's help button: Hint, and Solve behind a confirmation that says what solving costs. */
+@Composable
+fun HelpAction(
+    /** Hints taken so far. */
+    used: Int,
+    /** Whether a hint has anything left to reveal. */
+    canHint: Boolean,
+    enabled: Boolean,
+    /** What solving costs, said before the player confirms. */
+    solveWarning: String,
+    onHint: () -> Unit,
+    onSolve: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }, enabled = enabled, modifier = Modifier.testTag("help")) {
+            Icon(if (used == 0) Icons.Outlined.Support else Icons.Filled.Support, contentDescription = stringResource(R.string.help))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(if (used == 0) stringResource(R.string.hint) else pluralStringResource(R.plurals.hint_used, used, used)) },
+                leadingIcon = { Icon(Icons.Outlined.Lightbulb, contentDescription = null) },
+                enabled = canHint,
+                onClick = {
+                    open = false
+                    onHint()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.solve_menu)) },
+                leadingIcon = { Icon(Icons.Filled.AutoFixHigh, contentDescription = null) },
+                onClick = {
+                    open = false
+                    confirming = true
+                },
+            )
+        }
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.solve_title)) },
+            text = { Text(solveWarning) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirming = false
+                    onSolve()
+                }) { Text(stringResource(R.string.solve)) }
+            },
+            dismissButton = { TextButton(onClick = { confirming = false }) { Text(stringResource(android.R.string.cancel)) } },
+        )
     }
 }
 

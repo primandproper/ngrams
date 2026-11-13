@@ -149,4 +149,19 @@
     <string name="credit_source">This app\'s source and puzzle bank.</string>
     <string name="license_public_domain">Public domain</string>
     <string name="license_source">MIT, puzzles CC BY-SA 4.0</string>
+    <string name="help">Help</string>
+    <string name="hint">Hint</string>
+    <plurals name="hint_used">
+        <item quantity="one">Hint (%d used)</item>
+        <item quantity="other">Hint (%d used)</item>
+    </plurals>
+    <string name="solve_menu">Solve…</string>
+    <string name="solve_title">Solve this puzzle?</string>
+    <string name="solve">Solve</string>
+    <string name="solve_word_warning">Solving counts as a loss and ends your streak.</string>
+    <string name="solve_board_warning">Solving gives up the star.</string>
+    <string name="couldnt_save_progress">Couldn\'t save your progress</string>
+    <string name="hinted_letter">Hint: %1$s</string>
+    <string name="hinted_tile">Hinted</string>
+    <string name="clue">%1$s… · %2$d letters</string>
 </resources>

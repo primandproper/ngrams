@@ -198,6 +198,21 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   finish it as found and moves to Completed on home without a star. Each game's hints and
   solving are its own issue on epic #12; the epic records why the star, not the streak, pays
   for a solve (2026-11-03).
+- Every game's toolbar has a help button (Hint, and Solve… behind a confirmation saying what
+  solving costs) while the puzzle is in play: until a Password puzzle or a `tiles` board is
+  over, and until a `pangram` board has its star. Which hint comes next and what Solve finds
+  are game rules, so `testdata/help.json` holds both apps to them (2026-11-13).
+  - Password: a hint pencils the leftmost unknown letter (not shown correct, not hinted) into
+    its spot in the row being typed, dashed, and typing covers it; it's saved as the spot.
+    Solve clears the row, types the answer, and shows it as a final row, all correct, though
+    it isn't saved as a guess.
+  - `tiles`: a hint rings the next tile of an unfound target in the target's order, stopping a
+    tile short of the whole target before moving to the next one; it's saved as the tile, and
+    rings clear when their target is found. Solve builds each unfound target a tile at a time.
+  - `pangram`: a hint adds a chip with an unfound word's first two letters and length
+    ("PL… · 6 letters"), common pangrams first, then by points; it's saved as the word, and the
+    chip goes when the word is found. Solve spells common pangrams, then the highest scoring
+    words, until the board has its pangrams and target score.
 
 ## Languages
 

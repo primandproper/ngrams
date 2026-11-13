@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@… · %lld letters" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@… · %2$lld letras"
+          }
+        }
+      }
+    },
     "/ %lld" : {
       "shouldTranslate" : false
     },
@@ -600,6 +610,16 @@
         }
       }
     },
+    "Couldn't save your progress" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar tu progreso"
+          }
+        }
+      }
+    },
     "Current word" : {
       "localizations" : {
         "es" : {
@@ -766,6 +786,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modo difícil"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda"
+          }
+        }
+      }
+    },
+    "Hint" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pista"
+          }
+        }
+      }
+    },
+    "Hint (%lld used)" : {
+      "localizations" : {
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usadas)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usada)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pista (%lld usadas)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Hint: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pista: %@"
+          }
+        }
+      }
+    },
+    "Hinted" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con pista"
           }
         }
       }
@@ -969,6 +1057,26 @@
         }
       }
     },
+    "Solve" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolver"
+          }
+        }
+      }
+    },
+    "Solve this puzzle?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Resolver este reto?"
+          }
+        }
+      }
+    },
     "Solved in %lld guesses" : {
       "localizations" : {
         "en" : {
@@ -1011,6 +1119,36 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Solve…" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolver…"
+          }
+        }
+      }
+    },
+    "Solving counts as a loss and ends your streak." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolverlo cuenta como derrota y termina tu racha."
+          }
+        }
+      }
+    },
+    "Solving gives up the star." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolverlo te quita la estrella."
           }
         }
       }

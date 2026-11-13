@@ -83,6 +83,25 @@ nonisolated struct TilesGame: Sendable {
     !gaveUp && allTargetsFound && score >= puzzle.targetScore
   }
 
+  /// Whether finding every target still unfound would earn the star: the score so far, those
+  /// targets' points, and the bonus reach the target score. It never turns false while targets
+  /// are left, since finding one moves its points from what's left into the score.
+  var targetsEarnStar: Bool {
+    guard !gaveUp, !allTargetsFound else {
+      return false
+    }
+    let solved = Set(solvedTargets)
+    let left = puzzle.targets.indices.filter { !solved.contains($0) }.reduce(0) { sum, target in
+      sum + (words[targetText(target)]?.points ?? 0)
+    }
+    return score + left + puzzle.bonus >= puzzle.targetScore
+  }
+
+  /// A target's folded spelling: its tiles joined in order.
+  func targetText(_ target: Int) -> String {
+    puzzle.targets[target].map { puzzle.tiles[$0] }.joined()
+  }
+
   /// Whether an unfound word can still be spelled from the tiles left on the board. Once solved
   /// tiles leave, finding every target leaves none.
   var hasWordsLeft: Bool {

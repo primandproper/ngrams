@@ -680,6 +680,16 @@
         }
       }
     },
+    "Every target now earns the star" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrar todos los objetivos ya te da la estrella"
+          }
+        }
+      }
+    },
     "Find every pangram for the star" : {
       "localizations" : {
         "es" : {

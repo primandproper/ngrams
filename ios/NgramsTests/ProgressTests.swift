@@ -133,10 +133,34 @@ struct TilesSessionTests {
     session.tap(1)
     session.submit()
 
-    #expect(session.feedback?.kind == .found(smallPuzzle.words[2]))
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[2], targetsEarnStar: false))
     #expect(try store.entries(for: key) == ["abcd"])
     let restored = self.session(store)
     #expect(restored.game.foundWords == ["abcd"])
+  }
+
+  @Test("says so once the targets left would earn the star")
+  func targetsEarnStar() throws {
+    let puzzle = TilesPuzzle(
+      language: .en, n: 2, tiles: smallPuzzle.tiles, targets: smallPuzzle.targets, bonus: 40,
+      targetScore: 46, words: smallPuzzle.words, blocked: [])
+    let session = TilesSession(
+      puzzle: puzzle, day: testDay, solvedTilesLeave: false,
+      store: ProgressStore(context: try inMemoryContext(), observer: recordingObserver("test")),
+      observer: recordingObserver("test"))
+
+    session.tap(0)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[0], targetsEarnStar: false))
+
+    session.tap(2)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[1], targetsEarnStar: true))
+
+    session.tap(0)
+    session.tap(1)
+    session.submit()
+    #expect(session.feedback?.kind == .found(smallPuzzle.words[2], targetsEarnStar: false))
   }
 
   @Test("puts solved targets first on the board")

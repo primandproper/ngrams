@@ -74,6 +74,8 @@ import kotlin.math.roundToInt
 data class Feedback(
     @StringRes val message: Int,
     val args: List<Any> = emptyList(),
+    /** How long it shows, in milliseconds. */
+    val showFor: Long = 1_500,
     val id: Long = System.nanoTime(),
 )
 
@@ -110,7 +112,7 @@ fun BoxScope.FeedbackHost(
         if (feedback != null) {
             host.currentSnackbarData?.dismiss()
             val message = context.getString(feedback.message, *feedback.args.toTypedArray())
-            withTimeoutOrNull(1_500) { host.showSnackbar(message) }
+            withTimeoutOrNull(feedback.showFor) { host.showSnackbar(message) }
             onShown(feedback)
         }
     }
@@ -160,7 +162,8 @@ fun ScoreHeader(
     target: Int,
     progress: String,
     earnedStar: Boolean,
-    missing: String,
+    /** Why the star is still missing, or null when there's nothing to say yet. */
+    missing: String?,
     ended: String? = null,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -183,7 +186,7 @@ fun ScoreHeader(
             }
         } else if (ended != null) {
             Text(ended, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        } else if (score >= target) {
+        } else if (missing != null) {
             Text(missing, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }

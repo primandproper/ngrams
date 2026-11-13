@@ -87,7 +87,7 @@ struct TilesView: View {
       if let feedback = session.feedback {
         FeedbackBanner(feedback: feedback)
           .task(id: feedback.id) {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: .seconds(feedback.kind.isStarNotice ? 3 : 1.5))
             withAnimation(theme.animation.normal) { session.dismissFeedback(feedback) }
           }
           .transition(.move(edge: .top).combined(with: .opacity))
@@ -159,7 +159,7 @@ private struct ScoreHeader: View {
         Text("No words left")
           .font(.subheadline)
           .foregroundStyle(.secondary)
-      } else if game.score >= game.puzzle.targetScore {
+      } else if game.targetsEarnStar {
         Text("Find every target for the star")
           .font(.subheadline)
           .foregroundStyle(.secondary)
@@ -264,21 +264,37 @@ private struct FoundWords: View {
   }
 }
 
+extension TilesSession.Feedback.Kind {
+  /// Whether this feedback also says the targets left would earn the star.
+  var isStarNotice: Bool {
+    if case .found(_, targetsEarnStar: true) = self {
+      return true
+    }
+    return false
+  }
+}
+
 private struct FeedbackBanner: View {
   let feedback: TilesSession.Feedback
 
   var body: some View {
-    Text(message)
-      .font(.subheadline.weight(.semibold))
-      .padding(.horizontal, 16)
-      .padding(.vertical, 8)
-      .background(.thinMaterial, in: .capsule)
-      .padding(.top, 8)
+    VStack(spacing: 2) {
+      Text(message)
+      if feedback.kind.isStarNotice {
+        Text("Every target now earns the star")
+      }
+    }
+    .font(.subheadline.weight(.semibold))
+    .multilineTextAlignment(.center)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 8)
+    .background(.thinMaterial, in: .capsule)
+    .padding(.top, 8)
   }
 
   private var message: String {
     switch feedback.kind {
-    case .found(let word): "\(word.shown) +\(word.points)"
+    case .found(let word, _): "\(word.shown) +\(word.points)"
     case .alreadyFound(let word): String(localized: "Already found \(word.shown)")
     case .blocked: String(localized: "How dare you")
     case .notAWord(let text): String(localized: "\(text) isn't on the list")

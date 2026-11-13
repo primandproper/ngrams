@@ -84,6 +84,7 @@
     <string name="clear">Limpiar</string>
     <string name="submit">Enviar</string>
     <string name="tiles_star_missing">Encuentra todos los objetivos para ganar la estrella</string>
+    <string name="word_points_targets_earn_star">%1$s +%2$d\nEncontrar todos los objetivos ya te da la estrella</string>
     <string name="tiles_no_words_left">No quedan palabras</string>
     <plurals name="targets_progress">
         <item quantity="one">%1$d de %2$d objetivo</item>

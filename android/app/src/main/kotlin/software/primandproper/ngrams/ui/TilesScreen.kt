@@ -185,7 +185,16 @@ class TilesViewModel(
         val (game, submission) = playing.game.submit()
         val feedback =
             when (submission) {
-                is TilesSubmission.Found -> Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
+                is TilesSubmission.Found ->
+                    if (!playing.game.targetsEarnStar && game.targetsEarnStar) {
+                        Feedback(
+                            R.string.word_points_targets_earn_star,
+                            listOf(submission.word.shown, submission.word.points),
+                            showFor = 3_000,
+                        )
+                    } else {
+                        Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
+                    }
                 is TilesSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
                 is TilesSubmission.Blocked -> Feedback(R.string.how_dare_you)
                 is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text))
@@ -309,7 +318,7 @@ private fun Board(
                     game.puzzle.targets.size,
                 ),
             earnedStar = game.earnedStar,
-            missing = stringResource(R.string.tiles_star_missing),
+            missing = stringResource(R.string.tiles_star_missing).takeIf { game.targetsEarnStar },
             ended = if (game.hasWordsLeft) null else stringResource(R.string.tiles_no_words_left),
         )
         if (game.solvedTilesLeave) {

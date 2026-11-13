@@ -98,6 +98,7 @@ class SharedFixturesTest {
             assertEquals(case["allTargetsFound"].jsonPrimitive.boolean, game.allTargetsFound, label)
             assertEquals(case["earnedStar"].jsonPrimitive.boolean, game.earnedStar, label)
             assertEquals(case["isOver"].jsonPrimitive.boolean, game.isOver, label)
+            assertEquals(case["targetsEarnStar"].jsonPrimitive.boolean, game.targetsEarnStar, label)
         }
         for (case in fixture.getValue("submissions").jsonArray) {
             var game = TilesGame(puzzle(case), case["found"].strings, case["solvedTilesLeave"].jsonPrimitive.boolean)

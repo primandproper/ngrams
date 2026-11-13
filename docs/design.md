@@ -89,7 +89,11 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   (about 1 in 300 at N=4, so microseconds), seeding the first by board so it's stable across
   launches. Shuffle redraws the unsolved tiles; solving a target leaves the rest to slide up
   as in the original.
-- A board's star takes every target and the target score.
+- A board's star takes every target and the target score. The word that first makes the
+  targets still unfound enough for the star (the score so far, their points, and the bonus
+  reach the target score) says so in its banner ("Every target now earns the star"), and the
+  header says "Find every target for the star" from then on. It matters most in hard mode,
+  where the points beyond the targets have to come before the last one (2026-11-13).
 - As in the original, a found target's tiles lock into a row at the top of the board and stay
   usable in other words. A "hard mode" setting takes them off the board instead. Since
   every tile belongs to a target, finishing the last target empties the board, so in hard mode

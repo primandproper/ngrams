@@ -85,6 +85,7 @@ struct SharedFixturesTests {
       #expect(game.allTargetsFound == testCase["allTargetsFound"] as? Bool, "\(found)")
       #expect(game.earnedStar == testCase["earnedStar"] as? Bool, "\(found)")
       #expect(game.isOver == testCase["isOver"] as? Bool, "\(found) leave=\(solvedTilesLeave)")
+      #expect(game.targetsEarnStar == testCase["targetsEarnStar"] as? Bool, "\(found)")
     }
     for testCase in try cases(fixture, "submissions") {
       let found = try #require(testCase["found"] as? [String])

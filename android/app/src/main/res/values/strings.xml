@@ -84,6 +84,7 @@
     <string name="clear">Clear</string>
     <string name="submit">Submit</string>
     <string name="tiles_star_missing">Find every target for the star</string>
+    <string name="word_points_targets_earn_star">%1$s +%2$d\nEvery target now earns the star</string>
     <string name="tiles_no_words_left">No words left</string>
     <plurals name="targets_progress">
         <item quantity="one">%1$d of %2$d target</item>

@@ -330,7 +330,7 @@ private fun Board(
             target = game.puzzle.targetScore,
             progress = pangramCount(game),
             earnedStar = game.earnedStar,
-            missing = stringResource(R.string.pangram_star_missing),
+            missing = stringResource(R.string.pangram_star_missing).takeIf { game.score >= game.puzzle.targetScore },
         )
         CurrentWord(game)
         LetterWheel(game.puzzle.center, playing.outer, model::type)

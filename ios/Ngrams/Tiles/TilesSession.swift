@@ -12,7 +12,9 @@ import protocol Observability.Observer
 final class TilesSession {
   struct Feedback: Equatable, Identifiable {
     enum Kind: Equatable {
-      case found(TilesWord)
+      /// `targetsEarnStar` is true for the word that first makes the targets left enough for the
+      /// star.
+      case found(TilesWord, targetsEarnStar: Bool)
       case alreadyFound(TilesWord)
       case blocked
       case notAWord(String)
@@ -95,6 +97,7 @@ final class TilesSession {
   }
 
   func submit() {
+    let targetsEarnedStar = game.targetsEarnStar
     switch game.submit() {
     case .empty:
       return
@@ -106,7 +109,8 @@ final class TilesSession {
       logger.debug("spelled a blocked word")
       feedback = Feedback(kind: .blocked)
     case .found(let word):
-      feedback = Feedback(kind: .found(word))
+      feedback = Feedback(
+        kind: .found(word, targetsEarnStar: !targetsEarnedStar && game.targetsEarnStar))
       do {
         let (stretches, now) = timer.entry(completing: game.isOver)
         try store.append(

@@ -13,6 +13,7 @@
     <string name="star_earned">Star earned</string>
     <string name="enter">Enter</string>
     <string name="delete">Delete</string>
+    <string name="clear_row">Clear row</string>
     <string name="shuffle">Shuffle</string>
     <string name="current_word">Current word %s</string>
     <string name="already_found">Already found %s</string>

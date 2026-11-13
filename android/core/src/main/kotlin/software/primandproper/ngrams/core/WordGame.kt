@@ -112,6 +112,8 @@ class WordGame private constructor(
 
     fun deleteLetter(): WordGame = if (current.isEmpty()) this else copy(current = current.dropLast(1))
 
+    fun clearLetters(): WordGame = if (current.isEmpty()) this else copy(current = "")
+
     /** Checks the typed letters against [list]. A guess the list rejects stays typed, so it can be corrected. */
     fun submit(list: GuessList): Submitted {
         if (isOver) {

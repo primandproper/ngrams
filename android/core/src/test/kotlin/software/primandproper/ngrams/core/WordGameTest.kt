@@ -126,6 +126,14 @@ class WordGameTest {
     }
 
     @Test
+    fun `clears the row being typed, keeping the guesses`() {
+        val game = WordGame(wordPuzzle, listOf("plaza")).typed("lla").clearLetters()
+
+        assertEquals("", game.current)
+        assertEquals(listOf("plaza"), game.guesses)
+    }
+
+    @Test
     fun `types at most n letters`() {
         assertEquals("llama", WordGame(wordPuzzle).typed("llamas").current)
     }

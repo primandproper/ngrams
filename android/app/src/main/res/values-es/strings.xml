@@ -9,6 +9,7 @@
     <string name="star_earned">Estrella ganada</string>
     <string name="enter">Enviar</string>
     <string name="delete">Borrar</string>
+    <string name="clear_row">Borrar la fila</string>
     <string name="shuffle">Revolver</string>
     <string name="current_word">Palabra actual %s</string>
     <string name="already_found">Ya encontraste %s</string>

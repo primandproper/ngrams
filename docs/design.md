@@ -58,6 +58,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   plurals and conjugations included. A blocked word gets "How dare you", as in `tiles`.
 - The app has its own keyboard; the Spanish one adds Ñ. A lost puzzle shows the answer with
   its accents.
+- Holding Delete clears the row being typed. Tapping a cell to retype just that letter was
+  considered and rejected: it makes cycling one spot through the alphabet cheap, which helps
+  brute force a word more than it helps fix a typo (2026-11-13).
 - Solving earns the star. A puzzle is completed once it's over, won or lost, and its row
   shows the guesses used ("4/6", "X/6").
 - A "hard mode" setting makes every guess use the hints so far, by the original's rule: a

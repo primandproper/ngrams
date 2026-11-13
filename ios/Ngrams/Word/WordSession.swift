@@ -69,6 +69,10 @@ final class WordSession {
     game.deleteLetter()
   }
 
+  func clearLetters() {
+    game.clearLetters()
+  }
+
   func submit() {
     switch game.submit(against: list) {
     case .over:

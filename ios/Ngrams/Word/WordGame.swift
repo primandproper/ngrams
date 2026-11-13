@@ -127,6 +127,10 @@ nonisolated struct WordGame: Sendable {
     }
   }
 
+  mutating func clearLetters() {
+    current = ""
+  }
+
   /// Checks the typed letters against `list`. A guess the list rejects stays typed, so it can
   /// be corrected.
   mutating func submit(against list: GuessList) -> Submission {

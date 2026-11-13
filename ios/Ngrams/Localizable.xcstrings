@@ -520,6 +520,16 @@
         }
       }
     },
+    "Clear row" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar la fila"
+          }
+        }
+      }
+    },
     "Completed" : {
       "localizations" : {
         "es" : {
@@ -746,6 +756,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modo difícil"
+          }
+        }
+      }
+    },
+    "Hold to clear the row" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén presionado para borrar la fila"
           }
         }
       }

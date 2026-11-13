@@ -141,6 +141,17 @@ struct WordGameTests {
     #expect(!easy.isRuledOut("p"))
   }
 
+  @Test("clears the row being typed, keeping the guesses")
+  func clearsRow() {
+    var game = WordGame(puzzle: wordPuzzle, guesses: ["plaza"])
+    typed("lla", into: &game)
+
+    game.clearLetters()
+
+    #expect(game.current.isEmpty)
+    #expect(game.guesses == ["plaza"])
+  }
+
   @Test("types at most n letters")
   func capsTyping() {
     var game = WordGame(puzzle: wordPuzzle)

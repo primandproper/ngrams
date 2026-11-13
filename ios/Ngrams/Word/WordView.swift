@@ -70,7 +70,8 @@ struct WordView: View {
       Keyboard(
         language: session.game.puzzle.language, marks: session.game.letterMarks,
         disabled: session.game.isOver,
-        onLetter: session.type, onDelete: session.deleteLetter, onEnter: session.submit)
+        onLetter: session.type, onDelete: session.deleteLetter, onClear: session.clearLetters,
+        onEnter: session.submit)
     }
     .padding()
     .onChange(of: session.game.isOver) { wasOver, isOver in
@@ -243,6 +244,7 @@ private struct Keyboard: View {
   let disabled: Bool
   let onLetter: (Character) -> Void
   let onDelete: () -> Void
+  let onClear: () -> Void
   let onEnter: () -> Void
 
   private var rows: [[Character]] {
@@ -263,6 +265,9 @@ private struct Keyboard: View {
           }
           if index == rows.count - 1 {
             ActionKey(title: "Delete", systemImage: "delete.left", action: onDelete)
+              .simultaneousGesture(LongPressGesture().onEnded { _ in onClear() })
+              .accessibilityHint("Hold to clear the row")
+              .accessibilityAction(named: "Clear row", onClear)
           }
         }
       }

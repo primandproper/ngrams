@@ -142,7 +142,7 @@
     <string name="show_timer">Mostrar cronómetro</string>
     <string name="show_timer_footer">Los tiempos se guardan de todos modos, así que al volver a activarlo los verás todos.</string>
     <string name="acknowledgements">Créditos</string>
-    <string name="word_hard_mode_rule">Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí y las letras que están en la palabra aparecen en algún lado. Un reto conserva el modo que tenía en su primer intento.</string>
+    <string name="word_hard_mode_rule">Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento.</string>
     <string name="tiles_hard_mode_rule">Los objetivos encontrados salen del tablero, así que sus fichas no sirven para otras palabras. Encontrar el último objetivo termina el tablero.</string>
     <string name="pangram_hard_mode_rule">La primera palabra de un tablero tiene que ser un pangrama. Un tablero conserva el modo que tenía en su primera palabra.</string>
     <string name="word_lists">Listas de palabras</string>

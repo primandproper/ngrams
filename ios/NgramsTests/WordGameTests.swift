@@ -116,14 +116,29 @@ struct WordGameTests {
     typed("lolls", into: &game)
     #expect(game.submit(against: wordList) == .missingHint(.letter("a")))
 
-    // LOLLS finds an L in place and a second L that LOAMY leaves out.
+    // LOLLS finds an L in place and a second L that LUMPY leaves out.
     game = WordGame(puzzle: wordPuzzle, guesses: ["lolls"], hardMode: true)
-    typed("loamy", into: &game)
+    typed("lumpy", into: &game)
     #expect(game.submit(against: wordList) == .missingHint(.letter("l")))
 
     game = WordGame(puzzle: wordPuzzle, guesses: ["label"], hardMode: true)
     typed("llama", into: &game)
     #expect(game.submit(against: wordList) == .guessed("llama"))
+  }
+
+  @Test("keeps hard mode from typing a letter a guess showed absent")
+  func hardLocksAbsent() {
+    var game = WordGame(puzzle: wordPuzzle, guesses: ["plaza"], hardMode: true)
+    typed("zpl", into: &game)
+
+    #expect(game.current == "l")
+    #expect(game.isRuledOut("p"))
+    #expect(!game.isRuledOut("l"))
+
+    var easy = WordGame(puzzle: wordPuzzle, guesses: ["plaza"])
+    typed("zpl", into: &easy)
+    #expect(easy.current == "zpl")
+    #expect(!easy.isRuledOut("p"))
   }
 
   @Test("types at most n letters")

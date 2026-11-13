@@ -62,8 +62,10 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   shows the guesses used ("4/6", "X/6").
 - A "hard mode" setting makes every guess use the hints so far, by the original's rule: a
   correct letter stays in its spot, and a found letter appears at least as many times as any
-  earlier guess showed it. Absent letters stay allowed. A refused guess says which hint it
-  left out ("2nd letter must be R", "Guess must contain E").
+  earlier guess showed it. A refused guess says which hint it left out ("2nd letter must be
+  R", "Guess must contain E"). Unlike the original, hard mode also keeps a letter a guess
+  showed absent from being typed at all, so no guess can spend a turn on one. A letter absent
+  in one spot but found in another (a doubled letter) stays typeable (2026-11-13).
 
 ### `tiles`
 

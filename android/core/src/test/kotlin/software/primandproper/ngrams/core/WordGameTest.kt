@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class WordGameTest {
@@ -103,12 +104,25 @@ class WordGameTest {
         var game = WordGame(wordPuzzle, listOf("label"), hardMode = true).typed("lolls")
         assertEquals(Submission.MissingHint(Hint.Letter('a')), game.submit(wordList).submission)
 
-        // LOLLS finds an L in place and a second L that LOAMY leaves out.
-        game = WordGame(wordPuzzle, listOf("lolls"), hardMode = true).typed("loamy")
+        // LOLLS finds an L in place and a second L that LUMPY leaves out.
+        game = WordGame(wordPuzzle, listOf("lolls"), hardMode = true).typed("lumpy")
         assertEquals(Submission.MissingHint(Hint.Letter('l')), game.submit(wordList).submission)
 
         game = WordGame(wordPuzzle, listOf("label"), hardMode = true).typed("llama")
         assertEquals(Submission.Guessed("llama"), game.submit(wordList).submission)
+    }
+
+    @Test
+    fun `keeps hard mode from typing a letter a guess showed absent`() {
+        val game = WordGame(wordPuzzle, listOf("plaza"), hardMode = true)
+
+        assertEquals("l", game.typed("zpl").current)
+        assertTrue(game.isRuledOut('p'))
+        assertFalse(game.isRuledOut('l'))
+
+        val easy = WordGame(wordPuzzle, listOf("plaza"))
+        assertEquals("zpl", easy.typed("zpl").current)
+        assertFalse(easy.isRuledOut('p'))
     }
 
     @Test

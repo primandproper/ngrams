@@ -50,7 +50,7 @@ func tilesPuzzleJSON(
 let wordPuzzle = WordPuzzle(language: .en, n: 5, answer: "llama", display: nil)
 
 let wordList = GuessList(
-  accepted: ["llama", "label", "allay", "lolls", "loamy", "cramp", "plaza"], blocked: ["bitch"])
+  accepted: ["llama", "label", "allay", "lolls", "lumpy", "cramp", "plaza"], blocked: ["bitch"])
 
 /// A six-letter board centered on p, with one common pangram, "plaice", and one bonus pangram,
 /// "epical". "clip" is blocked.

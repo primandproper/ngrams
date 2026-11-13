@@ -660,12 +660,12 @@
         }
       }
     },
-    "Every guess uses the hints so far: letters in the right spot stay put and letters in the word appear somewhere. A puzzle keeps the mode it had at its first guess." : {
+    "Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere, and letters not in the word can't be typed. A puzzle keeps the mode it had at its first guess." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí y las letras que están en la palabra aparecen en algún lado. Un reto conserva el modo que tenía en su primer intento."
+            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento."
           }
         }
       }

@@ -165,7 +165,7 @@ class SharedFixturesTest {
     }
 
     @Test
-    fun `hints hard mode guesses the way the iOS app does`() {
+    fun `plays Password hard mode the way the iOS app does`() {
         val fixture = fixture("word_hints.json")
         val answer = fixture.getValue("answer").string
         val puzzle = WordPuzzle(Language.EN, answer.length, answer)
@@ -180,6 +180,14 @@ class SharedFixturesTest {
                     }
                 }
             assertEquals(expected, hint, "${case["guess"].string} after ${case["guesses"].strings}")
+        }
+        for (case in fixture.getValue("typing").jsonArray) {
+            val typed = case["typed"].string
+            var game = WordGame(puzzle, case["guesses"].strings, hardMode = case["hardMode"].jsonPrimitive.boolean)
+            for (letter in typed) {
+                game = game.type(letter)
+            }
+            assertEquals(case["current"].string, game.current, "'$typed' after ${case["guesses"].strings}")
         }
     }
 

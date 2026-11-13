@@ -109,8 +109,14 @@ nonisolated struct WordGame: Sendable {
     }
   }
 
+  /// Whether hard mode keeps `letter` from being typed: an earlier guess showed it isn't in the
+  /// answer anywhere.
+  func isRuledOut(_ letter: Character) -> Bool {
+    hardMode && letterMarks[letter] == .absent
+  }
+
   mutating func type(_ letter: Character) {
-    if !isOver, current.count < puzzle.n {
+    if !isOver, current.count < puzzle.n, !isRuledOut(letter) {
       current.append(letter)
     }
   }

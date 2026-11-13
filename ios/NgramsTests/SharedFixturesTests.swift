@@ -158,7 +158,7 @@ struct SharedFixturesTests {
     }
   }
 
-  @Test("hints hard mode guesses the way the Android app does")
+  @Test("plays Password hard mode the way the Android app does")
   func hints() throws {
     let fixture = try fixture("word_hints")
     let answer = try #require(fixture["answer"] as? String)
@@ -179,6 +179,16 @@ struct SharedFixturesTests {
         }
       let game = WordGame(puzzle: puzzle, guesses: guesses, hardMode: true)
       #expect(game.missingHint(in: guess) == expected, "\(guess) after \(guesses)")
+    }
+    for testCase in try cases(fixture, "typing") {
+      let guesses = try #require(testCase["guesses"] as? [String])
+      let typed = try #require(testCase["typed"] as? String)
+      var game = WordGame(
+        puzzle: puzzle, guesses: guesses, hardMode: try #require(testCase["hardMode"] as? Bool))
+      for letter in typed {
+        game.type(letter)
+      }
+      #expect(game.current == testCase["current"] as? String, "'\(typed)' after \(guesses)")
     }
   }
 

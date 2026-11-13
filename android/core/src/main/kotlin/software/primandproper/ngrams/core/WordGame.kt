@@ -104,7 +104,11 @@ class WordGame private constructor(
     /** Solves the puzzle for the player, as a loss. A puzzle that's over stays as it was. */
     fun giveUp(): WordGame = if (isOver) this else copy(current = "", gaveUp = true)
 
-    fun type(letter: Char): WordGame = if (!isOver && current.length < puzzle.n) copy(current = current + letter) else this
+    /** Whether hard mode keeps [letter] from being typed: an earlier guess showed it isn't in the answer anywhere. */
+    fun isRuledOut(letter: Char): Boolean = hardMode && letterMarks[letter] == LetterMark.ABSENT
+
+    fun type(letter: Char): WordGame =
+        if (!isOver && current.length < puzzle.n && !isRuledOut(letter)) copy(current = current + letter) else this
 
     fun deleteLetter(): WordGame = if (current.isEmpty()) this else copy(current = current.dropLast(1))
 

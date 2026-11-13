@@ -5,7 +5,7 @@ val wordPuzzle = WordPuzzle(Language.EN, 5, "llama")
 
 val wordList =
     GuessList(
-        accepted = setOf("llama", "label", "allay", "lolls", "loamy", "cramp", "plaza"),
+        accepted = setOf("llama", "label", "allay", "lolls", "lumpy", "cramp", "plaza"),
         blocked = setOf("bitch"),
     )
 

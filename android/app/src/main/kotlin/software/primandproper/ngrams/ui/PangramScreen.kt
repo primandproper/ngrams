@@ -1,5 +1,9 @@
 package software.primandproper.ngrams.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -39,7 +43,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +55,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -264,12 +274,12 @@ class PangramViewModel(
                         else -> Feedback(R.string.word_points, listOf(word.shown, word.points))
                     }
                 }
-                is PangramSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
-                PangramSubmission.TooShort -> Feedback(R.string.too_short)
-                PangramSubmission.MissingCenter -> Feedback(R.string.missing_center)
-                is PangramSubmission.Blocked -> Feedback(R.string.how_dare_you)
-                is PangramSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text.uppercase()))
-                PangramSubmission.NeedsPangram -> Feedback(R.string.needs_pangram)
+                is PangramSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown), rejected = true)
+                PangramSubmission.TooShort -> Feedback(R.string.too_short, rejected = true)
+                PangramSubmission.MissingCenter -> Feedback(R.string.missing_center, rejected = true)
+                is PangramSubmission.Blocked -> Feedback(R.string.how_dare_you, rejected = true)
+                is PangramSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text.uppercase()), rejected = true)
+                PangramSubmission.NeedsPangram -> Feedback(R.string.needs_pangram, rejected = true)
                 PangramSubmission.Empty -> null
             }
         val justFinished = !playing.game.earnedStar && game.earnedStar
@@ -391,6 +401,20 @@ private fun Board(
     model: PangramViewModel,
 ) {
     val game = playing.game
+    val haptics = rememberHaptics()
+    // Words rejected since the board opened, each of which shakes the current word.
+    var rejections by remember { mutableIntStateOf(0) }
+    // Full turns the ring has spun through, one per shuffle.
+    var spins by remember { mutableIntStateOf(0) }
+    OnChange(playing.feedback) { _, feedback ->
+        if (feedback?.rejected == true) {
+            rejections++
+            haptics(Haptic.ERROR)
+        }
+    }
+    OnChange(game.found.size) { old, new -> if (new > old && !playing.solving) haptics(Haptic.SUCCESS) }
+    OnChange(game.current) { old, new -> if (new.length > old.length && !playing.solving) haptics(Haptic.PICK) }
+    OnChange(game.hints.size) { old, new -> if (new > old) haptics(Haptic.HINT) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -403,16 +427,21 @@ private fun Board(
             earnedStar = game.earnedStar,
             missing = stringResource(R.string.pangram_star_missing).takeIf { game.score >= game.puzzle.targetScore },
         )
-        CurrentWord(game)
+        CurrentWord(game, Modifier.shake(rejections))
         Clues(game.clues)
-        LetterWheel(game.puzzle.center, playing.outer, model::type)
+        LetterWheel(game.puzzle.center, playing.outer, spins, model::type)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = model::deleteLetter, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) {
                 Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.delete))
             }
-            FilledTonalIconButton(onClick = model::shuffle) {
+            FilledTonalIconButton(onClick = {
+                if (!playing.solving) {
+                    spins++
+                    model.shuffle()
+                }
+            }) {
                 Icon(Icons.Filled.Shuffle, contentDescription = stringResource(R.string.shuffle))
             }
             Button(onClick = model::submit, enabled = game.current.isNotEmpty(), modifier = Modifier.weight(1f)) {
@@ -455,7 +484,10 @@ private fun Clues(words: List<PangramWord>) {
 }
 
 @Composable
-private fun CurrentWord(game: PangramGame) {
+private fun CurrentWord(
+    game: PangramGame,
+    modifier: Modifier,
+) {
     val currentWord = stringResource(R.string.current_word, game.current)
     val primary = MaterialTheme.colorScheme.primary
     Text(
@@ -473,7 +505,7 @@ private fun CurrentWord(game: PangramGame) {
         fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center,
         maxLines = 1,
-        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = currentWord },
+        modifier = modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = currentWord },
     )
 }
 
@@ -482,21 +514,52 @@ private val ringWidth = 90.dp
 private val wedgeGap = 6.dp
 private val wheelRadius = centerRadius + wedgeGap + ringWidth
 
+/** A spring that settles in about seven tenths of a second with a little overshoot, for the ring's spin. */
+private val ringSpring = spring<Float>(dampingRatio = 0.8f, stiffness = 80f)
+
 /**
  * The center letter in a circle, ringed by a wheel cut into a wedge per other letter, so every
  * board size gets the same shape. A tap anywhere in a wedge types its letter, and each letter is
- * also its own accessibility button.
+ * also its own accessibility button. A pressed wedge dips toward the center and darkens, and
+ * shuffling spins the ring [spins] full turns while the letters swing to their new places.
  */
 @Composable
 private fun LetterWheel(
     center: Char,
     outer: List<Char>,
+    spins: Int,
     onLetter: (Char) -> Unit,
 ) {
     val span = 360f / maxOf(outer.size, 1)
     val wedgeColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val centerColor = MaterialTheme.colorScheme.primary
     val centerLabel = stringResource(R.string.center_letter, center.uppercaseChar().toString())
+    val still = reduceMotion()
+    var pressed by remember { mutableStateOf<Char?>(null) }
+    val spin by animateFloatAsState(spins * 360f, ringSpring, label = "spin")
+    // How far each letter's wedge is pressed in, from 0 to 1.
+    val press =
+        (outer + center).associateWith { letter ->
+            key(letter) {
+                animateFloatAsState(
+                    if (pressed == letter) 1f else 0f,
+                    spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
+                    label = "press",
+                ).value
+            }
+        }
+    // Each letter's place on the ring, in degrees clockwise from the top, which swings when the letters swap.
+    val angles =
+        outer.withIndex().associate { (i, letter) ->
+            letter to key(letter) { animateFloatAsState(span * i, ringSpring, label = "letter").value }
+        }
+
+    fun dip(letter: Char) = if (still) 1f else 1f - 0.1f * press.getValue(letter)
+
+    fun shade(
+        color: Color,
+        letter: Char,
+    ) = lerp(color, Color.Black, 0.08f * press.getValue(letter))
 
     // The screenshot test waits for the wheel by this tag, whatever the language.
     Box(
@@ -504,18 +567,27 @@ private fun LetterWheel(
             .size(wheelRadius * 2)
             .testTag("wheel")
             .pointerInput(outer) {
-                detectTapGestures { tap ->
+                fun letterAt(tap: Offset): Char? {
                     val c = Offset(size.width / 2f, size.height / 2f)
                     val distance = hypot(tap.x - c.x, tap.y - c.y)
-                    when {
-                        distance <= centerRadius.toPx() -> onLetter(center)
+                    return when {
+                        distance <= centerRadius.toPx() -> center
                         distance <= wheelRadius.toPx() && outer.isNotEmpty() -> {
                             // Degrees clockwise from straight up, where the first wedge is centered.
                             val fromTop = (Math.toDegrees(atan2(tap.y - c.y, tap.x - c.x).toDouble()) + 90 + 360) % 360
-                            onLetter(outer[floor((fromTop + span / 2) / span).toInt() % outer.size])
+                            outer[floor((fromTop + span / 2) / span).toInt() % outer.size]
                         }
+                        else -> null
                     }
                 }
+                detectTapGestures(
+                    onPress = { tap ->
+                        pressed = letterAt(tap)
+                        tryAwaitRelease()
+                        pressed = null
+                    },
+                    onTap = { tap -> letterAt(tap)?.let(onLetter) },
+                )
             },
     ) {
         Canvas(Modifier.matchParentSize()) {
@@ -525,25 +597,26 @@ private fun LetterWheel(
             val gap = wedgeGap.toPx()
 
             fun inset(radius: Float) = Math.toDegrees(asin(gap / 2 / radius).toDouble()).toFloat()
-            for (i in outer.indices) {
-                val start = -90f + span * i - span / 2
+            for ((i, letter) in outer.withIndex()) {
+                val start = -90f + span * i - span / 2 + spin
                 val path =
                     Path().apply {
                         arcTo(Rect(c, outerRadius), start + inset(outerRadius), span - 2 * inset(outerRadius), forceMoveTo = true)
                         arcTo(Rect(c, inner), start + span - inset(inner), -(span - 2 * inset(inner)), forceMoveTo = false)
                         close()
                     }
-                drawPath(path, wedgeColor)
+                scale(dip(letter), pivot = c) { drawPath(path, shade(wedgeColor, letter)) }
             }
-            drawCircle(centerColor, centerRadius.toPx(), c)
+            drawCircle(shade(centerColor, center), centerRadius.toPx() * dip(center), c)
         }
-        LetterKey(center, Offset.Zero, MaterialTheme.colorScheme.onPrimary, centerLabel) { onLetter(center) }
-        for ((i, letter) in outer.withIndex()) {
-            val angle = Math.toRadians((-90.0 + span * i))
-            val reach = (wheelRadius - ringWidth / 2).value
+        LetterKey(center, Offset.Zero, dip(center), MaterialTheme.colorScheme.onPrimary, centerLabel) { onLetter(center) }
+        for (letter in outer) {
+            val angle = Math.toRadians(-90.0 + angles.getValue(letter) + spin)
+            val reach = (wheelRadius - ringWidth / 2).value * dip(letter)
             LetterKey(
                 letter,
                 Offset((reach * cos(angle)).toFloat(), (reach * sin(angle)).toFloat()),
+                dip(letter),
                 MaterialTheme.colorScheme.onSurface,
                 "${letter.uppercaseChar()}",
             ) { onLetter(letter) }
@@ -556,6 +629,7 @@ private fun LetterWheel(
 private fun BoxScope.LetterKey(
     letter: Char,
     offset: Offset,
+    scale: Float,
     color: Color,
     label: String,
     onClick: () -> Unit,
@@ -569,7 +643,10 @@ private fun BoxScope.LetterKey(
             Modifier
                 .align(Alignment.Center)
                 .offset(Dp(offset.x), Dp(offset.y))
-                .clearAndSetSemantics {
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }.clearAndSetSemantics {
                     contentDescription = label
                     role = Role.Button
                     onClick {
@@ -602,15 +679,27 @@ private fun FoundWords(
                 )
             }
         }
+        // Words found once the board is open pop in with a small bounce; the ones it opened with are just there.
+        val opened = remember { game.found.map { it.word }.toSet() }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // Common pangrams bold, bonus ones bold and italic.
             for (word in game.found(order)) {
-                FoundWord(
-                    word.shown,
-                    word.points,
-                    fontWeight = if (game.puzzle.isPangram(word.word)) FontWeight.Bold else FontWeight.Normal,
-                    italic = game.puzzle.isBonusPangram(word.word),
-                )
+                key(word.word) {
+                    val pop = remember { Animatable(if (word.word in opened) 1f else 0.2f) }
+                    LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) }
+                    FoundWord(
+                        word.shown,
+                        word.points,
+                        fontWeight = if (game.puzzle.isPangram(word.word)) FontWeight.Bold else FontWeight.Normal,
+                        italic = game.puzzle.isBonusPangram(word.word),
+                        modifier =
+                            Modifier.graphicsLayer {
+                                scaleX = pop.value
+                                scaleY = pop.value
+                                alpha = ((pop.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                            },
+                    )
+                }
             }
         }
     }

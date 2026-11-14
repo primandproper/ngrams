@@ -61,10 +61,12 @@ struct WordView: View {
 
   @Environment(\.dsTheme) private var theme
   @State private var showingStats = false
+  /// Guesses rejected since the view opened, each of which shakes the row being typed.
+  @State private var rejections = 0
 
   var body: some View {
     VStack(spacing: 16) {
-      GuessGrid(game: session.game)
+      GuessGrid(game: session.game, rejections: rejections)
       Spacer(minLength: 0)
       ResultLine(game: session.game)
       Keyboard(
@@ -74,6 +76,17 @@ struct WordView: View {
         onEnter: session.submit)
     }
     .padding()
+    .onChange(of: session.feedback) { _, feedback in
+      if feedback?.kind.isRejection == true {
+        rejections += 1
+      }
+    }
+    .sensoryFeedback(.error, trigger: rejections)
+    .sensoryFeedback(.success, trigger: solvedIn)
+    .sensoryFeedback(trigger: session.game.current) { old, new in
+      new.count > old.count && !session.solving ? .selection : nil
+    }
+    .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
     .onChange(of: session.finished) { wasFinished, finished in
       if !wasFinished, finished {
         Task {
@@ -127,7 +140,11 @@ struct WordView: View {
 }
 
 private struct GuessGrid: View {
+  /// The wait between one letter's flip and the next's.
+  static let flipStagger = 0.12
+
   let game: WordGame
+  let rejections: Int
 
   @Environment(\.dsTheme) private var theme
 
@@ -141,12 +158,28 @@ private struct GuessGrid: View {
           ForEach(0..<game.puzzle.n, id: \.self) { column in
             LetterCell(
               letter: letter(rows, row: row, column: column), mark: mark(marks, row, column),
-              hint: row == rows.count ? pencilled[column] : nil)
+              hint: row == rows.count ? pencilled[column] : nil,
+              flipDelay: Double(column) * Self.flipStagger
+            )
+            // The winning row hops once its last letter has turned over.
+            .hop(
+              on: row == wonRow ? 1 : 0,
+              delay: Double(game.puzzle.n) * Self.flipStagger + LetterCell.flipDuration
+                + Double(column) * 0.08)
           }
         }
+        .shake(on: rejections, active: row == rows.count)
       }
     }
     .animation(theme.animation.normal, value: rows)
+  }
+
+  /// The row that won the puzzle, if it was won.
+  private var wonRow: Int? {
+    if case .won(let guesses) = game.status {
+      return guesses - 1
+    }
+    return nil
   }
 
   /// The rows marked so far: the guesses, then the answer once it was solved for the player.
@@ -195,19 +228,38 @@ private struct LetterCell: View {
   /// Fits six cells across the narrowest supported phone.
   static let size: CGFloat = 52
 
+  /// How long a letter takes to turn over.
+  static let flipDuration = 0.36
+
   let letter: Character?
   /// Nil until the letter's guess is submitted.
   let mark: LetterMark?
   /// A hinted letter, pencilled in until a typed letter covers it.
   let hint: Character?
+  /// How long after its guess is submitted the letter starts to turn over.
+  let flipDelay: Double
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// The mark on show, which trails `mark` until the flip reaches its halfway turn. It starts
+  /// as `mark`, so a reopened puzzle's guesses don't flip.
+  @State private var shownMark: LetterMark?
+  @State private var angle = 0.0
+
+  init(letter: Character?, mark: LetterMark?, hint: Character?, flipDelay: Double) {
+    self.letter = letter
+    self.mark = mark
+    self.hint = hint
+    self.flipDelay = flipDelay
+    _shownMark = State(initialValue: mark)
+  }
 
   private var pencilled: Character? {
     letter == nil ? hint : nil
   }
 
   var body: some View {
+    let mark = shownMark
     let fill = mark?.fill(in: theme)
     Text((letter ?? pencilled).map { String($0).uppercased() } ?? " ")
       .font(.title.weight(.bold))
@@ -222,7 +274,34 @@ private struct LetterCell: View {
               style: StrokeStyle(lineWidth: 2, dash: pencilled == nil ? [] : [5, 4]))
         }
       }
+      .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0))
       .accessibilityLabel(accessibilityLabel)
+      .task(id: self.mark) { await reveal(self.mark) }
+  }
+
+  /// Shows a newly submitted mark: turns the letter edge on, swaps in the mark, and turns it
+  /// back, or fades the mark in with Reduce Motion on. Any other change shows at once.
+  private func reveal(_ mark: LetterMark?) async {
+    guard shownMark == nil, mark != nil else {
+      shownMark = mark
+      angle = 0
+      return
+    }
+    guard !reduceMotion else {
+      withAnimation(.easeInOut(duration: Self.flipDuration)) { shownMark = mark }
+      return
+    }
+    let half = Self.flipDuration / 2
+    do {
+      try await Task.sleep(for: .seconds(flipDelay))
+      withAnimation(.easeIn(duration: half)) { angle = 90 }
+      try await Task.sleep(for: .seconds(half))
+    } catch {
+      // Cancelled: the cell left the screen.
+      return
+    }
+    shownMark = mark
+    withAnimation(.easeOut(duration: half)) { angle = 0 }
   }
 
   private var accessibilityLabel: String {
@@ -236,7 +315,7 @@ private struct LetterCell: View {
   }
 
   private var foreground: Color {
-    switch mark {
+    switch shownMark {
     case .absent: theme.colors.textSecondary
     case .correct, .present: theme.colors.textOnPrimary
     case nil: theme.colors.textPrimary
@@ -244,7 +323,7 @@ private struct LetterCell: View {
   }
 
   private var border: Color {
-    if mark == .absent || letter == nil {
+    if shownMark == .absent || letter == nil {
       return theme.colors.border
     }
     return theme.colors.secondary
@@ -360,6 +439,16 @@ private struct ActionKey: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(title)
+  }
+}
+
+extension WordSession.Feedback.Kind {
+  /// Whether this feedback turns a guess away.
+  var isRejection: Bool {
+    switch self {
+    case .tooShort, .blocked, .notAWord, .missingHint: true
+    case .saveFailed, .helpSaveFailed, .loadFailed: false
+    }
   }
 }
 

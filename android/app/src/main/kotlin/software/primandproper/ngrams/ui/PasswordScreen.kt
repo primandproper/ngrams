@@ -1,6 +1,10 @@
 package software.primandproper.ngrams.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,13 +34,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -253,9 +260,9 @@ class PasswordViewModel(
 
     private fun feedback(submission: Submission): Feedback? =
         when (submission) {
-            Submission.TooShort -> Feedback(R.string.not_enough_letters)
-            is Submission.Blocked -> Feedback(R.string.how_dare_you)
-            is Submission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.guess.uppercase()))
+            Submission.TooShort -> Feedback(R.string.not_enough_letters, rejected = true)
+            is Submission.Blocked -> Feedback(R.string.how_dare_you, rejected = true)
+            is Submission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.guess.uppercase()), rejected = true)
             is Submission.MissingHint ->
                 when (val hint = submission.hint) {
                     // English spells the position as an ordinal and Spanish as a number, so both go along.
@@ -263,8 +270,9 @@ class PasswordViewModel(
                         Feedback(
                             R.string.hint_position,
                             listOf(ordinal(hint.index + 1), hint.index + 1, hint.letter.uppercaseChar().toString()),
+                            rejected = true,
                         )
-                    is Hint.Letter -> Feedback(R.string.hint_letter, listOf(hint.letter.uppercaseChar().toString()))
+                    is Hint.Letter -> Feedback(R.string.hint_letter, listOf(hint.letter.uppercaseChar().toString()), rejected = true)
                 }
             is Submission.Guessed, Submission.Over -> null
         }
@@ -299,6 +307,21 @@ fun PasswordScreen(
     val playing = state as? PasswordState.Playing
     var showingStats by rememberSaveable { mutableStateOf(false) }
     val interfaceLanguage = interfaceLanguage()
+    val haptics = rememberHaptics()
+    // Guesses rejected since the screen opened, each of which shakes the row being typed.
+    var rejections by remember { mutableIntStateOf(0) }
+
+    OnChange(playing?.feedback) { _, feedback ->
+        if (feedback?.rejected == true) {
+            rejections++
+            haptics(Haptic.ERROR)
+        }
+    }
+    OnChange(playing?.game?.status) { _, status -> if (status is Status.Won) haptics(Haptic.SUCCESS) }
+    OnChange(
+        playing?.game?.current.orEmpty(),
+    ) { old, new -> if (new.length > old.length && playing?.solving == false) haptics(Haptic.PICK) }
+    OnChange(playing?.game?.hints?.size ?: 0) { old, new -> if (new > old) haptics(Haptic.HINT) }
 
     LaunchedEffect(playing?.justFinished) {
         if (playing?.justFinished == true) {
@@ -342,7 +365,7 @@ fun PasswordScreen(
                 is PasswordState.Playing -> {
                     RunTimer(model.timer)
                     Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        GuessGrid(current.game)
+                        GuessGrid(current.game, rejections)
                         Spacer(Modifier.weight(1f))
                         ResultLine(current.game)
                         Spacer(Modifier.height(16.dp))
@@ -400,8 +423,19 @@ private fun spokenLetter(
     return letter?.let { it.uppercaseChar() + markText } ?: stringResource(R.string.empty_cell)
 }
 
+/** The wait between one letter's flip and the next's, in milliseconds. */
+private const val FLIP_STAGGER_MS = 120L
+
+/** How long a letter takes to turn over, in milliseconds. */
+private const val FLIP_MS = 360
+
 @Composable
-private fun GuessGrid(game: WordGame) {
+private fun GuessGrid(
+    game: WordGame,
+    /** Guesses rejected so far, which shake the row being typed. */
+    rejections: Int,
+) {
+    val wonRow = (game.status as? Status.Won)?.guesses?.minus(1)
     // The rows marked so far: the guesses, then the answer once it was solved for the player.
     val rows = if (game.gaveUp) game.guesses + game.puzzle.answer else game.guesses
     val marks = rows.map { WordGame.marks(it, game.puzzle.answer) }
@@ -414,12 +448,19 @@ private fun GuessGrid(game: WordGame) {
                     row == rows.size -> game.current
                     else -> ""
                 }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.shake(rejections, active = row == rows.size), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (column in 0 until game.puzzle.n) {
                     LetterCell(
                         text.getOrNull(column),
                         marks.getOrNull(row)?.getOrNull(column),
                         if (row == rows.size) pencilled[column] else null,
+                        flipDelayMillis = column * FLIP_STAGGER_MS,
+                        // The winning row hops once its last letter has turned over.
+                        modifier =
+                            Modifier.hop(
+                                if (row == wonRow) 1 else 0,
+                                delayMillis = game.puzzle.n * FLIP_STAGGER_MS + FLIP_MS + column * 80L,
+                            ),
                     )
                 }
             }
@@ -433,9 +474,28 @@ private fun LetterCell(
     mark: LetterMark?,
     /** A hinted letter, pencilled in until a typed letter covers it. */
     hint: Char?,
+    /** How long after its guess is submitted the letter starts to turn over. */
+    flipDelayMillis: Long,
+    modifier: Modifier = Modifier,
 ) {
+    // The mark on show trails [mark] until the flip reaches its halfway turn. It starts as [mark], so a reopened
+    // puzzle's guesses don't flip.
+    var shown by remember { mutableStateOf(mark) }
+    val turn = remember { Animatable(0f) }
+    val still = reduceMotion()
+    LaunchedEffect(mark) {
+        if (shown != null || mark == null || still) {
+            shown = mark
+            turn.snapTo(0f)
+            return@LaunchedEffect
+        }
+        delay(flipDelayMillis)
+        turn.animateTo(90f, tween(FLIP_MS / 2, easing = FastOutLinearInEasing))
+        shown = mark
+        turn.animateTo(0f, tween(FLIP_MS / 2, easing = LinearOutSlowInEasing))
+    }
     val pencilled = if (letter == null) hint else null
-    val colors = mark?.colors()
+    val colors = shown?.colors()
     val description =
         if (pencilled != null) stringResource(R.string.hinted_letter, pencilled.uppercaseChar().toString()) else spokenLetter(letter, mark)
     val shape = RoundedCornerShape(8.dp)
@@ -444,12 +504,16 @@ private fun LetterCell(
         when {
             colors != null -> Color.Transparent
             pencilled != null -> primary.copy(alpha = 0.6f)
-            mark == LetterMark.ABSENT || letter == null -> MaterialTheme.colorScheme.outlineVariant
+            shown == LetterMark.ABSENT || letter == null -> MaterialTheme.colorScheme.outlineVariant
             else -> MaterialTheme.colorScheme.outline
         }
     Box(
-        Modifier
+        modifier
             .size(52.dp)
+            .graphicsLayer {
+                rotationX = turn.value
+                cameraDistance = 12 * density
+            }
             .background(colors?.first ?: Color.Transparent, shape)
             .then(if (pencilled != null) Modifier.dashedBorder(border, shape) else Modifier.border(2.dp, border, shape))
             .semantics { contentDescription = description },
@@ -463,7 +527,7 @@ private fun LetterCell(
                 when {
                     colors != null -> colors.second
                     pencilled != null -> primary.copy(alpha = 0.45f)
-                    mark == LetterMark.ABSENT -> MaterialTheme.colorScheme.onSurfaceVariant
+                    shown == LetterMark.ABSENT -> MaterialTheme.colorScheme.onSurfaceVariant
                     else -> MaterialTheme.colorScheme.onSurface
                 },
         )

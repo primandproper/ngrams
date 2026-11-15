@@ -15,6 +15,17 @@ sealed interface Hint {
     data class Letter(
         val letter: Char,
     ) : Hint
+
+    /** A letter can't go back in a spot an earlier guess showed it isn't in, counted from zero. */
+    data class NotPosition(
+        val letter: Char,
+        val index: Int,
+    ) : Hint
+
+    /** A letter can't appear more often than an earlier guess showed the answer has it. */
+    data class TooMany(
+        val letter: Char,
+    ) : Hint
 }
 
 sealed interface Submission {
@@ -160,8 +171,9 @@ class WordGame private constructor(
     }
 
     /**
-     * The first hint [guess] leaves out: correct letters out of their spot first, then found
-     * letters it has too few copies of, both in the order they were revealed.
+     * The first hint [guess] breaks: correct letters out of their spot, then found letters it has
+     * too few copies of, then letters back in a spot ruled out for them, then letters past the
+     * count an earlier guess pinned down, each in the order they were revealed.
      */
     fun missingHint(guess: String): Hint? {
         val marks = marks
@@ -188,6 +200,27 @@ class WordGame private constructor(
         for (letter in guesses.joinToString("")) {
             if (guess.count { it == letter } < (required[letter] ?: 0)) {
                 return Hint.Letter(letter)
+            }
+        }
+
+        for ((previous, previousMarks) in guesses.zip(marks)) {
+            for ((i, mark) in previousMarks.withIndex()) {
+                if (mark != LetterMark.CORRECT && guess[i] == previous[i]) {
+                    return Hint.NotPosition(previous[i], i)
+                }
+            }
+        }
+
+        // A letter marked absent next to found copies of itself tells the answer's exact count.
+        for ((previous, previousMarks) in guesses.zip(marks)) {
+            val pairs = previous.toList().zip(previousMarks)
+            for ((letter, mark) in pairs) {
+                if (mark == LetterMark.ABSENT) {
+                    val most = pairs.count { (l, m) -> l == letter && m != LetterMark.ABSENT }
+                    if (guess.count { it == letter } > most) {
+                        return Hint.TooMany(letter)
+                    }
+                }
             }
         }
         return null

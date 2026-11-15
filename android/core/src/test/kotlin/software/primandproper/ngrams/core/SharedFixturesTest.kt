@@ -177,6 +177,8 @@ class SharedFixturesTest {
                 case["hint"].takeIf { it != JsonNull }?.let {
                     when (it["kind"].string) {
                         "position" -> Hint.Position(it["letter"].string.single(), it["index"].jsonPrimitive.int)
+                        "notPosition" -> Hint.NotPosition(it["letter"].string.single(), it["index"].jsonPrimitive.int)
+                        "tooMany" -> Hint.TooMany(it["letter"].string.single())
                         else -> Hint.Letter(it["letter"].string.single())
                     }
                 }

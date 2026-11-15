@@ -66,6 +66,9 @@
     <!-- %1$s is an English ordinal ("2nd"), %2$d the same position as a number, %3$s the letter. -->
     <string name="hint_position">%1$s letter must be %3$s</string>
     <string name="hint_letter">Guess must contain %s</string>
+    <!-- Same arguments as hint_position. -->
+    <string name="hint_not_position">%1$s letter can\'t be %3$s</string>
+    <string name="hint_too_many">Too many copies of %s</string>
     <string name="mark_correct">correct</string>
     <string name="mark_present">in the word</string>
     <string name="mark_absent">not in the word</string>
@@ -138,7 +141,7 @@
     <string name="show_timer">Show timer</string>
     <string name="show_timer_footer">Times are kept either way, so turning this back on shows them all.</string>
     <string name="acknowledgements">Acknowledgements</string>
-    <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere, and letters not in the word can\'t be typed. A puzzle keeps the mode it had at its first guess.</string>
+    <string name="word_hard_mode_rule">Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere but never back in a spot ruled out, no letter repeats more than the word allows, and letters not in the word can\'t be typed. A puzzle keeps the mode it had at its first guess.</string>
     <string name="tiles_hard_mode_rule">Found targets leave the board, so their tiles can\'t spell other words. Finding the last target ends the board.</string>
     <string name="pangram_hard_mode_rule">The first word on a board has to be a pangram. A board keeps the mode it had at its first word.</string>
     <string name="word_lists">Word lists</string>

@@ -473,6 +473,10 @@ private struct FeedbackBanner: View {
       String(localized: "\(ordinal(index + 1)) letter must be \(String(letter).uppercased())")
     case .missingHint(.letter(let letter)):
       String(localized: "Guess must contain \(String(letter).uppercased())")
+    case .missingHint(.notPosition(let letter, let index)):
+      String(localized: "\(ordinal(index + 1)) letter can't be \(String(letter).uppercased())")
+    case .missingHint(.tooMany(let letter)):
+      String(localized: "Too many copies of \(String(letter).uppercased())")
     case .saveFailed: String(localized: "Couldn't save that guess")
     case .helpSaveFailed: String(localized: "Couldn't save your progress")
     case .loadFailed: String(localized: "Couldn't load saved progress")

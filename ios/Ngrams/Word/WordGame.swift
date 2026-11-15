@@ -29,6 +29,10 @@ nonisolated struct WordGame: Sendable {
     case position(Character, Int)
     /// A found letter has to appear at least as often as an earlier guess showed it.
     case letter(Character)
+    /// A letter can't go back in a spot an earlier guess showed it isn't in, counted from zero.
+    case notPosition(Character, Int)
+    /// A letter can't appear more often than an earlier guess showed the answer has it.
+    case tooMany(Character)
   }
 
   enum Status: Equatable, Sendable {
@@ -183,8 +187,9 @@ nonisolated struct WordGame: Sendable {
     return .guessed(guess)
   }
 
-  /// The first hint `guess` leaves out: correct letters out of their spot first, then found
-  /// letters it has too few copies of, both in the order they were revealed.
+  /// The first hint `guess` breaks: correct letters out of their spot, then found letters it has
+  /// too few copies of, then letters back in a spot ruled out for them, then letters past the
+  /// count an earlier guess pinned down, each in the order they were revealed.
   func missingHint(in guess: String) -> Hint? {
     let letters = Array(guess)
     let marks = self.marks
@@ -206,6 +211,23 @@ nonisolated struct WordGame: Sendable {
     for letter in guesses.joined()
     where letters.count(where: { $0 == letter }) < required[letter, default: 0] {
       return .letter(letter)
+    }
+
+    for (previous, marks) in zip(guesses, marks) {
+      for (i, (letter, mark)) in zip(previous, marks).enumerated()
+      where mark != .correct && letters[i] == letter {
+        return .notPosition(letter, i)
+      }
+    }
+
+    // A letter marked absent next to found copies of itself tells the answer's exact count.
+    for (previous, marks) in zip(guesses, marks) {
+      for (letter, mark) in zip(previous, marks) where mark == .absent {
+        let most = zip(previous, marks).count(where: { $0.0 == letter && $0.1 != .absent })
+        if letters.count(where: { $0 == letter }) > most {
+          return .tooMany(letter)
+        }
+      }
     }
     return nil
   }

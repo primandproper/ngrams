@@ -47,6 +47,16 @@
         }
       }
     },
+    "%@ letter can't be %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La %1$@ letra no puede ser %2$@"
+          }
+        }
+      }
+    },
     "%@ letter must be %@" : {
       "localizations" : {
         "es" : {
@@ -690,12 +700,12 @@
         }
       }
     },
-    "Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere, and letters not in the word can't be typed. A puzzle keeps the mode it had at its first guess." : {
+    "Every guess uses the hints so far: letters in the right spot stay put, letters in the word appear somewhere but never back in a spot ruled out, no letter repeats more than the word allows, and letters not in the word can't be typed. A puzzle keeps the mode it had at its first guess." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento."
+            "value" : "Cada intento usa las pistas que llevas: las letras en su lugar se quedan ahí, las letras que están en la palabra aparecen en algún lado pero nunca donde ya se descartaron, ninguna letra se repite más de lo que la palabra permite y las que no están ya no se pueden escribir. Un reto conserva el modo que tenía en su primer intento."
           }
         }
       }
@@ -1339,6 +1349,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "Too many copies of %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demasiadas letras %@"
           }
         }
       }

@@ -273,6 +273,13 @@ class PasswordViewModel(
                             rejected = true,
                         )
                     is Hint.Letter -> Feedback(R.string.hint_letter, listOf(hint.letter.uppercaseChar().toString()), rejected = true)
+                    is Hint.NotPosition ->
+                        Feedback(
+                            R.string.hint_not_position,
+                            listOf(ordinal(hint.index + 1), hint.index + 1, hint.letter.uppercaseChar().toString()),
+                            rejected = true,
+                        )
+                    is Hint.TooMany -> Feedback(R.string.hint_too_many, listOf(hint.letter.uppercaseChar().toString()), rejected = true)
                 }
             is Submission.Guessed, Submission.Over -> null
         }

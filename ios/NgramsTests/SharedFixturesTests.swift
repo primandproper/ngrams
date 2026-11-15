@@ -170,10 +170,11 @@ struct SharedFixturesTests {
       let guess = try #require(testCase["guess"] as? String)
       let expected: WordGame.Hint? =
         if let hint = testCase["hint"] as? Object, let letter = (hint["letter"] as? String)?.first {
-          if hint["kind"] as? String == "position", let index = hint["index"] as? Int {
-            .position(letter, index)
-          } else {
-            .letter(letter)
+          switch (hint["kind"] as? String, hint["index"] as? Int) {
+          case ("position", let index?): .position(letter, index)
+          case ("notPosition", let index?): .notPosition(letter, index)
+          case ("tooMany", _): .tooMany(letter)
+          default: .letter(letter)
           }
         } else {
           nil

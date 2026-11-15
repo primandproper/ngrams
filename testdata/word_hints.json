@@ -1,10 +1,13 @@
 {
-  "description": "Password hard mode. cases: the first hint a guess leaves out after earlier guesses, or null when it uses them all. Correct letters out of their spot come first, then found letters with too few copies, both in the order revealed. typing: letters typed after earlier guesses and the row they leave. In hard mode a letter an earlier guess showed absent everywhere can't be typed; one absent in one spot but found in another still can.",
+  "description": "Password hard mode. cases: the first hint a guess leaves out after earlier guesses, or null when it uses them all. Correct letters out of their spot come first, then found letters with too few copies, then letters back in a spot an earlier guess ruled out for them, then letters past a count an earlier guess pinned down (a letter marked absent beside found copies of itself), each in the order revealed. typing: letters typed after earlier guesses and the row they leave. In hard mode a letter an earlier guess showed absent everywhere can't be typed; one absent in one spot but found in another still can.",
   "answer": "llama",
   "cases": [
     {"guesses": ["plaza"], "guess": "label", "hint": {"kind": "position", "letter": "l", "index": 1}},
     {"guesses": ["label"], "guess": "lolls", "hint": {"kind": "letter", "letter": "a"}},
     {"guesses": ["lolls"], "guess": "loamy", "hint": {"kind": "letter", "letter": "l"}},
+    {"guesses": ["label"], "guess": "lapel", "hint": {"kind": "notPosition", "letter": "a", "index": 1}},
+    {"guesses": ["label"], "guess": "lolal", "hint": {"kind": "notPosition", "letter": "l", "index": 4}},
+    {"guesses": ["lolls"], "guess": "llaml", "hint": {"kind": "tooMany", "letter": "l"}},
     {"guesses": ["label"], "guess": "llama", "hint": null},
     {"guesses": ["plaza"], "guess": "llama", "hint": null}
   ],

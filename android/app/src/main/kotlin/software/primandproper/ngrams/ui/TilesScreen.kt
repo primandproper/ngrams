@@ -1,12 +1,17 @@
 package software.primandproper.ngrams.ui
 
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -14,8 +19,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,12 +43,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -53,6 +66,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -261,9 +275,9 @@ class TilesViewModel(
                     } else {
                         Feedback(R.string.word_points, listOf(submission.word.shown, submission.word.points))
                     }
-                is TilesSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown))
-                is TilesSubmission.Blocked -> Feedback(R.string.how_dare_you)
-                is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text))
+                is TilesSubmission.AlreadyFound -> Feedback(R.string.already_found, listOf(submission.word.shown), rejected = true)
+                is TilesSubmission.Blocked -> Feedback(R.string.how_dare_you, rejected = true)
+                is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text), rejected = true)
                 TilesSubmission.Empty -> null
             }
         val justFinished = !playing.game.isOver && game.isOver
@@ -381,6 +395,18 @@ private fun Board(
 ) {
     val game = playing.game
     val currentWord = stringResource(R.string.current_word, game.selectedText)
+    val haptics = rememberHaptics()
+    // Words rejected since the board opened, each of which shakes the current word.
+    var rejections by remember { mutableIntStateOf(0) }
+    OnChange(playing.feedback) { _, feedback ->
+        if (feedback?.rejected == true) {
+            rejections++
+            haptics(Haptic.ERROR)
+        }
+    }
+    OnChange(game.found.size) { old, new -> if (new > old && !playing.solving) haptics(Haptic.SUCCESS) }
+    OnChange(game.selection.size) { old, new -> if (new > old && !playing.solving) haptics(Haptic.PICK) }
+    OnChange(game.hints.size) { old, new -> if (new > old) haptics(Haptic.HINT) }
     // The screenshot test waits for the board by this tag, whatever the language.
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp).testTag("board"),
@@ -408,24 +434,17 @@ private fun Board(
             style = MaterialTheme.typography.headlineSmall,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = currentWord },
+            modifier = Modifier.fillMaxWidth().shake(rejections).semantics { contentDescription = currentWord },
             textAlign = TextAlign.Center,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (row in playing.boardTiles.chunked(game.puzzle.n)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (tile in row) {
-                        TileButton(
-                            text = game.puzzle.tiles[tile],
-                            position = game.selection.indexOf(tile).takeIf { it >= 0 },
-                            solved = tile in game.solvedTiles,
-                            hinted = tile in game.lit,
-                            modifier = Modifier.weight(1f),
-                        ) { model.tap(tile) }
-                    }
-                    repeat(game.puzzle.n - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
+        TileGrid(playing.boardTiles, game.puzzle.n) { tile, modifier ->
+            TileButton(
+                text = game.puzzle.tiles[tile],
+                position = game.selection.indexOf(tile).takeIf { it >= 0 },
+                solved = tile in game.solvedTiles,
+                hinted = tile in game.lit,
+                modifier = modifier,
+            ) { model.tap(tile) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = model::shuffle, enabled = !playing.solving) {
@@ -439,6 +458,44 @@ private fun Board(
             Button(onClick = model::submit, enabled = canSubmit) { Text(stringResource(R.string.submit)) }
         }
         FoundWords(game.found)
+    }
+}
+
+private val tileHeight = 56.dp
+private val tileGap = 8.dp
+
+/**
+ * [tiles] in rows of [columns], each placed by hand rather than by a Row so it can spring to its new spot, overshooting a
+ * little, when the board rearranges.
+ */
+@Composable
+private fun TileGrid(
+    tiles: List<Int>,
+    columns: Int,
+    tile: @Composable (tile: Int, modifier: Modifier) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val width = (maxWidth - tileGap * (columns - 1)) / columns
+        val rows = (tiles.size + columns - 1) / columns
+        Box(Modifier.fillMaxWidth().height(tileHeight * rows + tileGap * maxOf(rows - 1, 0))) {
+            tiles.forEachIndexed { slot, index ->
+                key(index) {
+                    val target =
+                        with(LocalDensity.current) {
+                            IntOffset(
+                                ((width + tileGap) * (slot % columns)).roundToPx(),
+                                ((tileHeight + tileGap) * (slot / columns)).roundToPx(),
+                            )
+                        }
+                    val offset by animateIntOffsetAsState(
+                        target,
+                        spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessLow),
+                        label = "tile",
+                    )
+                    tile(index, Modifier.offset { offset }.size(width, tileHeight))
+                }
+            }
+        }
     }
 }
 
@@ -467,13 +524,28 @@ private fun TileButton(
             Modifier
         }
     val hintedLabel = stringResource(R.string.hinted_tile)
+    // A picked tile lifts off the board: it grows, rises, and casts a shadow.
+    val lift by animateFloatAsState(
+        if (position != null) 1f else 0f,
+        spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow),
+        label = "lift",
+    )
     Surface(
         onClick = onClick,
         modifier =
-            modifier.heightIn(min = 56.dp).then(ring).semantics {
-                selected = position != null
-                if (hinted) stateDescription = hintedLabel
-            },
+            modifier
+                .graphicsLayer {
+                    scaleX = 1f + 0.07f * lift
+                    scaleY = 1f + 0.07f * lift
+                    translationY = -4.dp.toPx() * lift
+                    shadowElevation = 6.dp.toPx() * lift.coerceAtLeast(0f)
+                    this.shape = shape
+                }.heightIn(min = tileHeight)
+                .then(ring)
+                .semantics {
+                    selected = position != null
+                    if (hinted) stateDescription = hintedLabel
+                },
         shape = shape,
         color =
             when {
@@ -483,7 +555,7 @@ private fun TileButton(
             },
         contentColor = if (position != null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
     ) {
-        Box(Modifier.heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.heightIn(min = tileHeight), contentAlignment = Alignment.Center) {
             Text(
                 text,
                 style = MaterialTheme.typography.titleMedium,
@@ -547,8 +619,9 @@ fun FoundWord(
     points: Int,
     fontWeight: FontWeight = FontWeight.Normal,
     italic: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    Row(verticalAlignment = Alignment.Top) {
+    Row(modifier, verticalAlignment = Alignment.Top) {
         Text(
             shown,
             fontWeight = fontWeight,

@@ -213,6 +213,24 @@ games; the risk was accepted for an in-app label, since only the app's name is s
     ("PL… · 6 letters"), common pangrams first, then by points; it's saved as the word, and the
     chip goes when the word is found. Solve spells common pangrams, then the highest scoring
     words, until the board has its pangrams and target score.
+- Every game animates its moves, and both apps follow the same timings (2026-11-14):
+  - Password: a submitted guess turns over a letter at a time, 0.12 s apart and 0.36 s each,
+    showing its mark at the halfway turn; reopened guesses show marked without flipping. Once
+    the winning row has flipped, its letters hop 18 points and land, 0.08 s apart.
+  - `tiles`: a picked tile lifts (1.07 times, 4 points up, a shadow); the board springs into a
+    new arrangement with a slight overshoot.
+  - `pangram`: a pressed wedge or the center dips to 0.9 and darkens; shuffling spins the ring
+    one full turn while the letters swap; a newly found word pops into the list.
+  - Every rejected guess or word shakes the row or word being typed. On boards the score rolls
+    to its new value, the bar springs to it, and "Star earned" bounces in.
+  - Haptics follow the system setting, with no switch in the app: a light tap per letter or
+    tile picked, a success buzz for a found word or a solved puzzle, an error buzz for a
+    rejection, and a tap for a hint. Moves Solve plays make none.
+  - Reduce Motion on iOS turns movement into fades or shading. Android has no such setting
+    apart from removing animations, which finishes every animation at once, so the hand-timed
+    flip, hop and shake skip themselves there too.
+  - The prototype's particle bursts, on a pangram and on the star, were dropped after playing.
+    What proves reusable moves into the platform-ui libraries afterward (epic #12).
 
 ## Languages
 
@@ -307,7 +325,7 @@ it in `ios/Ngrams/App/Theme.swift`; Android's should match these values.
 | `borderSubtle`             | `systemGray4`               | Enter and Delete keys                                         |
 | `textOnPrimary`            | white                       | text on any filled color                                      |
 | radius `xs`/`sm`/`md`/`lg` | 4 / 6 / 8 / 10              | stat bars / keys, solved chips / letter cells / tiles         |
-| animation `normal`         | SwiftUI's `.default`        | every animated change                                         |
+| animation `normal`         | SwiftUI's `.default`        | animated changes without a timing of their own (Shared)       |
 
 ## Generator
 

@@ -41,7 +41,10 @@ struct TilesView: View {
   @Bindable var session: TilesSession
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var showingStats = false
+  /// Words rejected since the view opened, each of which shakes the current word.
+  @State private var rejections = 0
 
   /// One column per tile in a target, so every board is a full rectangle and a solved target
   /// fills exactly one row.
@@ -62,6 +65,19 @@ struct TilesView: View {
       }
       .padding()
     }
+    .onChange(of: session.feedback) { _, feedback in
+      if feedback?.kind.isRejection == true {
+        rejections += 1
+      }
+    }
+    .sensoryFeedback(.error, trigger: rejections)
+    .sensoryFeedback(trigger: session.game.found.count) { old, new in
+      new > old && !session.solving ? .success : nil
+    }
+    .sensoryFeedback(trigger: session.game.selection) { old, new in
+      new.count > old.count && !session.solving ? .selection : nil
+    }
+    .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
     .onChange(of: session.finished) { wasFinished, finished in
       if !wasFinished, finished {
         Task {
@@ -113,6 +129,7 @@ struct TilesView: View {
         .font(.title2.weight(.semibold).monospaced())
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Current word")
+        .shake(on: rejections)
 
       LazyVGrid(columns: columns, spacing: 8) {
         ForEach(session.boardTiles, id: \.self) { tile in
@@ -126,7 +143,14 @@ struct TilesView: View {
           }
         }
       }
-      .animation(theme.animation.normal, value: session.boardTiles)
+      // Tiles spring into a new arrangement, overshooting a little. With Reduce Motion on, the
+      // board is rebuilt for each arrangement instead, so it fades from one to the next.
+      .id(reduceMotion ? session.boardTiles : [])
+      .transition(.opacity)
+      .animation(
+        reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.62),
+        value: session.boardTiles
+      )
       .disabled(session.solving)
     }
   }
@@ -151,12 +175,14 @@ private struct ScoreHeader: View {
   let game: TilesGame
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     VStack(spacing: 6) {
       HStack(alignment: .firstTextBaseline) {
         Text("\(game.score)")
           .font(.largeTitle.weight(.bold).monospacedDigit())
+          .countingUp(game.score)
         Text("/ \(game.puzzle.targetScore)")
           .foregroundStyle(.secondary)
         Spacer()
@@ -164,10 +190,12 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(game.puzzle.targetScore), 1))
+        .countingUp(game.score)
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(theme.colors.tertiary)
+          .transition(.pop(reduceMotion: reduceMotion))
       } else if !game.hasWordsLeft {
         Text("No words left")
           .font(.subheadline)
@@ -178,6 +206,7 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
     }
+    .starEntrance(game.earnedStar)
   }
 }
 
@@ -226,6 +255,11 @@ private struct TileButton: View {
   @Environment(\.dsTheme) private var theme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+  /// Whether the tile is lifted off the board: picked, with Reduce Motion off.
+  private var lifted: Bool {
+    position != nil && !reduceMotion
+  }
+
   private var background: Color {
     if position != nil {
       return theme.colors.primary
@@ -263,6 +297,10 @@ private struct TileButton: View {
               }
           }
         }
+        .scaleEffect(lifted ? 1.07 : 1)
+        .offset(y: lifted ? -4 : 0)
+        .shadow(color: .black.opacity(lifted ? 0.25 : 0), radius: lifted ? 6 : 0, y: lifted ? 4 : 0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: lifted)
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(position == nil ? [] : .isSelected)
@@ -293,6 +331,14 @@ private struct FoundWords: View {
 }
 
 extension TilesSession.Feedback.Kind {
+  /// Whether this feedback turns a word away.
+  var isRejection: Bool {
+    switch self {
+    case .alreadyFound, .blocked, .notAWord: true
+    case .found, .saveFailed, .helpSaveFailed, .loadFailed: false
+    }
+  }
+
   /// Whether this feedback also says the targets left would earn the star.
   var isStarNotice: Bool {
     if case .found(_, targetsEarnStar: true) = self {

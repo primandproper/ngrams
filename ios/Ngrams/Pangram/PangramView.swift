@@ -41,16 +41,23 @@ struct PangramView: View {
   @Bindable var session: PangramSession
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var showingStats = false
+  /// Words rejected since the view opened, each of which shakes the current word.
+  @State private var rejections = 0
+  /// Full turns the ring has spun through, one per shuffle.
+  @State private var spins = 0
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
         ScoreHeader(game: session.game)
         CurrentWord(game: session.game)
+          .shake(on: rejections)
         Clues(words: session.game.clues)
         LetterWheel(
-          center: session.game.puzzle.center, outer: session.outer, onLetter: session.type
+          center: session.game.puzzle.center, outer: session.outer, spins: spins,
+          onLetter: session.type
         )
         .disabled(session.solving)
         controls
@@ -59,6 +66,19 @@ struct PangramView: View {
       }
       .padding()
     }
+    .onChange(of: session.feedback) { _, feedback in
+      if feedback?.kind.isRejection == true {
+        rejections += 1
+      }
+    }
+    .sensoryFeedback(.error, trigger: rejections)
+    .sensoryFeedback(trigger: session.game.found.count) { old, new in
+      new > old && !session.solving ? .success : nil
+    }
+    .sensoryFeedback(trigger: session.game.current) { old, new in
+      new.count > old.count && !session.solving ? .selection : nil
+    }
+    .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
     .onChange(of: session.finished) { wasFinished, finished in
       if !wasFinished, finished {
         Task {
@@ -114,7 +134,16 @@ struct PangramView: View {
       }
       .disabled(session.game.current.isEmpty)
       Button("Shuffle", systemImage: "shuffle") {
-        withAnimation(theme.animation.normal) { session.shuffle() }
+        // The ring spins once around while the letters swap places. With Reduce Motion on, they
+        // swap in place.
+        if reduceMotion {
+          session.shuffle()
+        } else {
+          withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+            spins += 1
+            session.shuffle()
+          }
+        }
       }
       .accessibilityIdentifier("shuffle")
       .labelStyle(.iconOnly)
@@ -138,12 +167,14 @@ private struct ScoreHeader: View {
   let game: PangramGame
 
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     VStack(spacing: 6) {
       HStack(alignment: .firstTextBaseline) {
         Text("\(game.score)")
           .font(.largeTitle.weight(.bold).monospacedDigit())
+          .countingUp(game.score)
         Text("/ \(game.puzzle.targetScore)")
           .foregroundStyle(.secondary)
         Spacer()
@@ -151,16 +182,19 @@ private struct ScoreHeader: View {
           .foregroundStyle(.secondary)
       }
       ProgressView(value: min(Double(game.score) / Double(max(game.puzzle.targetScore, 1)), 1))
+        .countingUp(game.score)
       if game.earnedStar {
         Label("Star earned", systemImage: "star.fill")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(theme.colors.tertiary)
+          .transition(.pop(reduceMotion: reduceMotion))
       } else if game.score >= game.puzzle.targetScore {
         Text("Find every pangram for the star")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
     }
+    .starEntrance(game.earnedStar)
   }
 
   /// The common pangrams the star needs, then any bonus ones apart, so a bonus find never looks
@@ -222,6 +256,8 @@ private struct CurrentWord: View {
 private struct LetterWheel: View {
   let center: Character
   let outer: [Character]
+  /// Full turns the ring has spun through.
+  let spins: Int
   let onLetter: (Character) -> Void
 
   @Environment(\.dsTheme) private var theme
@@ -234,9 +270,12 @@ private struct LetterWheel: View {
   var body: some View {
     let span = Angle.degrees(360 / Double(max(outer.count, 1)))
     ZStack {
-      ForEach(Array(outer.enumerated()), id: \.element) { index, letter in
-        WedgeKey(letter: letter, span: span, rotation: span * Double(index)) { onLetter(letter) }
+      ZStack {
+        ForEach(Array(outer.enumerated()), id: \.element) { index, letter in
+          WedgeKey(letter: letter, span: span, rotation: span * Double(index)) { onLetter(letter) }
+        }
       }
+      .rotationEffect(.degrees(Double(spins) * 360))
       Button {
         onLetter(center)
       } label: {
@@ -247,7 +286,7 @@ private struct LetterWheel: View {
           .background(theme.colors.primary, in: .circle)
           .contentShape(.circle)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(PulseStyle())
       .accessibilityLabel("\(String(center).uppercased()), center")
     }
     .frame(width: 2 * Self.radius, height: 2 * Self.radius)
@@ -279,7 +318,7 @@ private struct LetterWheel: View {
           }
           .contentShape([.interaction, .accessibility], wedge)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(PulseStyle())
       .rotationEffect(rotation)
       .accessibilityLabel(String(letter).uppercased())
     }
@@ -316,6 +355,7 @@ private struct FoundWords: View {
 
   @AppStorage(SettingsKey.pangramFoundOrder) private var order = FoundWordOrder.alphabetical
   @Environment(\.dsTheme) private var theme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -348,10 +388,24 @@ private struct FoundWords: View {
               .font(.caption2)
               .foregroundStyle(.secondary)
           }
+          .transition(.pop(reduceMotion: reduceMotion))
         }
       }
+      .animation(
+        reduceMotion ? .easeInOut(duration: 0.2) : .bouncy(duration: 0.45, extraBounce: 0.2),
+        value: game.found.count)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+extension PangramSession.Feedback.Kind {
+  /// Whether this feedback turns a word away.
+  var isRejection: Bool {
+    switch self {
+    case .alreadyFound, .tooShort, .missingCenter, .blocked, .notAWord, .needsPangram: true
+    case .found, .foundBonusPangram, .saveFailed, .helpSaveFailed, .loadFailed: false
+    }
   }
 }
 

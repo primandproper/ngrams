@@ -3,6 +3,14 @@ package software.primandproper.ngrams.ui
 import android.content.Context
 import android.content.Intent
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,6 +103,8 @@ data class Feedback(
     val args: List<Any> = emptyList(),
     /** How long it shows, in milliseconds. */
     val showFor: Long = 1_500,
+    /** Whether it turns a guess or word away, which shakes it and buzzes. */
+    val rejected: Boolean = false,
     val id: Long = System.nanoTime(),
 )
 
@@ -261,15 +271,31 @@ fun ScoreHeader(
     missing: String?,
     ended: String? = null,
 ) {
+    // The score rolls to its new value and the bar springs to it.
+    val shownScore by animateIntAsState(score, tween(400), label = "score")
+    val bar by animateFloatAsState(
+        (score.toFloat() / maxOf(target, 1)).coerceAtMost(1f),
+        spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "score bar",
+    )
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text("$score", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+            Text(
+                "$shownScore",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clearAndSetSemantics { contentDescription = "$score" },
+            )
             Text(" / $target", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
             Spacer(Modifier.weight(1f))
             Text(progress, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
         }
-        LinearProgressIndicator(progress = { (score.toFloat() / maxOf(target, 1)).coerceAtMost(1f) }, modifier = Modifier.fillMaxWidth())
-        if (earnedStar) {
+        LinearProgressIndicator(progress = { bar }, modifier = Modifier.fillMaxWidth())
+        // Springs in with a bounce when the star is earned, and is simply there on a board reopened with it.
+        AnimatedVisibility(
+            earnedStar,
+            enter = scaleIn(spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.2f) + fadeIn(),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Star, contentDescription = null, tint = StarColor)
                 Text(
@@ -279,10 +305,10 @@ fun ScoreHeader(
                     modifier = Modifier.padding(start = 4.dp),
                 )
             }
-        } else if (ended != null) {
-            Text(ended, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        } else if (missing != null) {
-            Text(missing, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        }
+        val note = if (earnedStar) null else ended ?: missing
+        if (note != null) {
+            Text(note, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

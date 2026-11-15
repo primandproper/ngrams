@@ -218,6 +218,29 @@ func TestLoad(T *testing.T) {
 		must.Eq(t, "seré", lex.Display("sere"))
 	})
 
+	T.Run("keeps only real two-letter spanish words", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		writeFiles(t, dir, map[string]string{
+			"raw/es/es_MX.aff":   spanishAff,
+			"raw/es/es_MX.dic":   "3\ncl\nel\nño\n",
+			"raw/es/es_full.txt": "el 900\ncl 175\nño 100\n",
+			"blocklists/es.txt":  "",
+		})
+
+		lex, err := Load("es", &Config{
+			DataDir:      filepath.Join(dir, "raw"),
+			BlocklistDir: filepath.Join(dir, "blocklists"),
+			MinCount:     20,
+		})
+		must.NoError(t, err)
+
+		must.Eq(t, []string{"el", "ño"}, lex.Targets())
+		isWord, _ := lex.Lookup("cl")
+		must.False(t, isWord, must.Sprint("abbreviation dropped"))
+	})
+
 	T.Run("rejects an unsupported language", func(t *testing.T) {
 		t.Parallel()
 

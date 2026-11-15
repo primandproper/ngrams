@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"unicode/utf8"
 
 	"github.com/primandproper/ngrams/generator/internal/hunspell"
 )
@@ -34,6 +35,31 @@ var vosotrosStems = map[string]bool{
 	"fiais": true, "fieis": true, "friais": true, "guiais": true, "guieis": true,
 	"jugaréis": true, "liais": true, "lieis": true, "piais": true, "pieis": true,
 	"poded": true, "riais": true, "íd": true,
+}
+
+// twoLetterWords are the only two-letter Spanish words kept: function words, common
+// interjections, note and letter names. es_MX also carries abbreviations and fragments
+// at this length (cl, pl, ej, qu), and a single tile spells any of them.
+var twoLetterWords = map[string]bool{
+	"ah": true, "al": true, "as": true, "ay": true, "be": true, "bu": true, "ce": true,
+	"cu": true, "da": true, "de": true, "di": true, "do": true, "ea": true, "eh": true,
+	"el": true, "en": true, "es": true, "ex": true, "fa": true, "fe": true, "fu": true,
+	"ge": true, "ha": true, "he": true, "ir": true, "ja": true, "je": true, "ji": true,
+	"jo": true, "la": true, "le": true, "lo": true, "me": true, "mi": true, "mu": true,
+	"ni": true, "no": true, "oh": true, "os": true, "pe": true, "pi": true, "re": true,
+	"se": true, "si": true, "so": true, "su": true, "ta": true, "te": true, "ti": true,
+	"to": true, "tu": true, "un": true, "uy": true, "va": true, "ve": true, "vi": true,
+	"xi": true, "ya": true, "ye": true, "yo": true, "za": true, "ña": true, "ño": true,
+}
+
+// spanishWord folds a form, reporting false for one that isn't a plain word or is a
+// two-letter word not in twoLetterWords.
+func spanishWord(form string) (string, bool) {
+	word, ok := Fold(form)
+	if ok && utf8.RuneCountInString(word) == 2 && !twoLetterWords[word] {
+		return "", false
+	}
+	return word, ok
 }
 
 // loadSpanish expands es_MX into every form. Only .dic stems become targets, since they
@@ -63,7 +89,7 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 		if vosotrosStems[entries[i].Stem] {
 			continue
 		}
-		stem, ok := Fold(entries[i].Stem)
+		stem, ok := spanishWord(entries[i].Stem)
 		if ok {
 			stems[stem] = struct{}{}
 			if len(entries[i].Flags) > 0 {
@@ -72,7 +98,7 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 		}
 		stemBlocked := ok && blocked[stem]
 		affixes.Expand(entries[i].Stem, entries[i].Flags, func(form string) {
-			word, valid := Fold(form)
+			word, valid := spanishWord(form)
 			if !valid {
 				return
 			}

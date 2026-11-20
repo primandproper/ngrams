@@ -125,7 +125,7 @@ final class TilesSession {
     }
   }
 
-  /// Whether the board is over and done showing how, which opens its stats.
+  /// Whether the board is over and done showing how.
   var finished: Bool {
     game.isOver && !solving
   }

@@ -60,7 +60,6 @@ struct WordView: View {
   @Bindable var session: WordSession
 
   @Environment(\.dsTheme) private var theme
-  @State private var showingStats = false
   /// Guesses rejected since the view opened, each of which shakes the row being typed.
   @State private var rejections = 0
 
@@ -87,20 +86,6 @@ struct WordView: View {
       new.count > old.count && !session.solving ? .selection : nil
     }
     .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
-    .onChange(of: session.finished) { wasFinished, finished in
-      if !wasFinished, finished {
-        Task {
-          try? await Task.sleep(for: .seconds(1))
-          showingStats = true
-        }
-      }
-    }
-    .sheet(isPresented: $showingStats) {
-      let puzzle = session.game.puzzle
-      LineStatsSheet(
-        line: PuzzleLine(language: puzzle.language, kind: .word, n: puzzle.n),
-        highlight: solvedIn, time: session.timer.elapsed)
-    }
     .toolbar {
       if session.game.isOver {
         ToolbarItem(placement: .topBarTrailing) {

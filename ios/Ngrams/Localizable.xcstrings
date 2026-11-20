@@ -967,16 +967,6 @@
         }
       }
     },
-    "No stats yet" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay estadísticas"
-          }
-        }
-      }
-    },
     "No words left" : {
       "localizations" : {
         "es" : {
@@ -1319,16 +1309,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El código fuente de esta app y su banco de retos."
-          }
-        }
-      }
-    },
-    "Time" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiempo"
           }
         }
       }

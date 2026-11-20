@@ -37,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,11 +56,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import software.primandproper.ngrams.AppContainer
@@ -70,11 +67,9 @@ import software.primandproper.ngrams.core.GuessList
 import software.primandproper.ngrams.core.Hint
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.LetterMark
-import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
-import software.primandproper.ngrams.core.PuzzleLine
 import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.Status
 import software.primandproper.ngrams.core.Submission
@@ -89,8 +84,6 @@ sealed interface PasswordState {
     data class Playing(
         val game: WordGame,
         val feedback: Feedback? = null,
-        /** Set by the guess that ends the puzzle, so its stats open once. */
-        val justFinished: Boolean = false,
         /** Whether the puzzle is being solved for the player, a letter at a time. */
         val solving: Boolean = false,
     ) : PasswordState
@@ -114,9 +107,6 @@ class PasswordViewModel(
     private val _state = MutableStateFlow<PasswordState>(PasswordState.Loading)
     val state: StateFlow<PasswordState> = _state
     private var list: GuessList? = null
-
-    val stats: StateFlow<LineStats?> =
-        container.stats(container.today()).map { it[key.line] }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         viewModelScope.launch { load() }
@@ -209,7 +199,6 @@ class PasswordViewModel(
                     it.copy(
                         game = it.game.giveUp(),
                         solving = false,
-                        justFinished = true,
                     )
                 } else {
                     it
@@ -232,7 +221,7 @@ class PasswordViewModel(
         }
         val list = list ?: return
         val (game, submission) = playing.game.submit(list)
-        _state.value = PasswordState.Playing(game, feedback(submission), justFinished = !playing.game.isOver && game.isOver)
+        _state.value = PasswordState.Playing(game, feedback(submission))
         if (submission is Submission.Guessed) {
             val (stretches, at) = timer.entry(completes = game.isOver)
             viewModelScope.launch {
@@ -252,10 +241,6 @@ class PasswordViewModel(
 
     fun feedbackShown(shown: Feedback) {
         _state.update { if (it is PasswordState.Playing && it.feedback == shown) it.copy(feedback = null) else it }
-    }
-
-    fun finishShown() {
-        _state.update { if (it is PasswordState.Playing) it.copy(justFinished = false) else it }
     }
 
     private fun feedback(submission: Submission): Feedback? =
@@ -310,9 +295,7 @@ fun PasswordScreen(
     val showTimer = showsTimer(container)
     val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
-    val stats by model.stats.collectAsStateWithLifecycle()
     val playing = state as? PasswordState.Playing
-    var showingStats by rememberSaveable { mutableStateOf(false) }
     val interfaceLanguage = interfaceLanguage()
     val haptics = rememberHaptics()
     // Guesses rejected since the screen opened, each of which shakes the row being typed.
@@ -329,16 +312,6 @@ fun PasswordScreen(
         playing?.game?.current.orEmpty(),
     ) { old, new -> if (new.length > old.length && playing?.solving == false) haptics(Haptic.PICK) }
     OnChange(playing?.game?.hints?.size ?: 0) { old, new -> if (new > old) haptics(Haptic.HINT) }
-
-    LaunchedEffect(playing?.justFinished) {
-        if (playing?.justFinished == true) {
-            // Cleared only after the sheet opens: clearing it changes this effect's key, which
-            // would cancel the wait.
-            delay(1_000)
-            showingStats = true
-            model.finishShown()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -389,17 +362,6 @@ fun PasswordScreen(
                 }
             }
         }
-    }
-
-    if (showingStats && playing != null) {
-        LineStatsSheet(
-            line = PuzzleLine(language, PuzzleKind.WORD, n),
-            stats = stats,
-            highlight = (playing.game.status as? Status.Won)?.guesses,
-            time = timing.elapsed,
-            showTimer = showTimer,
-            onDismiss = { showingStats = false },
-        )
     }
 }
 

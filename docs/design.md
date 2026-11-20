@@ -172,7 +172,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   absent letters fade rather than fill.
 - Stats and streaks are per `(lang, kind, n)`: played, the share won (`word`) or starred
   (boards), current and best streak, and for `word` how many guesses each solve took. They
-  show on a stats screen from home, after finishing a puzzle, and as a flame on each home row.
+  show on a stats screen from home and as a flame on each home row. Finishing a puzzle used
+  to open its line's stats in a sheet a second later; that went, since it interrupted every
+  puzzle of the day to show numbers that had barely moved (2026-11-20).
 - A streak counts a `word` solve or a board's star, on the puzzle's own day. Playing earlier
   days from the calendar counts toward the totals but not the streak, as in the original's
   archive. An unfinished puzzle today leaves the streak alone until midnight; a lost one ends
@@ -185,8 +187,8 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   than stored. Time before the first guess or word is held in memory and saved with it, so
   opening a puzzle and leaving never starts it, and the open stretch is saved every 30 seconds,
   which is the most a crash can lose. A puzzle started before timing existed has no time
-  (`timed` is false on its progress). The clock shows under each game's title, the finished
-  time in the stats sheet, and the best timed success per line on the stats screen. "Show
+  (`timed` is false on its progress). The clock shows under each game's title, and the
+  best timed success per line on the stats screen. "Show
   timer" in Settings hides all of it without stopping the timing (2026-11-02).
 - A player can take hints or have a puzzle solved. Hints are free but counted: progress keeps
   each hint, in the game's own terms, in the order taken, apart from `entries` since stats read

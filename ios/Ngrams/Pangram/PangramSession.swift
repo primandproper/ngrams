@@ -117,8 +117,7 @@ final class PangramSession {
     }
   }
 
-  /// Whether the board has its star or was solved, and is done showing how, which opens its
-  /// stats.
+  /// Whether the board has its star or was solved, and is done showing how.
   var finished: Bool {
     (game.earnedStar || game.gaveUp) && !solving
   }

@@ -42,7 +42,6 @@ struct TilesView: View {
 
   @Environment(\.dsTheme) private var theme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var showingStats = false
   /// Words rejected since the view opened, each of which shakes the current word.
   @State private var rejections = 0
 
@@ -78,20 +77,6 @@ struct TilesView: View {
       new.count > old.count && !session.solving ? .selection : nil
     }
     .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
-    .onChange(of: session.finished) { wasFinished, finished in
-      if !wasFinished, finished {
-        Task {
-          try? await Task.sleep(for: .seconds(1))
-          showingStats = true
-        }
-      }
-    }
-    .sheet(isPresented: $showingStats) {
-      let puzzle = session.game.puzzle
-      LineStatsSheet(
-        line: PuzzleLine(language: puzzle.language, kind: .tiles, n: puzzle.n),
-        time: session.timer.elapsed)
-    }
     .toolbar {
       if !session.game.found.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {

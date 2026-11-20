@@ -311,27 +311,6 @@ private struct DayList: View {
     }
     .animation(theme.animation.normal, value: completed.map(\.id))
     .animation(theme.animation.normal, value: grouping)
-    .toolbar {
-      if let text = shareText(all) {
-        ToolbarItem(placement: .topBarTrailing) {
-          ShareLink(item: text)
-        }
-      }
-    }
-  }
-
-  private func shareText(_ entries: [Entry]) -> String? {
-    var words: [WordGame] = []
-    var tiles: [TilesGame] = []
-    var pangrams: [PangramGame] = []
-    for entry in entries {
-      switch entry {
-      case .word(let game): words.append(game)
-      case .tiles(let game): tiles.append(game)
-      case .pangram(let game): pangrams.append(game)
-      }
-    }
-    return ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: day)
   }
 
   private func rows(_ entries: [Entry], labeled labeling: RowLabeling) -> some View {

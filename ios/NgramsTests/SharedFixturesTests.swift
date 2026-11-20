@@ -352,15 +352,6 @@ struct SharedFixturesTests {
         }
       #expect(text == testCase["text"] as? String)
     }
-    for testCase in try cases(fixture, "days") {
-      let games = try #require(testCase["games"] as? [Object])
-      let text = ShareText.day(
-        words: try games.filter { $0["kind"] as? String == "word" }.map(word),
-        tiles: try games.filter { $0["kind"] as? String == "tiles" }.map(tiles),
-        pangrams: try games.filter { $0["kind"] as? String == "pangram" }.map(pangram),
-        on: day, in: interface(testCase))
-      #expect(text == testCase["text"] as? String)
-    }
     for testCase in try cases(fixture, "dayNames") {
       let name = try #require(PuzzleDay(testCase["day"] as? String ?? ""))
         .name(

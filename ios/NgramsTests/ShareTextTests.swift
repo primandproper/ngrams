@@ -49,24 +49,4 @@ struct ShareTextTests {
         https://primandproper.software/ngrams/
         """)
   }
-
-  @Test("shares every puzzle started on a day, and nothing when none was")
-  func day() {
-    let words = [
-      WordGame(puzzle: wordPuzzle, guesses: ["plaza", "llama"], hardMode: true),
-      WordGame(puzzle: WordPuzzle(language: .es, n: 4, answer: "casa", display: nil)),
-    ]
-    let tiles = [TilesGame(puzzle: smallPuzzle, foundWords: ["abcd", "ab"])]
-    let pangrams = [PangramGame(puzzle: pangramPuzzle)]
-
-    #expect(
-      ShareText.day(words: words, tiles: tiles, pangrams: pangrams, on: testDay, in: .en) == """
-        n-grams · Jan 1
-        🇺🇸 Password · n=5 2/6* ⭐
-        🇺🇸 Tiles · n=2 3/50
-        https://primandproper.software/ngrams/
-        """)
-    #expect(
-      ShareText.day(words: [words[1]], tiles: [], pangrams: pangrams, on: testDay, in: .en) == nil)
-  }
 }

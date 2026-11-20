@@ -353,18 +353,6 @@ class SharedFixturesTest {
                 }
             assertEquals(case["text"].string, text)
         }
-        for (case in fixture.getValue("days").jsonArray) {
-            val games = case["games"].jsonArray
-            val text =
-                ShareText.day(
-                    games.filter { it["kind"].string == "word" }.map(::word),
-                    games.filter { it["kind"].string == "tiles" }.map(::tiles),
-                    games.filter { it["kind"].string == "pangram" }.map(::pangram),
-                    day,
-                    interfaceLanguage(case),
-                )
-            assertEquals(case["text"].takeIf { it != JsonNull }?.string, text)
-        }
         for (case in fixture.getValue("dayNames").jsonArray) {
             val name = PuzzleDay.parse(case["day"].string)!!.name(case["includingYear"].jsonPrimitive.boolean, interfaceLanguage(case))
             assertEquals(case["name"].string, name)

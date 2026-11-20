@@ -1,6 +1,6 @@
 import Foundation
 
-/// Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
+/// One puzzle's spoiler-free result to paste anywhere. A `*`
 /// marks a result played in hard mode, a ⭐ one that earned its star, and 💡 the hints taken. Written in the sharer's
 /// interface language; testdata/share.json holds both apps to the same text.
 nonisolated enum ShareText {
@@ -47,45 +47,6 @@ nonisolated enum ShareText {
       headline(.pangram, puzzle.language, puzzle.n, day, interfaceLanguage) + " · " + result(game),
       bar(game.score, of: puzzle.targetScore) + " \(game.foundPangrams)/\(pangrams) \(noun)",
     ])
-  }
-
-  /// A line per language and game with the result of each puzzle started, or nil if none was.
-  static func day(
-    words: [WordGame], tiles: [TilesGame], pangrams: [PangramGame], on day: PuzzleDay,
-    in interfaceLanguage: Language = .interface
-  ) -> String? {
-    var lines: [String] = []
-    for language in Language.allCases {
-      let results: [(PuzzleKind, [String])] = [
-        (
-          .word,
-          words.filter { $0.puzzle.language == language && (!$0.guesses.isEmpty || $0.gaveUp) }
-            .sorted { $0.puzzle.n < $1.puzzle.n }
-            .map { "n=\($0.puzzle.n) \(result($0))" }
-        ),
-        (
-          .tiles,
-          tiles.filter { $0.puzzle.language == language && (!$0.found.isEmpty || $0.gaveUp) }
-            .sorted { $0.puzzle.n < $1.puzzle.n }
-            .map { "n=\($0.puzzle.n) \(result($0))" }
-        ),
-        (
-          .pangram,
-          pangrams.filter { $0.puzzle.language == language && (!$0.found.isEmpty || $0.gaveUp) }
-            .sorted { $0.puzzle.n < $1.puzzle.n }
-            .map { "n=\($0.puzzle.n) \(result($0))" }
-        ),
-      ]
-      for (kind, kindResults) in results where !kindResults.isEmpty {
-        lines.append(
-          "\(language.flag) \(kind.name(in: interfaceLanguage)) · "
-            + kindResults.joined(separator: " · "))
-      }
-    }
-    guard !lines.isEmpty else {
-      return nil
-    }
-    return finished(["n-grams · \(day.name(includingYear: false, in: interfaceLanguage))"] + lines)
   }
 
   private static func headline(

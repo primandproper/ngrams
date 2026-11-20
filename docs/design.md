@@ -163,8 +163,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   the same comma-separated codes as the language choice, which keeps the keys fixed for
   `@AppStorage`. The single switches from before move over on first launch, to every language if
   they were on; a language turned on later starts with its hard modes off.
-- Results share as spoiler-free text: each puzzle from its own screen, and every puzzle started
-  on a day from home, a line per language and game, in the interface language. Shares carry the
+- Results share as spoiler-free text, each puzzle from its own screen, in the interface
+  language. Home used to share every puzzle started on a day, a line per language and game;
+  that button and its text were removed (2026-11-20). Shares carry the
   date ("Oct 25") rather than a puzzle number, a flag even when only one language is on (the
   reader may play another), `*` for hard mode, and ⭐ for a star. `word` shares its grid;
   `tiles` and `pangram` a ten-segment bar toward the target. The grid avoids the original's

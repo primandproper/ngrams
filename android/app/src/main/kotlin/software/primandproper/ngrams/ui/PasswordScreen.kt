@@ -309,6 +309,7 @@ fun PasswordScreen(
         }
     }
     OnChange(playing?.game?.status) { _, status -> if (status is Status.Won) haptics(Haptic.SUCCESS) }
+    ReturnHomeWhenWon(playing?.game?.let { it.status is Status.Won }, onBack)
     OnChange(
         playing?.game?.current.orEmpty(),
     ) { old, new -> if (new.length > old.length && playing?.solving == false) haptics(Haptic.PICK) }

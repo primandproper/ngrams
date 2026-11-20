@@ -83,6 +83,7 @@ struct WordView: View {
     }
     .sensoryFeedback(.error, trigger: rejections)
     .sensoryFeedback(.success, trigger: solvedIn)
+    .returnsHome(whenWon: solvedIn != nil)
     .sensoryFeedback(trigger: session.game.current) { old, new in
       new.count > old.count && !session.solving ? .selection : nil
     }

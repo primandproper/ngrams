@@ -324,6 +324,8 @@ fun TilesScreen(
     val playing = state as? TilesState.Playing
     val interfaceLanguage = interfaceLanguage()
 
+    ReturnHomeWhenWon(playing?.game?.earnedStar, onBack)
+
     Scaffold(
         topBar = {
             TopAppBar(

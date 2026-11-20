@@ -73,6 +73,7 @@ struct PangramView: View {
       }
     }
     .sensoryFeedback(.error, trigger: rejections)
+    .returnsHome(whenWon: session.game.earnedStar)
     .sensoryFeedback(trigger: session.game.found.count) { old, new in
       new > old && !session.solving ? .success : nil
     }

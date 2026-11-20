@@ -323,6 +323,8 @@ fun PangramScreen(
     val playing = state as? PangramState.Playing
     val interfaceLanguage = interfaceLanguage()
 
+    ReturnHomeWhenWon(playing?.game?.earnedStar, onBack)
+
     Scaffold(
         topBar = {
             TopAppBar(

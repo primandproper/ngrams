@@ -151,6 +151,10 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   letters per board); that's accepted, since it's the player's choice. Completed puzzles move
   to a "Completed" section at the bottom: a `tiles` board or `word` puzzle once it's over, a
   `pangram` board once it has its star.
+- Winning a `word` puzzle or earning a board's star goes back to home after a second and a
+  half, long enough to see the win land. A puzzle lost or solved for the player stays open, so
+  the answer can be read, as does one opened already finished: a `pangram` board reopened from
+  Completed takes more words without leaving again (2026-11-20).
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.

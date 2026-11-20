@@ -33,6 +33,7 @@ func run(args []string) error {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
 	dataDir := fs.String("data", "../data/raw", "directory holding the downloaded source data")
 	blocklistDir := fs.String("blocklists", "../data/blocklists", "directory holding <lang>.txt blocklists")
+	exclusionDir := fs.String("exclusions", "../data/exclusions", "directory holding <lang>.txt lists of words kept out of targets and answers")
 	out := fs.String("out", "../data/bank/puzzles.json", "where to write the bank")
 	guessDir := fs.String("guesses", "../data/bank/guesses", "where to write each word size's accepted guesses")
 	langs := fs.String("langs", "en,es", "comma-separated languages")
@@ -119,7 +120,9 @@ func run(args []string) error {
 	lexicons := map[string]*lexicon.Lexicon{}
 	for _, lang := range splitList(*langs) {
 		loadStarted := time.Now()
-		lex, loadErr := lexicon.Load(lang, &lexicon.Config{DataDir: *dataDir, BlocklistDir: *blocklistDir, MinCount: *minCount})
+		lex, loadErr := lexicon.Load(lang, &lexicon.Config{
+			DataDir: *dataDir, BlocklistDir: *blocklistDir, ExclusionDir: *exclusionDir, MinCount: *minCount,
+		})
 		if loadErr != nil {
 			return fmt.Errorf("loading %s: %w", lang, loadErr)
 		}

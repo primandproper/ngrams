@@ -263,7 +263,7 @@ Go tool, and the app ships with a pre-built puzzle bank.
 ```mermaid
 flowchart LR
   subgraph Offline["generator (Go, run locally)"]
-    W[Word lists + frequency data + blocklist] --> G[Generators + quality scoring]
+    W[Word lists + frequency data + blocklist + exclusions] --> G[Generators + quality scoring]
     G --> R[Manual review pass]
     R --> B[puzzles.json]
   end
@@ -283,7 +283,7 @@ generator/   Go module: word list processing, puzzle generation, bank output
 ios/         Xcode project
 android/     Gradle project: :core (rules, plain Kotlin) and :app (Compose)
 testdata/    cases the iOS and Android tests both run
-data/        per-language source word lists and blocklists, generated bank
+data/        per-language source word lists, blocklists and exclusions, generated bank
 docs/        this file
 ```
 
@@ -361,6 +361,15 @@ per-language config.
   also mean a Spanish word can only be blocked with its whole family: mamar takes mamá with
   it and violar takes viola, so their vulgar forms (mame, violen) stay unblocked until the
   list supports exact forms.
+- Exclusions: one list per language, in `data/exclusions/`, of real words that are never
+  answers or targets but stay valid guesses and found words. Subtitle counts are lowercased,
+  so a name or foreign word ranks as common whenever the dictionary carries a rare word
+  spelled the same: HWAN, an old Korean coin, was a Password answer on the strength of
+  Korean names, as were LIANG, COLIN and ORTEGA. The lists are curated by reading the answer
+  pools, since no count separates LIANG from JACK, CHINA or SWISS, which stay because players
+  know their everyday sense. Only the pools were read, so a board target outside them can
+  still be a name. English entries are exact forms and Spanish ones stems, as in the
+  blocklists (2026-11-20).
 
 ### `word` puzzles
 
@@ -378,7 +387,7 @@ Answers are base forms, which neither dictionary marks directly:
   irregular conjugations and abbreviations (seré, podrán, dpto). A stem displays as the
   dictionary spells it rather than as its most common homograph (vera, not verá), which also
   changed a few `tiles` words' display spellings.
-- At 4 letters Spanish has only about 720 answers, under 2 years of puzzles.
+- At 4 letters Spanish has only about 680 answers, under 2 years of puzzles.
 
 ### `tiles` puzzles
 

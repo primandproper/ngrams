@@ -67,7 +67,7 @@ func spanishWord(form string) (string, bool) {
 // Answers further need affix flags: the flagless stems are mostly irregular conjugations
 // and abbreviations (seré, podrán, dpto), and a stem displays as the dictionary spells
 // it rather than as its most common homograph (vera, not verá).
-func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, error) {
+func loadSpanish(dir string, minCount int, blocked, excluded map[string]bool) (*Lexicon, error) {
 	affixes, err := parseFile(filepath.Join(dir, "es_MX.aff"), hunspell.ParseAffixes)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 
 	var targets []string
 	for stem := range stems {
-		if top[stem] && !allBlocked[stem] {
+		if top[stem] && !allBlocked[stem] && !excluded[stem] {
 			targets = append(targets, stem)
 		}
 	}

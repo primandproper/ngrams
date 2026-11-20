@@ -1,5 +1,5 @@
 // Package lexicon loads one language's word data: every valid word, how common each is,
-// which are blocked, and which are fair to use as targets and answers.
+// which are blocked or excluded, and which are fair to use as targets and answers.
 package lexicon
 
 import (
@@ -36,6 +36,9 @@ type (
 		_            struct{} `json:"-"`
 		DataDir      string
 		BlocklistDir string
+		// ExclusionDir holds <lang>.txt lists of real words that are never targets or answers:
+		// names and foreign words the frequency list counts as common.
+		ExclusionDir string
 		// MinCount is the fewest subtitle occurrences for a word to count as common.
 		MinCount int
 	}
@@ -58,18 +61,22 @@ func New(display map[string]string, freq map[string]int, blocked map[string]bool
 	return l
 }
 
-// Load reads a supported language's dictionary, frequency list, and blocklist.
+// Load reads a supported language's dictionary, frequency list, blocklist, and exclusions.
 func Load(lang string, cfg *Config) (*Lexicon, error) {
-	blocked, err := loadBlocklist(filepath.Join(cfg.BlocklistDir, lang+".txt"))
+	blocked, err := loadWordList(filepath.Join(cfg.BlocklistDir, lang+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	excluded, err := loadWordList(filepath.Join(cfg.ExclusionDir, lang+".txt"))
 	if err != nil {
 		return nil, err
 	}
 
 	switch lang {
 	case "en":
-		return loadEnglish(filepath.Join(cfg.DataDir, "en"), cfg.MinCount, blocked)
+		return loadEnglish(filepath.Join(cfg.DataDir, "en"), cfg.MinCount, blocked, excluded)
 	case "es":
-		return loadSpanish(filepath.Join(cfg.DataDir, "es"), cfg.MinCount, blocked)
+		return loadSpanish(filepath.Join(cfg.DataDir, "es"), cfg.MinCount, blocked, excluded)
 	default:
 		return nil, fmt.Errorf("unsupported language %q", lang)
 	}
@@ -144,9 +151,9 @@ func Fold(word string) (string, bool) {
 	return b.String(), b.Len() > 0
 }
 
-// loadBlocklist reads one word per line, ignoring blank lines and # comments.
-func loadBlocklist(path string) (map[string]bool, error) {
-	blocked := map[string]bool{}
+// loadWordList reads one word per line, ignoring blank lines and # comments.
+func loadWordList(path string) (map[string]bool, error) {
+	words := map[string]bool{}
 	err := eachLine(path, func(lineNum int, line string) error {
 		entry, _, _ := strings.Cut(line, "#")
 		if entry = strings.TrimSpace(entry); entry == "" {
@@ -156,16 +163,16 @@ func loadBlocklist(path string) (map[string]bool, error) {
 		if !ok {
 			return fmt.Errorf("line %d: %q isn't a plain word", lineNum, entry)
 		}
-		blocked[word] = true
+		words[word] = true
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return blocked, nil
+	return words, nil
 }
 
-func loadEnglish(dir string, minCount int, blocked map[string]bool) (*Lexicon, error) {
+func loadEnglish(dir string, minCount int, blocked, excluded map[string]bool) (*Lexicon, error) {
 	display := map[string]string{}
 	err := eachLine(filepath.Join(dir, "enable1.txt"), func(_ int, line string) error {
 		if word, ok := Fold(strings.TrimSpace(line)); ok {
@@ -184,7 +191,7 @@ func loadEnglish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 
 	var targets []string
 	for word := range display {
-		if top[word] && !blocked[word] {
+		if top[word] && !blocked[word] && !excluded[word] {
 			targets = append(targets, word)
 		}
 	}

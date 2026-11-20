@@ -102,10 +102,6 @@ private struct StatsRow: View {
 /// One line's numbers, and for word puzzles how many guesses each solve took.
 struct LineStatsView: View {
   let stats: LineStats
-  /// The guesses a just-solved word puzzle took, picked out in the distribution.
-  var highlight: Int?
-  /// The time a just-finished puzzle took.
-  var time: TimeInterval?
 
   @AppStorage(SettingsKey.showTimer) private var showTimer = true
 
@@ -119,16 +115,15 @@ struct LineStatsView: View {
           Figure(value: "\(stats.currentStreak)", label: "Streak")
           Figure(value: "\(stats.bestStreak)", label: "Best streak")
         }
-        if showTimer, time != nil || stats.bestTime != nil {
-          HStack(alignment: .top) {
-            if let time {
-              Figure(value: formattedTime(time), label: "Time")
-            }
-            Figure(value: stats.bestTime.map(formattedTime) ?? "–", label: "Best time")
+        HStack(alignment: .top) {
+          if showTimer, let bestTime = stats.bestTime {
+            Figure(value: formattedTime(bestTime), label: "Best time")
           }
+          Figure(value: "\(stats.hints)", label: "Hints")
+          Figure(value: "\(stats.givenUp)", label: "Solved for you")
         }
         if stats.line.kind == .word {
-          GuessDistribution(counts: stats.guessCounts, highlight: highlight)
+          GuessDistribution(counts: stats.guessCounts)
         }
         Group {
           if stats.line.kind == .word {
@@ -165,7 +160,6 @@ struct LineStatsView: View {
 
 private struct GuessDistribution: View {
   let counts: [Int]
-  let highlight: Int?
 
   @Environment(\.dsTheme) private var theme
 
@@ -188,9 +182,7 @@ private struct GuessDistribution: View {
                 width: max(30, geometry.size.width * CGFloat(count) / CGFloat(most)),
                 height: geometry.size.height, alignment: .trailing
               )
-              .background(
-                index + 1 == highlight ? theme.colors.primary : theme.colors.secondary,
-                in: .rect(cornerRadius: theme.radius.xs))
+              .background(theme.colors.secondary, in: .rect(cornerRadius: theme.radius.xs))
           }
           .frame(height: 22)
         }
@@ -198,37 +190,6 @@ private struct GuessDistribution: View {
         .accessibilityLabel("\(index + 1) guesses: \(count)")
       }
     }
-  }
-}
-
-/// One line's stats, shown when a puzzle is finished.
-struct LineStatsSheet: View {
-  let line: PuzzleLine
-  var highlight: Int?
-  var time: TimeInterval?
-
-  @Query private var progress: [PuzzleProgress]
-  @Environment(\.puzzleBank) private var bank
-  @Environment(\.dismiss) private var dismiss
-
-  var body: some View {
-    NavigationStack {
-      Group {
-        if let bank, let stats = StatsBook.current(progress, bank: bank)[line] {
-          LineStatsView(stats: stats, highlight: highlight, time: time)
-        } else {
-          ContentUnavailableView("No stats yet", systemImage: "chart.bar")
-        }
-      }
-      .navigationTitle(line.title)
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Done") { dismiss() }
-        }
-      }
-    }
-    .presentationDetents([.medium, .large])
   }
 }
 

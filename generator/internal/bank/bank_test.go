@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -18,8 +19,9 @@ import (
 
 // testLanguage has eight four-letter targets that each split only as two 2-letter tiles,
 // plus "ab", a one-tile word, "cdab", which is blocked, and two five-letter targets:
-// "zebra" and "cañon", whose display spelling differs.
-func testLanguage() Language {
+// "zebra" and "cañon", whose display spelling differs. Blocked words named in profane can
+// be turned on.
+func testLanguage(profane ...string) Language {
 	targets := []string{"abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "bdac", "egfh", "cañon", "zebra"}
 	display := map[string]string{"ab": "ab", "cdab": "cdab"}
 	freq := map[string]int{"ab": 50}
@@ -30,7 +32,12 @@ func testLanguage() Language {
 	}
 	display["cañon"] = "cañón"
 
-	return Language{Code: "en", Lexicon: lexicon.New(display, freq, blocked, targets)}
+	unlockable := map[string]bool{}
+	for _, word := range profane {
+		unlockable[word] = true
+	}
+
+	return Language{Code: "en", Lexicon: lexicon.New(display, freq, blocked, unlockable, targets)}
 }
 
 func testBuildConfig() *BuildConfig {
@@ -231,6 +238,19 @@ func TestBuild_pangrams(T *testing.T) {
 		must.Eq(t, []string{"cdab"}, second.Blocked)
 	})
 
+	T.Run("scores a blocked word a player can turn on", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := pangramConfig()
+		cfg.Languages = []Language{testLanguage("cdab")}
+		b, err := Build(cfg)
+		must.NoError(t, err)
+
+		p := b.Days[1].Puzzles[2]
+		must.Eq(t, []string{"cdab"}, p.Blocked)
+		must.Eq(t, []Word{{Word: "cdab", Points: 1 + pangram.PangramBonus}}, p.Profane)
+	})
+
 	T.Run("lists every word with its points and the pangrams a star needs", func(t *testing.T) {
 		t.Parallel()
 
@@ -295,6 +315,33 @@ func TestBuild_frozen(T *testing.T) {
 		must.NoError(t, err)
 
 		must.Eq(t, full, rebuilt)
+	})
+
+	T.Run("marks what a frozen board lets a player turn on by the blocklists as they are now", func(t *testing.T) {
+		t.Parallel()
+
+		before, err := Build(everyKind())
+		must.NoError(t, err)
+
+		cfg := everyKind()
+		cfg.Languages = []Language{testLanguage("cdab")}
+		cfg.Frozen = before.Days
+		after, err := Build(cfg)
+		must.NoError(t, err)
+
+		marked := 0
+		for d := range after.Days {
+			for i := range after.Days[d].Puzzles {
+				was, is := before.Days[d].Puzzles[i], after.Days[d].Puzzles[i]
+				must.SliceEmpty(t, was.Profane)
+				must.Eq(t, slices.Contains(is.Blocked, "cdab"), len(is.Profane) == 1)
+				marked += len(is.Profane)
+
+				is.Profane = nil
+				must.Eq(t, was, is, must.Sprint("nothing else about a frozen puzzle changes"))
+			}
+		}
+		must.Positive(t, marked)
 	})
 
 	T.Run("keeps frozen days through a change and repeats nothing a kind used", func(t *testing.T) {
@@ -413,6 +460,28 @@ func TestTilesPuzzle(T *testing.T) {
 		must.Eq(t, []string{"cdab"}, p.Blocked)
 		must.SliceLen(t, 1, p.Words)
 		must.Eq(t, "abcd", p.Words[0].Word)
+		must.SliceEmpty(t, p.Profane)
+	})
+
+	T.Run("scores a blocked word a player can turn on", func(t *testing.T) {
+		t.Parallel()
+
+		lang := testLanguage("cdab")
+		board := &tiles.Board{
+			Targets: []string{"abcd"},
+			Tiles:   []string{"ab", "cd"},
+			Found: []tiles.FoundWord{
+				{Word: "abcd", Tiles: []int{0, 1}},
+				{Word: "cdab", Tiles: []int{1, 0}},
+			},
+		}
+
+		p := tilesPuzzle(lang, 2, board, testRand())
+
+		must.Eq(t, []string{"cdab"}, p.Blocked)
+		must.SliceLen(t, 1, p.Profane)
+		must.Eq(t, "cdab", joinTiles(&p, p.Profane[0].Tiles))
+		must.Eq(t, tiles.Points(2), p.Profane[0].Points)
 	})
 }
 

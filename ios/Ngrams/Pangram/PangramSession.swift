@@ -45,8 +45,8 @@ final class PangramSession {
   /// `hardMode` is the setting, which applies only until the first word is saved; after that
   /// the board keeps the mode it was saved with.
   init(
-    puzzle: PangramPuzzle, day: PuzzleDay, hardMode: Bool, store: ProgressStore,
-    observer: any Observer
+    puzzle: PangramPuzzle, day: PuzzleDay, hardMode: Bool, curseWords: Bool = false,
+    store: ProgressStore, observer: any Observer
   ) {
     let key = ProgressKey(language: puzzle.language, kind: .pangram, n: puzzle.n, day: day)
     let logger = observer.logger.withValue("day", day.description).withValue("n", puzzle.n)
@@ -60,11 +60,11 @@ final class PangramSession {
       let assistance = try store.assistance(for: key)
       game = PangramGame(
         puzzle: puzzle, foundWords: try store.entries(for: key),
-        hardMode: try store.hardMode(for: key) ?? hardMode, hints: assistance?.hints ?? [],
-        gaveUp: assistance?.gaveUp ?? false)
+        hardMode: try store.hardMode(for: key) ?? hardMode, curseWords: curseWords,
+        hints: assistance?.hints ?? [], gaveUp: assistance?.gaveUp ?? false)
     } catch {
       logger.error("loading pangram progress", error)
-      game = PangramGame(puzzle: puzzle, hardMode: hardMode)
+      game = PangramGame(puzzle: puzzle, hardMode: hardMode, curseWords: curseWords)
       feedback = Feedback(kind: .loadFailed)
     }
     var rng = SeededGenerator(seed: "\(key.language.rawValue)-\(key.kind.rawValue)-\(key.n)-\(day)")
@@ -117,8 +117,7 @@ final class PangramSession {
     }
   }
 
-  /// Whether the board has its star or was solved, and is done showing how, which opens its
-  /// stats.
+  /// Whether the board has its star or was solved, and is done showing how.
   var finished: Bool {
     (game.earnedStar || game.gaveUp) && !solving
   }

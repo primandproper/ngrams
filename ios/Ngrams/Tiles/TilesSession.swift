@@ -40,8 +40,8 @@ final class TilesSession {
   private let logger: any Logger
 
   init(
-    puzzle: TilesPuzzle, day: PuzzleDay, solvedTilesLeave: Bool, store: ProgressStore,
-    observer: any Observer
+    puzzle: TilesPuzzle, day: PuzzleDay, solvedTilesLeave: Bool, curseWords: Bool = false,
+    store: ProgressStore, observer: any Observer
   ) {
     let key = ProgressKey(language: puzzle.language, kind: .tiles, n: puzzle.n, day: day)
     let logger = observer.logger.withValue("day", day.description).withValue("n", puzzle.n)
@@ -56,11 +56,12 @@ final class TilesSession {
       let assistance = try store.assistance(for: key)
       game = TilesGame(
         puzzle: puzzle, foundWords: try store.entries(for: key),
-        solvedTilesLeave: solvedTilesLeave, hints: assistance?.hints ?? [],
-        gaveUp: assistance?.gaveUp ?? false)
+        solvedTilesLeave: solvedTilesLeave, curseWords: curseWords,
+        hints: assistance?.hints ?? [], gaveUp: assistance?.gaveUp ?? false)
     } catch {
       logger.error("loading tiles progress", error)
-      game = TilesGame(puzzle: puzzle, solvedTilesLeave: solvedTilesLeave)
+      game = TilesGame(
+        puzzle: puzzle, solvedTilesLeave: solvedTilesLeave, curseWords: curseWords)
       feedback = Feedback(kind: .loadFailed)
     }
     self.game = game
@@ -125,7 +126,7 @@ final class TilesSession {
     }
   }
 
-  /// Whether the board is over and done showing how, which opens its stats.
+  /// Whether the board is over and done showing how.
   var finished: Bool {
     game.isOver && !solving
   }

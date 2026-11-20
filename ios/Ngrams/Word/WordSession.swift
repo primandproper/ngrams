@@ -102,7 +102,7 @@ final class WordSession {
     }
   }
 
-  /// Whether the puzzle is over and done showing how, which opens its stats.
+  /// Whether the puzzle is over and done showing how.
   var finished: Bool {
     game.isOver && !solving
   }

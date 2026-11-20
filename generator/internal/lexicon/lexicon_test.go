@@ -68,7 +68,7 @@ func TestFold(T *testing.T) {
 func TestLexicon_Lookup(T *testing.T) {
 	T.Parallel()
 
-	lex := New(map[string]string{"cat": "cat", "cats": "cats", "dog": "dog"}, nil, nil, nil)
+	lex := New(map[string]string{"cat": "cat", "cats": "cats", "dog": "dog"}, nil, nil, nil, nil)
 
 	T.Run("finds a word that is also a prefix", func(t *testing.T) {
 		t.Parallel()
@@ -111,26 +111,38 @@ func TestLoad(T *testing.T) {
 
 		dir := t.TempDir()
 		writeFiles(t, dir, map[string]string{
-			"raw/en/enable1.txt":   "cat\ncats\ndog\nshit\n",
-			"raw/en/en_50k.txt":    "cat 100\nshit 50\ndog 5\nzzz 1\n",
-			"blocklists/en.txt":    "# comment\nshit\n\n",
-			"blocklists/other.txt": "",
+			"raw/en/enable1.txt":          "cat\ncats\ndog\ngrue\nhwan\nshit\n",
+			"raw/en/en_50k.txt":           "cat 100\ngrue 70\nhwan 60\nshit 50\ndog 5\nzzz 1\n",
+			"blocklists/en.txt":           "# comment\ngrue\n\n",
+			"blocklists/en-profanity.txt": "# comment\nshit\n",
+			"blocklists/other.txt":        "",
+			"exclusions/en.txt":           "# comment\nhwan\n",
 		})
 
 		lex, err := Load("en", &Config{
 			DataDir:      filepath.Join(dir, "raw"),
 			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
 			MinCount:     20,
 		})
 		must.NoError(t, err)
 
-		must.Eq(t, 4, lex.Size())
+		must.Eq(t, 6, lex.Size())
 		must.Eq(t, []string{"cat", "dog"}, lex.Targets())
 		must.True(t, lex.Blocked("shit"))
+		must.True(t, lex.Profane("shit"))
+		must.True(t, lex.Blocked("grue"))
+		must.False(t, lex.Profane("grue"), must.Sprint("a word blocked for everyone can't be turned on"))
 
 		count, common := lex.Count("cat")
 		must.True(t, common)
 		must.Eq(t, 100, count)
+
+		isWord, _ := lex.Lookup("hwan")
+		must.True(t, isWord, must.Sprint("an excluded word is still a word"))
+		must.False(t, lex.Blocked("hwan"))
+		_, common = lex.Count("hwan")
+		must.True(t, common)
 
 		_, common = lex.Count("dog")
 		must.False(t, common)
@@ -145,11 +157,15 @@ func TestLoad(T *testing.T) {
 			"raw/en/enable1.txt": words,
 			"raw/en/en_50k.txt":  strings.ReplaceAll(words, "\n", " 100\n"),
 			"blocklists/en.txt":  "",
+			"exclusions/en.txt":  "",
+
+			"blocklists/en-profanity.txt": "",
 		})
 
 		lex, err := Load("en", &Config{
 			DataDir:      filepath.Join(dir, "raw"),
 			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
 			MinCount:     20,
 		})
 		must.NoError(t, err)
@@ -164,14 +180,18 @@ func TestLoad(T *testing.T) {
 		dir := t.TempDir()
 		writeFiles(t, dir, map[string]string{
 			"raw/es/es_MX.aff":   spanishAff,
-			"raw/es/es_MX.dic":   "5\ncanción/S\njoder/J\nvivir/X\ndad\nMéxico\n",
-			"raw/es/es_full.txt": "canción 300\ncancion 10\njoder 200\ndad 90\ncanciones 50\nméxico 80\n",
-			"blocklists/es.txt":  "joder\n",
+			"raw/es/es_MX.dic":   "6\ncanción/S\njoder/J\nvivir/X\ndad\nMéxico\nguzmán/S\n",
+			"raw/es/es_full.txt": "canción 300\ncancion 10\njoder 200\ndad 90\ncanciones 50\nméxico 80\nguzmán 70\n",
+			"blocklists/es.txt":  "",
+			"exclusions/es.txt":  "guzmán\n",
+
+			"blocklists/es-profanity.txt": "joder\n",
 		})
 
 		lex, err := Load("es", &Config{
 			DataDir:      filepath.Join(dir, "raw"),
 			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
 			MinCount:     20,
 		})
 		must.NoError(t, err)
@@ -185,6 +205,7 @@ func TestLoad(T *testing.T) {
 		must.Eq(t, 310, count)
 
 		must.True(t, lex.Blocked("joden"), must.Sprint("forms of a blocked stem are blocked"))
+		must.True(t, lex.Profane("joden"), must.Sprint("forms of a profane stem can be turned on"))
 
 		isWord, _ := lex.Lookup("vivi")
 		must.False(t, isWord, must.Sprint("voseo rule dropped"))
@@ -192,6 +213,35 @@ func TestLoad(T *testing.T) {
 		must.False(t, isWord, must.Sprint("vosotros stem dropped"))
 		isWord, _ = lex.Lookup("mexico")
 		must.False(t, isWord, must.Sprint("capitalized stem dropped"))
+		isWord, _ = lex.Lookup("guzman")
+		must.True(t, isWord, must.Sprint("an excluded stem is still a word"))
+	})
+
+	T.Run("keeps a form blocked for everyone when a profane stem shares it", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		writeFiles(t, dir, map[string]string{
+			"raw/es/es_MX.aff":   spanishAff,
+			"raw/es/es_MX.dic":   "2\ncomer/J\ncomen\n",
+			"raw/es/es_full.txt": "comer 300\ncomen 200\n",
+			"blocklists/es.txt":  "comen\n",
+			"exclusions/es.txt":  "",
+
+			"blocklists/es-profanity.txt": "comer\n",
+		})
+
+		lex, err := Load("es", &Config{
+			DataDir:      filepath.Join(dir, "raw"),
+			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
+			MinCount:     20,
+		})
+		must.NoError(t, err)
+
+		must.True(t, lex.Profane("comer"))
+		must.True(t, lex.Blocked("comen"))
+		must.False(t, lex.Profane("comen"))
 	})
 
 	T.Run("keeps flagless spanish stems out of answers", func(t *testing.T) {
@@ -203,11 +253,15 @@ func TestLoad(T *testing.T) {
 			"raw/es/es_MX.dic":   "2\nvera/S\nseré\n",
 			"raw/es/es_full.txt": "verá 500\nvera 10\nseré 300\n",
 			"blocklists/es.txt":  "",
+			"exclusions/es.txt":  "",
+
+			"blocklists/es-profanity.txt": "",
 		})
 
 		lex, err := Load("es", &Config{
 			DataDir:      filepath.Join(dir, "raw"),
 			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
 			MinCount:     20,
 		})
 		must.NoError(t, err)
@@ -227,11 +281,15 @@ func TestLoad(T *testing.T) {
 			"raw/es/es_MX.dic":   "3\ncl\nel\nño\n",
 			"raw/es/es_full.txt": "el 900\ncl 175\nño 100\n",
 			"blocklists/es.txt":  "",
+			"exclusions/es.txt":  "",
+
+			"blocklists/es-profanity.txt": "",
 		})
 
 		lex, err := Load("es", &Config{
 			DataDir:      filepath.Join(dir, "raw"),
 			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
 			MinCount:     20,
 		})
 		must.NoError(t, err)
@@ -261,13 +319,38 @@ func TestLoad(T *testing.T) {
 		must.Error(t, err)
 	})
 
+	T.Run("fails on a missing exclusion list", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		writeFiles(t, dir, map[string]string{
+			"raw/en/enable1.txt": "cat\n",
+			"raw/en/en_50k.txt":  "cat 100\n",
+			"blocklists/en.txt":  "",
+
+			"blocklists/en-profanity.txt": "",
+		})
+
+		_, err := Load("en", &Config{
+			DataDir:      filepath.Join(dir, "raw"),
+			BlocklistDir: filepath.Join(dir, "blocklists"),
+			ExclusionDir: filepath.Join(dir, "exclusions"),
+			MinCount:     20,
+		})
+		must.Error(t, err)
+	})
+
 	T.Run("fails on a missing dictionary", func(t *testing.T) {
 		t.Parallel()
 
 		dir := t.TempDir()
-		writeFiles(t, dir, map[string]string{"blocklists/en.txt": ""})
+		writeFiles(t, dir, map[string]string{
+			"blocklists/en.txt": "", "blocklists/en-profanity.txt": "", "exclusions/en.txt": "",
+		})
 
-		_, err := Load("en", &Config{DataDir: dir, BlocklistDir: filepath.Join(dir, "blocklists")})
+		_, err := Load("en", &Config{
+			DataDir: dir, BlocklistDir: filepath.Join(dir, "blocklists"), ExclusionDir: filepath.Join(dir, "exclusions"),
+		})
 		must.Error(t, err)
 	})
 }

@@ -86,7 +86,6 @@ import software.primandproper.ngrams.core.PangramGame
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
 import software.primandproper.ngrams.core.PuzzleLine
-import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.StatsBook
 import software.primandproper.ngrams.core.Status
 import software.primandproper.ngrams.core.TilesGame
@@ -156,16 +155,6 @@ sealed interface HomeState {
         val languagePrompt: Set<Language>?,
     ) : HomeState {
         val multilingual: Boolean get() = entries.map { it.language }.toSet().size > 1
-
-        /** Every puzzle started on the day, in [interfaceLanguage], or null if none was. */
-        fun shareText(interfaceLanguage: Language): String? =
-            ShareText.day(
-                entries.filterIsInstance<HomeEntry.Word>().map { it.game },
-                entries.filterIsInstance<HomeEntry.Tiles>().map { it.game },
-                entries.filterIsInstance<HomeEntry.Pangram>().map { it.game },
-                day,
-                interfaceLanguage,
-            )
     }
 }
 
@@ -372,7 +361,6 @@ fun HomeScreen(
                     IconButton(onClick = onSettings, modifier = Modifier.testTag("settings-button")) {
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
                     }
-                    loaded?.shareText(interfaceLanguage)?.let { ShareAction(it) }
                 },
                 scrollBehavior = scroll,
             )

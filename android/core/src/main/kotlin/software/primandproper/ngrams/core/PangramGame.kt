@@ -52,6 +52,8 @@ class PangramGame private constructor(
     val hints: List<String>,
     /** Whether the player had the puzzle solved for them, which gives up the star. */
     val gaveUp: Boolean,
+    /** Whether the board's profane words can be found. One found while this was on stays found. */
+    val curseWords: Boolean,
 ) {
     data class Submitted(
         val game: PangramGame,
@@ -59,6 +61,7 @@ class PangramGame private constructor(
     )
 
     private val words: Map<String, PangramWord> = puzzle.words.distinctBy { it.word }.associateBy { it.word }
+    private val profane: Map<String, PangramWord> = puzzle.profane.distinctBy { it.word }.associateBy { it.word }
 
     /** Folded spellings of the found words, oldest first, for saving. */
     val foundWords: List<String> get() = found.map { it.word }
@@ -147,12 +150,13 @@ class PangramGame private constructor(
             return Submitted(this, PangramSubmission.Empty)
         }
         val cleared = copy(current = "")
+        val unlocked = if (curseWords) profane[text] else null
         return when {
             text.length < PangramPuzzle.MIN_LENGTH -> Submitted(cleared, PangramSubmission.TooShort)
             puzzle.center !in text -> Submitted(cleared, PangramSubmission.MissingCenter)
-            text in puzzle.blocked -> Submitted(cleared, PangramSubmission.Blocked(text))
+            unlocked == null && text in puzzle.blocked -> Submitted(cleared, PangramSubmission.Blocked(text))
             else -> {
-                val word = words[text] ?: return Submitted(cleared, PangramSubmission.NotAWord(text))
+                val word = words[text] ?: unlocked ?: return Submitted(cleared, PangramSubmission.NotAWord(text))
                 when {
                     word in found -> Submitted(cleared, PangramSubmission.AlreadyFound(word))
                     hardMode && found.isEmpty() && !puzzle.isPangram(text) -> Submitted(cleared, PangramSubmission.NeedsPangram)
@@ -167,7 +171,7 @@ class PangramGame private constructor(
         current: String = this.current,
         hints: List<String> = this.hints,
         gaveUp: Boolean = this.gaveUp,
-    ): PangramGame = PangramGame(puzzle, hardMode, found, current, hints, gaveUp)
+    ): PangramGame = PangramGame(puzzle, hardMode, found, current, hints, gaveUp, curseWords)
 
     companion object {
         /**
@@ -180,9 +184,10 @@ class PangramGame private constructor(
             hardMode: Boolean = false,
             hints: List<String> = emptyList(),
             gaveUp: Boolean = false,
+            curseWords: Boolean = false,
         ): PangramGame {
-            val byWord = puzzle.words.distinctBy { it.word }.associateBy { it.word }
-            return PangramGame(puzzle, hardMode, foundWords.distinct().mapNotNull { byWord[it] }, "", hints, gaveUp)
+            val byWord = (puzzle.words + puzzle.profane).distinctBy { it.word }.associateBy { it.word }
+            return PangramGame(puzzle, hardMode, foundWords.distinct().mapNotNull { byWord[it] }, "", hints, gaveUp, curseWords)
         }
     }
 }

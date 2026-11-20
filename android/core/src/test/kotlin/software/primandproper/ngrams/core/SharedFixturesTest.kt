@@ -101,7 +101,13 @@ class SharedFixturesTest {
             assertEquals(case["targetsEarnStar"].jsonPrimitive.boolean, game.targetsEarnStar, label)
         }
         for (case in fixture.getValue("submissions").jsonArray) {
-            var game = TilesGame(puzzle(case), case["found"].strings, case["solvedTilesLeave"].jsonPrimitive.boolean)
+            var game =
+                TilesGame(
+                    puzzle(case),
+                    case["found"].strings,
+                    case["solvedTilesLeave"].jsonPrimitive.boolean,
+                    curseWords = case.jsonObject.optional("curseWords")?.jsonPrimitive?.boolean ?: false,
+                )
             for (tile in case["taps"].ints) {
                 game = game.toggle(tile)
             }
@@ -142,7 +148,12 @@ class SharedFixturesTest {
         for (case in fixture.getValue("submissions").jsonArray) {
             val game =
                 case["typed"].string.fold(
-                    PangramGame(puzzle, case["found"].strings, case["hardMode"].jsonPrimitive.boolean),
+                    PangramGame(
+                        puzzle,
+                        case["found"].strings,
+                        case["hardMode"].jsonPrimitive.boolean,
+                        curseWords = case.jsonObject.optional("curseWords")?.jsonPrimitive?.boolean ?: false,
+                    ),
                 ) { g, letter -> g.type(letter) }
             val (after, submission) = game.submit()
             val (result, text) =
@@ -278,6 +289,11 @@ class SharedFixturesTest {
                     actual.bestTime,
                     scenario["name"].string,
                 )
+                assertEquals(
+                    listOf("hints", "givenUp").map { expected.jsonObject.optional(it)?.jsonPrimitive?.int ?: 0 },
+                    listOf(actual.hints, actual.givenUp),
+                    scenario["name"].string,
+                )
             }
         }
     }
@@ -352,18 +368,6 @@ class SharedFixturesTest {
                     else -> ShareText.pangram(pangram(case), day, interfaceLanguage(case))
                 }
             assertEquals(case["text"].string, text)
-        }
-        for (case in fixture.getValue("days").jsonArray) {
-            val games = case["games"].jsonArray
-            val text =
-                ShareText.day(
-                    games.filter { it["kind"].string == "word" }.map(::word),
-                    games.filter { it["kind"].string == "tiles" }.map(::tiles),
-                    games.filter { it["kind"].string == "pangram" }.map(::pangram),
-                    day,
-                    interfaceLanguage(case),
-                )
-            assertEquals(case["text"].takeIf { it != JsonNull }?.string, text)
         }
         for (case in fixture.getValue("dayNames").jsonArray) {
             val name = PuzzleDay.parse(case["day"].string)!!.name(case["includingYear"].jsonPrimitive.boolean, interfaceLanguage(case))

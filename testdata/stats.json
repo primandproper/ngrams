@@ -1,5 +1,5 @@
 {
-  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. A record's stretches are [start, end] pairs of play, and timed says whether it was timed from its first move (false when left out). gaveUp says the player had it solved for them, and hints lists the hints taken (both empty or false when left out). bestTime is the fastest timed success in seconds, null when there is none or left out. Only the lines listed are checked.",
+  "description": "Stats and streaks. Each scenario computes every line through `today` from its records, with completions placed in timeZone. Records finish at noon Chicago (18:00Z) unless they say otherwise. A record's stretches are [start, end] pairs of play, and timed says whether it was timed from its first move (false when left out). gaveUp says the player had it solved for them, and hints lists the hints taken (both empty or false when left out). A line's hints is every hint taken on it, even on a puzzle with no guess or word yet, and givenUp is how many of its puzzles were solved for the player (both 0 when left out). bestTime is the fastest timed success in seconds, null when there is none or left out. Only the lines listed are checked.",
   "timeZone": "America/Chicago",
   "bank": {"version": 1, "seed": 1, "days": [
     {"date": "2027-01-01", "puzzles": [
@@ -61,7 +61,7 @@
       {"kind": "word", "lang": "en", "n": 5, "day": "2027-01-05", "entries": [], "completedAt": null, "hints": ["2"]},
       {"kind": "pangram", "lang": "en", "n": 6, "day": "2027-01-01", "entries": ["pace", "plaice"], "completedAt": "2027-01-01T18:00:00Z", "gaveUp": true}],
      "lines": [
-       {"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 2, "currentStreak": 1, "bestStreak": 1, "guessCounts": [2, 0, 0, 0, 0, 0]},
-       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 0, "currentStreak": 0, "bestStreak": 0, "guessCounts": [0, 0, 0, 0, 0, 0]}]}
+       {"kind": "word", "lang": "en", "n": 5, "played": 4, "decided": 4, "successes": 2, "currentStreak": 1, "bestStreak": 1, "guessCounts": [2, 0, 0, 0, 0, 0], "hints": 3, "givenUp": 2},
+       {"kind": "pangram", "lang": "en", "n": 6, "played": 1, "decided": 1, "successes": 0, "currentStreak": 0, "bestStreak": 0, "guessCounts": [0, 0, 0, 0, 0, 0], "givenUp": 1}]}
   ]
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"time"
 
@@ -67,11 +68,13 @@ type (
 		Targets  [][]int  `json:"targets,omitempty"`
 		// Blocked holds the folded spellings of offensive words the tiles or letters can
 		// build. They score nothing, so they aren't in Words.
-		Blocked     []string `json:"blocked,omitempty"`
-		Words       []Word   `json:"words,omitempty"`
-		N           int      `json:"n"`
-		Bonus       int      `json:"bonus,omitempty"`
-		TargetScore int      `json:"target_score,omitempty"`
+		Blocked []string `json:"blocked,omitempty"`
+		// Profane are the Blocked words a player can turn on, scored as Words are.
+		Profane     []Word `json:"profane,omitempty"`
+		Words       []Word `json:"words,omitempty"`
+		N           int    `json:"n"`
+		Bonus       int    `json:"bonus,omitempty"`
+		TargetScore int    `json:"target_score,omitempty"`
 	}
 
 	// Word is a valid word on a tiles or pangram board.
@@ -156,7 +159,7 @@ func Build(cfg *BuildConfig) (*Bank, error) {
 
 	for _, lang := range cfg.Languages {
 		started := time.Now()
-		used := keepFrozen(cfg, lang.Code, b)
+		used := keepFrozen(cfg, lang, b)
 
 		generators := make([]*tiles.Generator, len(cfg.Sizes))
 		for i, size := range cfg.Sizes {
@@ -280,7 +283,68 @@ func pangramPuzzle(lang Language, n int, board *pangram.Board) Puzzle {
 		}
 		p.Words = append(p.Words, w)
 	}
+	markProfane(lang, &p)
 	return p
+}
+
+// markProfane sets p.Profane to the blocked words on a board that a player can turn on,
+// worked out from the finished puzzle so a frozen board and a new one get them alike.
+func markProfane(lang Language, p *Puzzle) {
+	p.Profane = nil
+	for _, blocked := range p.Blocked {
+		if !lang.Lexicon.Profane(blocked) {
+			continue
+		}
+		w := Word{Word: blocked}
+		switch p.Kind {
+		case KindTiles:
+			w.Tiles = fewestTiles(p.Tiles, blocked, p.N)
+			w.Points = tiles.Points(len(w.Tiles))
+		case KindPangram:
+			w.Points = pangram.Points(blocked, usesEvery(p.Letters, blocked))
+		default:
+			continue
+		}
+		if shown := lang.Lexicon.Display(blocked); shown != blocked {
+			w.Display = shown
+		}
+		p.Profane = append(p.Profane, w)
+	}
+}
+
+// usesEvery reports whether spelled has every one of letters.
+func usesEvery(letters []string, spelled string) bool {
+	for _, letter := range letters {
+		if !strings.Contains(spelled, letter) {
+			return false
+		}
+	}
+	return true
+}
+
+// fewestTiles returns the fewest of a board's tiles, at most limit, that spell spelled in
+// order, each used once. A word found on the board always has such a path.
+func fewestTiles(board []string, spelled string, limit int) []int {
+	var best []int
+	var walk func(rest string, path []int)
+	walk = func(rest string, path []int) {
+		if rest == "" {
+			if best == nil || len(path) < len(best) {
+				best = slices.Clone(path)
+			}
+			return
+		}
+		if len(path) == limit || (best != nil && len(path)+1 >= len(best)) {
+			return
+		}
+		for i, tile := range board {
+			if strings.HasPrefix(rest, tile) && !slices.Contains(path, i) {
+				walk(rest[len(tile):], append(path, i))
+			}
+		}
+	}
+	walk(spelled, nil)
+	return best
 }
 
 // usedSets are what a language's puzzles have used so far, per kind: tiles targets, word
@@ -292,8 +356,9 @@ type usedSets struct {
 }
 
 // keepFrozen copies lang's configured puzzles from the frozen days into b and returns
-// what they used.
-func keepFrozen(cfg *BuildConfig, lang string, b *Bank) usedSets {
+// what they used. A frozen board keeps its tiles and words, but which of its blocked words
+// a player can turn on follows the blocklists as they are now.
+func keepFrozen(cfg *BuildConfig, lang Language, b *Bank) usedSets {
 	used := usedSets{tiles: map[string]bool{}, words: map[string]bool{}, pangrams: map[string]bool{}}
 	configured := map[string]map[int]bool{KindTiles: {}, KindWord: {}, KindPangram: {}}
 	for _, size := range cfg.Sizes {
@@ -309,10 +374,12 @@ func keepFrozen(cfg *BuildConfig, lang string, b *Bank) usedSets {
 	for d := range cfg.Frozen {
 		for i := range cfg.Frozen[d].Puzzles {
 			p := &cfg.Frozen[d].Puzzles[i]
-			if p.Lang != lang || !configured[p.Kind][p.N] {
+			if p.Lang != lang.Code || !configured[p.Kind][p.N] {
 				continue
 			}
-			b.Days[d].Puzzles = append(b.Days[d].Puzzles, *p)
+			kept := *p
+			markProfane(lang, &kept)
+			b.Days[d].Puzzles = append(b.Days[d].Puzzles, kept)
 
 			switch p.Kind {
 			case KindTiles:
@@ -386,6 +453,7 @@ func tilesPuzzle(lang Language, n int, board *tiles.Board, rng *rand.Rand) Puzzl
 		}
 		p.Words = append(p.Words, w)
 	}
+	markProfane(lang, &p)
 
 	return p
 }

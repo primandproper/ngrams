@@ -1,7 +1,7 @@
 package software.primandproper.ngrams.core
 
 /**
- * Spoiler-free results to paste anywhere: one puzzle's, or every puzzle started on a day. A `*`
+ * One puzzle's spoiler-free result to paste anywhere. A `*`
  * marks a result played in hard mode, and a ⭐ one that earned its star. Written in the sharer's
  * interface language, and matches the iOS app's text exactly; testdata/share.json holds both apps
  * to it.
@@ -56,46 +56,6 @@ object ShareText {
                 bar(game.score, puzzle.targetScore) + " ${game.foundPangrams}/$pangrams $noun",
             ),
         )
-    }
-
-    /** A line per language and game with the result of each puzzle started, or null if none was. */
-    fun day(
-        words: List<WordGame>,
-        tiles: List<TilesGame>,
-        pangrams: List<PangramGame>,
-        day: PuzzleDay,
-        interfaceLanguage: Language,
-    ): String? {
-        val lines = mutableListOf<String>()
-        for (language in Language.entries) {
-            val results =
-                listOf(
-                    PuzzleKind.WORD to
-                        words
-                            .filter { it.puzzle.language == language && (it.guesses.isNotEmpty() || it.gaveUp) }
-                            .sortedBy { it.puzzle.n }
-                            .map { "n=${it.puzzle.n} ${result(it)}" },
-                    PuzzleKind.TILES to
-                        tiles
-                            .filter { it.puzzle.language == language && (it.found.isNotEmpty() || it.gaveUp) }
-                            .sortedBy { it.puzzle.n }
-                            .map { "n=${it.puzzle.n} ${result(it)}" },
-                    PuzzleKind.PANGRAM to
-                        pangrams
-                            .filter { it.puzzle.language == language && (it.found.isNotEmpty() || it.gaveUp) }
-                            .sortedBy { it.puzzle.n }
-                            .map { "n=${it.puzzle.n} ${result(it)}" },
-                )
-            for ((kind, kindResults) in results) {
-                if (kindResults.isNotEmpty()) {
-                    lines += "${language.flag} ${kind.displayName(interfaceLanguage)} · " + kindResults.joinToString(" · ")
-                }
-            }
-        }
-        if (lines.isEmpty()) {
-            return null
-        }
-        return finished(listOf("n-grams · ${day.name(includingYear = false, interfaceLanguage)}") + lines)
     }
 
     private fun headline(

@@ -33,6 +33,8 @@ data class TilesPuzzle(
     val words: List<TilesWord>,
     /** Folded spellings of offensive words the tiles can build. They score nothing. */
     val blocked: Set<String> = emptySet(),
+    /** The blocked words a player can turn on, which then score like any other. */
+    val profane: List<TilesWord> = emptyList(),
 )
 
 /** A valid word on a tiles board. */
@@ -60,6 +62,8 @@ data class PangramPuzzle(
     val pangrams: Set<String>,
     /** Folded spellings of offensive words the letters can build. They score nothing. */
     val blocked: Set<String> = emptySet(),
+    /** The blocked words a player can turn on, which then score like any other. */
+    val profane: List<PangramWord> = emptyList(),
 ) {
     /** Whether [word] uses every letter. */
     fun isPangram(word: String): Boolean = word.toSet() == letters.toSet()
@@ -179,6 +183,7 @@ private data class PuzzleFile(
     @SerialName("target_score") val targetScore: Int = 0,
     val words: List<WordFile> = emptyList(),
     val blocked: List<String> = emptyList(),
+    val profane: List<WordFile> = emptyList(),
     val letters: List<String> = emptyList(),
     val center: String? = null,
     val pangrams: List<String> = emptyList(),
@@ -196,7 +201,7 @@ private data class PuzzleFile(
 
     fun tilesPuzzle(): TilesPuzzle? {
         val language = language(PuzzleKind.TILES) ?: return null
-        for (index in targets.flatten() + words.flatMap { it.tiles }) {
+        for (index in targets.flatten() + (words + profane).flatMap { it.tiles }) {
             if (index !in tiles.indices) {
                 throw BankException("tile index $index is outside a ${tiles.size}-tile board")
             }
@@ -210,6 +215,7 @@ private data class PuzzleFile(
             targetScore = targetScore,
             words = words.map { TilesWord(it.word, it.display, it.tiles, it.points) },
             blocked = blocked.toSet(),
+            profane = profane.map { TilesWord(it.word, it.display, it.tiles, it.points) },
         )
     }
 
@@ -217,7 +223,7 @@ private data class PuzzleFile(
         val language = language(PuzzleKind.PANGRAM) ?: return null
         val letters = letters.mapNotNull { it.firstOrNull() }
         val center = center?.firstOrNull()?.takeIf { it in letters } ?: throw BankException("pangram center $center isn't a letter")
-        for (word in words) {
+        for (word in words + profane) {
             if (center !in word.word || !letters.containsAll(word.word.toList())) {
                 throw BankException("${word.word} doesn't fit its pangram board")
             }
@@ -231,6 +237,7 @@ private data class PuzzleFile(
             words = words.map { PangramWord(it.word, it.display, it.points) },
             pangrams = pangrams.toSet(),
             blocked = blocked.toSet(),
+            profane = profane.map { PangramWord(it.word, it.display, it.points) },
         )
     }
 }

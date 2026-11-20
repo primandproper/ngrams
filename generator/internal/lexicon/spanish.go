@@ -67,7 +67,7 @@ func spanishWord(form string) (string, bool) {
 // Answers further need affix flags: the flagless stems are mostly irregular conjugations
 // and abbreviations (seré, podrán, dpto), and a stem displays as the dictionary spells
 // it rather than as its most common homograph (vera, not verá).
-func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, error) {
+func loadSpanish(dir string, minCount int, never, profane, excluded map[string]bool) (*Lexicon, error) {
 	affixes, err := parseFile(filepath.Join(dir, "es_MX.aff"), hunspell.ParseAffixes)
 	if err != nil {
 		return nil, err
@@ -80,9 +80,11 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 		return nil, err
 	}
 
-	// Blocklist entries are stems, so every form expanded from one is blocked too.
+	// Blocklist entries are stems, so every form expanded from one is blocked too. A form
+	// two stems share stays blocked for everyone if either stem is.
 	display := map[string]string{}
-	allBlocked := maps.Clone(blocked)
+	allNever := maps.Clone(never)
+	allProfane := maps.Clone(profane)
 	stems := map[string]struct{}{}
 	flagged := map[string]string{}
 	for i := range entries {
@@ -96,7 +98,8 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 				flagged[stem] = entries[i].Stem
 			}
 		}
-		stemBlocked := ok && blocked[stem]
+		stemNever := ok && never[stem]
+		stemProfane := ok && profane[stem]
 		affixes.Expand(entries[i].Stem, entries[i].Flags, func(form string) {
 			word, valid := spanishWord(form)
 			if !valid {
@@ -105,8 +108,11 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 			if _, seen := display[word]; !seen {
 				display[word] = form
 			}
-			if stemBlocked {
-				allBlocked[word] = true
+			if stemNever {
+				allNever[word] = true
+			}
+			if stemProfane {
+				allProfane[word] = true
 			}
 		})
 	}
@@ -118,14 +124,18 @@ func loadSpanish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 
 	maps.Copy(display, flagged)
 
+	allBlocked := maps.Clone(allNever)
+	maps.Copy(allBlocked, allProfane)
+	maps.DeleteFunc(allProfane, func(word string, _ bool) bool { return allNever[word] })
+
 	var targets []string
 	for stem := range stems {
-		if top[stem] && !allBlocked[stem] {
+		if top[stem] && !allBlocked[stem] && !excluded[stem] {
 			targets = append(targets, stem)
 		}
 	}
 
-	lex := New(display, freq, allBlocked, targets)
+	lex := New(display, freq, allBlocked, allProfane, targets)
 	lex.answers = slices.DeleteFunc(slices.Clone(lex.targets), func(stem string) bool {
 		_, ok := flagged[stem]
 		return !ok

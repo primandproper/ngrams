@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.sin
@@ -87,6 +89,32 @@ fun <T> OnChange(
         }
     }
 }
+
+/**
+ * Calls [onBack] a moment after [won] turns on. [won] is null until the puzzle loads, so one opened already won stays
+ * open, as does one lost or solved for the player, whose answer is still to be read. Leaving first cancels the wait.
+ */
+@Composable
+fun ReturnHomeWhenWon(
+    won: Boolean?,
+    onBack: () -> Unit,
+) {
+    var returning by remember { mutableStateOf(false) }
+    val back by rememberUpdatedState(onBack)
+    OnChange(won) { was, now -> if (was == false && now == true) returning = true }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(returning) {
+        if (returning) {
+            delay(RETURN_HOME_MS)
+            // A screen already on its way out isn't resumed, and popping again would take home with it.
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                back()
+            }
+        }
+    }
+}
+
+private const val RETURN_HOME_MS = 1_500L
 
 /**
  * Shakes side to side whenever [trigger] goes up while [active], unless animations are removed. Views that take turns

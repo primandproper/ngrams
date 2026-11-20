@@ -151,6 +151,10 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   letters per board); that's accepted, since it's the player's choice. Completed puzzles move
   to a "Completed" section at the bottom: a `tiles` board or `word` puzzle once it's over, a
   `pangram` board once it has its star.
+- Winning a `word` puzzle or earning a board's star goes back to home after a second and a
+  half, long enough to see the win land. A puzzle lost or solved for the player stays open, so
+  the answer can be read, as does one opened already finished: a `pangram` board reopened from
+  Completed takes more words without leaving again (2026-11-20).
 - Players choose which languages they want puzzles in, once on first launch (pre-checked from
   the device's preferred languages) and any time after in Settings. Home shows only those, so
   nobody is handed puzzles in a language they don't play. At least one stays on.
@@ -163,8 +167,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   the same comma-separated codes as the language choice, which keeps the keys fixed for
   `@AppStorage`. The single switches from before move over on first launch, to every language if
   they were on; a language turned on later starts with its hard modes off.
-- Results share as spoiler-free text: each puzzle from its own screen, and every puzzle started
-  on a day from home, a line per language and game, in the interface language. Shares carry the
+- Results share as spoiler-free text, each puzzle from its own screen, in the interface
+  language. Home used to share every puzzle started on a day, a line per language and game;
+  that button and its text were removed (2026-11-20). Shares carry the
   date ("Oct 25") rather than a puzzle number, a flag even when only one language is on (the
   reader may play another), `*` for hard mode, and ⭐ for a star. `word` shares its grid;
   `tiles` and `pangram` a ten-segment bar toward the target. The grid avoids the original's
@@ -172,7 +177,11 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   absent letters fade rather than fill.
 - Stats and streaks are per `(lang, kind, n)`: played, the share won (`word`) or starred
   (boards), current and best streak, and for `word` how many guesses each solve took. They
-  show on a stats screen from home, after finishing a puzzle, and as a flame on each home row.
+  show on a stats screen from home and as a flame on each home row. A line's stats also
+  count every hint taken on it and how many of its puzzles were solved for the player
+  (2026-11-20). Finishing a puzzle used
+  to open its line's stats in a sheet a second later; that went, since it interrupted every
+  puzzle of the day to show numbers that had barely moved (2026-11-20).
 - A streak counts a `word` solve or a board's star, on the puzzle's own day. Playing earlier
   days from the calendar counts toward the totals but not the streak, as in the original's
   archive. An unfinished puzzle today leaves the streak alone until midnight; a lost one ends
@@ -185,8 +194,8 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   than stored. Time before the first guess or word is held in memory and saved with it, so
   opening a puzzle and leaving never starts it, and the open stretch is saved every 30 seconds,
   which is the most a crash can lose. A puzzle started before timing existed has no time
-  (`timed` is false on its progress). The clock shows under each game's title, the finished
-  time in the stats sheet, and the best timed success per line on the stats screen. "Show
+  (`timed` is false on its progress). The clock shows under each game's title, and the
+  best timed success per line on the stats screen. "Show
   timer" in Settings hides all of it without stopping the timing (2026-11-02).
 - A player can take hints or have a puzzle solved. Hints are free but counted: progress keeps
   each hint, in the game's own terms, in the order taken, apart from `entries` since stats read
@@ -263,7 +272,7 @@ Go tool, and the app ships with a pre-built puzzle bank.
 ```mermaid
 flowchart LR
   subgraph Offline["generator (Go, run locally)"]
-    W[Word lists + frequency data + blocklist] --> G[Generators + quality scoring]
+    W[Word lists + frequency data + blocklist + exclusions] --> G[Generators + quality scoring]
     G --> R[Manual review pass]
     R --> B[puzzles.json]
   end
@@ -283,7 +292,7 @@ generator/   Go module: word list processing, puzzle generation, bank output
 ios/         Xcode project
 android/     Gradle project: :core (rules, plain Kotlin) and :app (Compose)
 testdata/    cases the iOS and Android tests both run
-data/        per-language source word lists and blocklists, generated bank
+data/        per-language source word lists, blocklists and exclusions, generated bank
 docs/        this file
 ```
 
@@ -350,17 +359,40 @@ per-language config.
   since the 50k list misses rare but standard inflections (`untó`, `vencía`); the dictionary
   filters out the junk in its tail. In both languages targets come only from the top 50k
   ranks, and a found word counts as common at 20 or more occurrences.
-- Blocklist: one per language, in `data/blocklists/`. Offensive words are excluded from
+- Blocklists: two per language, in `data/blocklists/`. Offensive words are excluded from
   answers and targets, and the board search penalizes boards that can spell them. A board
   that still can lists them apart from its scoring words, and spelling one gets "How dare you"
   instead of points: a plain rejection of a real word would read as a bug. The bar is slurs,
   sexual or anatomical vulgarity, and sexual-violence terms; words whose innocent sense
   dominates stay (sexual, suck, butt, Spanish pedo), and mild profanity (damn, hell, crap)
-  stays except "ass". Spanish entries are stems, so blocking one blocks every form it
+  stays except "ass".
+- The blocklist is split by whether a player can turn a word on (2026-11-20). `<lang>.txt`
+  holds slurs and sexual-violence terms, blocked for everyone. `<lang>-profanity.txt` holds
+  swearing and sexual vulgarity, blocked until "Curse words" is on in Settings, which is one
+  switch for every language and off by default. On, a profane word is a Password guess and a
+  found word on a board, scoring as any word of its length or tile count would. It is still
+  never an answer or a target, since the day's puzzle is the same for everyone, and the board
+  search still steers away from it. A board's unlockable words ship in the bank as `profane`,
+  scored, beside `blocked`, and each Password length gets a `-profane.txt` guess file, so
+  the apps hold no scoring rules of their own. Frozen days gain or lose `profane` words as
+  the lists change, the one thing about a frozen board that follows today's data, since it
+  changes nothing a player without the setting sees. The setting is read when a puzzle
+  opens, and a word found or guessed while it was on stays after it is turned off. Spanish
+  `puto` sits with the profanity although it is also a slur, because its forms include
+  `puta` and a stem brings its whole family. Spanish entries are stems, so blocking one blocks every form it
   expands to; English entries are exact forms, so compounds need their own entries. Stems
   also mean a Spanish word can only be blocked with its whole family: mamar takes mamá with
   it and violar takes viola, so their vulgar forms (mame, violen) stay unblocked until the
   list supports exact forms.
+- Exclusions: one list per language, in `data/exclusions/`, of real words that are never
+  answers or targets but stay valid guesses and found words. Subtitle counts are lowercased,
+  so a name or foreign word ranks as common whenever the dictionary carries a rare word
+  spelled the same: HWAN, an old Korean coin, was a Password answer on the strength of
+  Korean names, as were LIANG, COLIN and ORTEGA. The lists are curated by reading the answer
+  pools, since no count separates LIANG from JACK, CHINA or SWISS, which stay because players
+  know their everyday sense. Only the pools were read, so a board target outside them can
+  still be a name. English entries are exact forms and Spanish ones stems, as in the
+  blocklists (2026-11-20).
 
 ### `word` puzzles
 
@@ -378,7 +410,7 @@ Answers are base forms, which neither dictionary marks directly:
   irregular conjugations and abbreviations (seré, podrán, dpto). A stem displays as the
   dictionary spells it rather than as its most common homograph (vera, not verá), which also
   changed a few `tiles` words' display spellings.
-- At 4 letters Spanish has only about 720 answers, under 2 years of puzzles.
+- At 4 letters Spanish has only about 680 answers, under 2 years of puzzles.
 
 ### `tiles` puzzles
 

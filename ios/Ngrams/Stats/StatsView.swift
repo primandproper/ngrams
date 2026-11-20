@@ -115,8 +115,12 @@ struct LineStatsView: View {
           Figure(value: "\(stats.currentStreak)", label: "Streak")
           Figure(value: "\(stats.bestStreak)", label: "Best streak")
         }
-        if showTimer, let bestTime = stats.bestTime {
-          Figure(value: formattedTime(bestTime), label: "Best time")
+        HStack(alignment: .top) {
+          if showTimer, let bestTime = stats.bestTime {
+            Figure(value: formattedTime(bestTime), label: "Best time")
+          }
+          Figure(value: "\(stats.hints)", label: "Hints")
+          Figure(value: "\(stats.givenUp)", label: "Solved for you")
         }
         if stats.line.kind == .word {
           GuessDistribution(counts: stats.guessCounts)

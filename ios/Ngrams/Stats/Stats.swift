@@ -59,6 +59,10 @@ nonisolated struct LineStats: Equatable, Sendable {
   var guessCounts = Array(repeating: 0, count: WordGame.maxGuesses)
   /// The fastest timed success, in seconds.
   var bestTime: TimeInterval?
+  /// Every hint taken, even on a puzzle with no guess or word yet.
+  var hints = 0
+  /// Puzzles the player had solved for them.
+  var givenUp = 0
 
   init(line: PuzzleLine) {
     self.line = line
@@ -101,6 +105,10 @@ nonisolated enum StatsBook {
         if outcome.succeeded, let time = outcome.time {
           lineStats.bestTime = min(lineStats.bestTime ?? time, time)
         }
+        lineStats.hints += outcome.hints
+        if outcome.gaveUp {
+          lineStats.givenUp += 1
+        }
 
         let onTime =
           outcome.succeeded
@@ -131,6 +139,8 @@ nonisolated enum StatsBook {
     var guesses: Int?
     var completedAt: Date?
     var time: TimeInterval?
+    var hints = 0
+    var gaveUp = false
   }
 
   private static func outcome(
@@ -155,6 +165,8 @@ nonisolated enum StatsBook {
       }
       outcome.completedAt = record.completedAt
       outcome.time = record.time
+      outcome.hints = record.hints.count
+      outcome.gaveUp = game.gaveUp
     }
     return (line, outcome)
   }
@@ -173,6 +185,8 @@ nonisolated enum StatsBook {
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt
       outcome.time = record.time
+      outcome.hints = record.hints.count
+      outcome.gaveUp = game.gaveUp
     }
     return (line, outcome)
   }
@@ -191,6 +205,8 @@ nonisolated enum StatsBook {
       outcome.succeeded = game.earnedStar
       outcome.completedAt = record.completedAt
       outcome.time = record.time
+      outcome.hints = record.hints.count
+      outcome.gaveUp = game.gaveUp
     }
     return (line, outcome)
   }

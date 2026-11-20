@@ -173,7 +173,9 @@ games; the risk was accepted for an in-app label, since only the app's name is s
   absent letters fade rather than fill.
 - Stats and streaks are per `(lang, kind, n)`: played, the share won (`word`) or starred
   (boards), current and best streak, and for `word` how many guesses each solve took. They
-  show on a stats screen from home and as a flame on each home row. Finishing a puzzle used
+  show on a stats screen from home and as a flame on each home row. A line's stats also
+  count every hint taken on it and how many of its puzzles were solved for the player
+  (2026-11-20). Finishing a puzzle used
   to open its line's stats in a sheet a second later; that went, since it interrupted every
   puzzle of the day to show numbers that had barely moved (2026-11-20).
 - A streak counts a `word` solve or a board's star, on the puzzle's own day. Playing earlier

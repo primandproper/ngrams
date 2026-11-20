@@ -274,6 +274,8 @@ struct SharedFixturesTests {
         #expect(actual.bestStreak == expected["bestStreak"] as? Int, "\(name)")
         #expect(actual.guessCounts == expected["guessCounts"] as? [Int], "\(name)")
         #expect(actual.bestTime == expected["bestTime"] as? TimeInterval, "\(name)")
+        #expect(actual.hints == expected["hints"] as? Int ?? 0, "\(name)")
+        #expect(actual.givenUp == expected["givenUp"] as? Int ?? 0, "\(name)")
       }
     }
   }

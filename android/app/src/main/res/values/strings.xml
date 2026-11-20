@@ -118,6 +118,8 @@
     <string name="best_streak">Best streak</string>
     <string name="time">Time</string>
     <string name="best_time">Best time</string>
+    <string name="hints">Hints</string>
+    <string name="solved_for_you">Solved for you</string>
     <string name="guesses">Guesses</string>
     <string name="no_stats">No stats yet</string>
     <string name="streaks_count_solves">Streaks count solves on the puzzle\'s own day.</string>

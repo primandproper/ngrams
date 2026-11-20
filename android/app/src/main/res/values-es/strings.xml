@@ -119,6 +119,8 @@
     <string name="best_streak">Mejor racha</string>
     <string name="time">Tiempo</string>
     <string name="best_time">Mejor tiempo</string>
+    <string name="hints">Pistas</string>
+    <string name="solved_for_you">Resueltos por ti</string>
     <string name="guesses">Intentos</string>
     <string name="no_stats">Aún no hay estadísticas</string>
     <string name="streaks_count_solves">Las rachas cuentan los retos resueltos el mismo día del reto.</string>

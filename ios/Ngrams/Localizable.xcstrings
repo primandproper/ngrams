@@ -868,6 +868,16 @@
         }
       }
     },
+    "Hints" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pistas"
+          }
+        }
+      }
+    },
     "Hold to clear the row" : {
       "localizations" : {
         "es" : {
@@ -1073,6 +1083,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Resolver este reto?"
+          }
+        }
+      }
+    },
+    "Solved for you" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resueltos por ti"
           }
         }
       }

@@ -278,6 +278,11 @@ class SharedFixturesTest {
                     actual.bestTime,
                     scenario["name"].string,
                 )
+                assertEquals(
+                    listOf("hints", "givenUp").map { expected.jsonObject.optional(it)?.jsonPrimitive?.int ?: 0 },
+                    listOf(actual.hints, actual.givenUp),
+                    scenario["name"].string,
+                )
             }
         }
     }

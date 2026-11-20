@@ -345,11 +345,13 @@ fun LineStatsView(
             Figure("${stats.currentStreak}", stringResource(R.string.streak))
             Figure("${stats.bestStreak}", stringResource(R.string.best_streak))
         }
-        val bestTime = stats.bestTime
-        if (showTimer && bestTime != null) {
-            Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth()) {
+            val bestTime = stats.bestTime
+            if (showTimer && bestTime != null) {
                 Figure(formattedTime(bestTime), stringResource(R.string.best_time))
             }
+            Figure("${stats.hints}", stringResource(R.string.hints))
+            Figure("${stats.givenUp}", stringResource(R.string.solved_for_you))
         }
         if (stats.line.kind == PuzzleKind.WORD) {
             GuessDistribution(stats.guessCounts)

@@ -10,14 +10,14 @@ import (
 )
 
 // testLexicon has four-letter answers of descending commonness, a five-letter answer, a
-// valid word that isn't an answer, and a blocked one.
+// valid word that isn't an answer, and two blocked ones, one of which can be turned on.
 func testLexicon() *lexicon.Lexicon {
 	display := map[string]string{
-		"lamp": "lamp", "tree": "tree", "fern": "fern", "piñon": "piñón", "zarf": "zarf", "shit": "shit",
+		"lamp": "lamp", "tree": "tree", "fern": "fern", "piñon": "piñón", "zarf": "zarf", "shit": "shit", "grue": "grue",
 	}
 	freq := map[string]int{"lamp": 300, "tree": 200, "fern": 100, "piñon": 50}
-	blocked := map[string]bool{"shit": true}
-	return lexicon.New(display, freq, blocked, []string{"fern", "lamp", "piñon", "tree"})
+	blocked := map[string]bool{"shit": true, "grue": true}
+	return lexicon.New(display, freq, blocked, map[string]bool{"shit": true}, []string{"fern", "lamp", "piñon", "tree"})
 }
 
 func TestNewGenerator(T *testing.T) {
@@ -73,9 +73,10 @@ func TestGuesses(T *testing.T) {
 	T.Run("splits every word of the length into accepted and blocked", func(t *testing.T) {
 		t.Parallel()
 
-		accepted, blocked := Guesses(testLexicon(), 4)
+		accepted, blocked, profane := Guesses(testLexicon(), 4)
 
 		must.Eq(t, []string{"fern", "lamp", "tree", "zarf"}, accepted)
-		must.Eq(t, []string{"shit"}, blocked)
+		must.Eq(t, []string{"grue", "shit"}, blocked)
+		must.Eq(t, []string{"shit"}, profane, must.Sprint("only swearing can be turned on"))
 	})
 }

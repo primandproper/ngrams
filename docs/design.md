@@ -355,13 +355,27 @@ per-language config.
   since the 50k list misses rare but standard inflections (`untó`, `vencía`); the dictionary
   filters out the junk in its tail. In both languages targets come only from the top 50k
   ranks, and a found word counts as common at 20 or more occurrences.
-- Blocklist: one per language, in `data/blocklists/`. Offensive words are excluded from
+- Blocklists: two per language, in `data/blocklists/`. Offensive words are excluded from
   answers and targets, and the board search penalizes boards that can spell them. A board
   that still can lists them apart from its scoring words, and spelling one gets "How dare you"
   instead of points: a plain rejection of a real word would read as a bug. The bar is slurs,
   sexual or anatomical vulgarity, and sexual-violence terms; words whose innocent sense
   dominates stay (sexual, suck, butt, Spanish pedo), and mild profanity (damn, hell, crap)
-  stays except "ass". Spanish entries are stems, so blocking one blocks every form it
+  stays except "ass".
+- The blocklist is split by whether a player can turn a word on (2026-11-20). `<lang>.txt`
+  holds slurs and sexual-violence terms, blocked for everyone. `<lang>-profanity.txt` holds
+  swearing and sexual vulgarity, blocked until "Curse words" is on in Settings, which is one
+  switch for every language and off by default. On, a profane word is a Password guess and a
+  found word on a board, scoring as any word of its length or tile count would. It is still
+  never an answer or a target, since the day's puzzle is the same for everyone, and the board
+  search still steers away from it. A board's unlockable words ship in the bank as `profane`,
+  scored, beside `blocked`, and each Password length gets a `-profane.txt` guess file, so
+  the apps hold no scoring rules of their own. Frozen days gain or lose `profane` words as
+  the lists change, the one thing about a frozen board that follows today's data, since it
+  changes nothing a player without the setting sees. The setting is read when a puzzle
+  opens, and a word found or guessed while it was on stays after it is turned off. Spanish
+  `puto` sits with the profanity although it is also a slur, because its forms include
+  `puta` and a stem brings its whole family. Spanish entries are stems, so blocking one blocks every form it
   expands to; English entries are exact forms, so compounds need their own entries. Stems
   also mean a Spanish word can only be blocked with its whole family: mamar takes mamá with
   it and violar takes viola, so their vulgar forms (mame, violen) stay unblocked until the

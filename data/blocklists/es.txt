@@ -1,81 +1,26 @@
-# Spanish blocklist, Mexican usage. One word per line; # starts a comment.
-# Entries are dictionary stems: every form expanded from a stem is blocked too
-# (joder blocks joden, mamón blocks mamona). Accents are optional.
+# Spanish blocklist, Mexican usage: words blocked for everyone. One word per line; # starts
+# a comment. Entries are dictionary stems: every form expanded from a stem is blocked too
+# (marica blocks maricas). Accents are optional.
 #
-# Blocked words never become targets or score, and the generator steers away from
-# boards that can spell them. Spelling one in the app gets "How dare you".
+# Slurs and sexual-violence terms. Blocked words never become targets or score, and the
+# generator steers away from boards that can spell them. Spelling one in the app gets
+# "How dare you", whatever the player's settings. Swearing is in es-profanity.txt.
 
 bollero
-boludo
-buscona
-cabrón
-cabronada
-cagar
-chaquetear
-chaquetero
-chingada
-chingar
-chingón
-coger # vulgar in Mexico
-cojonudo
-comemierda
-coño
-culero
-culo
-culón
 estuprador
 estuprar
 estupro
-follador
-follar
-furcia
-gilipollas
-golfa
-joder
-lameculos
 machorra
-mamón
 marica
 maricón
 mariconera
 marimacho
 marimarica
-mear
-mierda
 mongólico
 mongoloide
-mujerzuela
 naco
-ojete
-pajear
-pajero
-panocha
 pederasta
 pederastia
 pedofilia
-pelandusca
-pendejear
-pendejo
-pinche
-piruja
 pocho
-porno
-puñetero
-puta
-putada
-putañear
-putear
-puterío
-putero
-puto
-putón
-ramera
-singar
-soplapollas
-teta
-tetón
-tetona
-tetuda
-verga
 violador
-zorra

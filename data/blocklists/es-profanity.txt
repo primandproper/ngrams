@@ -1,0 +1,65 @@
+# Spanish profanity, Mexican usage: words blocked until a player turns curse words on. One
+# word per line; # starts a comment. Entries are dictionary stems: every form expanded from
+# a stem is covered too (joder covers joden, mamón covers mamona). Accents are optional.
+#
+# Swearing and sexual vulgarity. Like the words in es.txt these never become targets and
+# the generator steers away from boards that can spell them, but with curse words on they
+# count as guesses and found words. A form a stem in es.txt also expands to stays blocked
+# for everyone.
+
+boludo
+buscona
+cabrón
+cabronada
+cagar
+chaquetear
+chaquetero
+chingada
+chingar
+chingón
+coger # vulgar in Mexico
+cojonudo
+comemierda
+coño
+culero
+culo
+culón
+follador
+follar
+furcia
+gilipollas
+golfa
+joder
+lameculos
+mamón
+mear
+mierda
+mujerzuela
+ojete
+pajear
+pajero
+panocha
+pelandusca
+pendejear
+pendejo
+pinche
+piruja
+porno
+puñetero
+puta
+putada
+putañear
+putear
+puterío
+putero
+puto # also a slur, but its forms include puta, and stems block whole families
+putón
+ramera
+singar
+soplapollas
+teta
+tetón
+tetona
+tetuda
+verga
+zorra

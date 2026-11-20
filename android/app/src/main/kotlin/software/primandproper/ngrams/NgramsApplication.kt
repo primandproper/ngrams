@@ -89,6 +89,6 @@ class AppContainer(
             val name = GuessList.name(language, n)
 
             fun read(file: String) = assets.open("guesses/$file.txt").bufferedReader().use { it.readText() }
-            GuessList.parse(read(name), read("$name-blocked"))
+            GuessList.parse(read(name), read("$name-blocked"), read("$name-profane"))
         }
 }

@@ -36,6 +36,8 @@ class TilesGame private constructor(
     val hints: List<String>,
     /** Whether the player had the puzzle solved for them, which gives up the star. */
     val gaveUp: Boolean,
+    /** Whether the board's profane words can be found. One found while this was on stays found. */
+    val curseWords: Boolean,
 ) {
     data class Submitted(
         val game: TilesGame,
@@ -44,6 +46,7 @@ class TilesGame private constructor(
 
     /** The board's words by spelling, the first of any repeat winning, as on iOS. */
     private val words: Map<String, TilesWord> = puzzle.words.distinctBy { it.word }.associateBy { it.word }
+    private val profane: Map<String, TilesWord> = puzzle.profane.distinctBy { it.word }.associateBy { it.word }
     private val targetIndex: Map<String, Int> =
         puzzle.targets.withIndex().associate { (i, target) -> target.joinToString("") { puzzle.tiles[it] } to i }
 
@@ -168,10 +171,11 @@ class TilesGame private constructor(
             return Submitted(this, TilesSubmission.Empty)
         }
         val cleared = copy(selection = emptyList())
-        if (text in puzzle.blocked) {
+        val unlocked = if (curseWords) profane[text] else null
+        if (unlocked == null && text in puzzle.blocked) {
             return Submitted(cleared, TilesSubmission.Blocked(text))
         }
-        val word = words[text] ?: return Submitted(cleared, TilesSubmission.NotAWord(text))
+        val word = words[text] ?: unlocked ?: return Submitted(cleared, TilesSubmission.NotAWord(text))
         if (word in found) {
             return Submitted(cleared, TilesSubmission.AlreadyFound(word))
         }
@@ -183,7 +187,7 @@ class TilesGame private constructor(
         selection: List<Int> = this.selection,
         hints: List<String> = this.hints,
         gaveUp: Boolean = this.gaveUp,
-    ): TilesGame = TilesGame(puzzle, solvedTilesLeave, found, selection, hints, gaveUp)
+    ): TilesGame = TilesGame(puzzle, solvedTilesLeave, found, selection, hints, gaveUp, curseWords)
 
     companion object {
         /**
@@ -196,10 +200,11 @@ class TilesGame private constructor(
             solvedTilesLeave: Boolean = false,
             hints: List<String> = emptyList(),
             gaveUp: Boolean = false,
+            curseWords: Boolean = false,
         ): TilesGame {
-            val byWord = puzzle.words.distinctBy { it.word }.associateBy { it.word }
+            val byWord = (puzzle.words + puzzle.profane).distinctBy { it.word }.associateBy { it.word }
             val found = foundWords.distinct().mapNotNull { byWord[it] }
-            return TilesGame(puzzle, solvedTilesLeave, found, emptyList(), hints, gaveUp)
+            return TilesGame(puzzle, solvedTilesLeave, found, emptyList(), hints, gaveUp, curseWords)
         }
     }
 }

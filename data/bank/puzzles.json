@@ -250866,7 +250866,7 @@
           {"word":"urdo","points":1},
           {"word":"urdu","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","n","o","u"],"center":"f","pangrams":["cualificacion","funcional"],"blocked":["folla","follala","follalo","follan","follo"],"n":8,"target_score":439,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","n","o","u"],"center":"f","pangrams":["cualificacion","funcional"],"blocked":["folla","follala","follalo","follan","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follan","points":6},{"word":"follo","points":5}],"n":8,"target_score":439,"words":[
           {"word":"afan","display":"afán","points":1},
           {"word":"afana","points":5},
           {"word":"afanan","points":6},
@@ -251854,7 +251854,7 @@
           {"word":"orfo","points":1},
           {"word":"rafa","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","g","i","m","n","t"],"center":"g","pangrams":["ciegamente","enigmatica","geneticamente","magicamente","magnetica"],"blocked":["caga","cagan","cagate"],"n":8,"target_score":399,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","g","i","m","n","t"],"center":"g","pangrams":["ciegamente","enigmatica","geneticamente","magicamente","magnetica"],"blocked":["caga","cagan","cagate"],"profane":[{"word":"caga","points":1},{"word":"cagan","points":5},{"word":"cagate","display":"cágate","points":6}],"n":8,"target_score":399,"words":[
           {"word":"aciaga","points":6},
           {"word":"agamita","points":7},
           {"word":"agamitan","points":8},
@@ -252880,7 +252880,7 @@
           {"word":"union","display":"unión","points":5},
           {"word":"util","display":"útil","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","d","f","i","o","r","u"],"center":"f","pangrams":["crucificado","fiduciario"],"blocked":["furcia"],"n":8,"target_score":258,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","d","f","i","o","r","u"],"center":"f","pangrams":["crucificado","fiduciario"],"blocked":["furcia"],"profane":[{"word":"furcia","points":6}],"n":8,"target_score":258,"words":[
           {"word":"acidifica","points":9},
           {"word":"acidificada","points":11},
           {"word":"acidificado","points":11},
@@ -253910,7 +253910,7 @@
           {"word":"tofana","points":6},
           {"word":"tofo","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","m","o","p","r","ñ"],"center":"ñ","pangrams":["acompañare","acompañarme","compañera","compañero"],"blocked":["coño"],"n":8,"target_score":278,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","m","o","p","r","ñ"],"center":"ñ","pangrams":["acompañare","acompañarme","compañera","compañero"],"blocked":["coño"],"profane":[{"word":"coño","points":1}],"n":8,"target_score":278,"words":[
           {"word":"aceña","points":5},
           {"word":"acompaña","points":8},
           {"word":"acompañame","display":"acompáñame","points":10},
@@ -255006,7 +255006,7 @@
           {"word":"urajee","display":"urajeé","points":6},
           {"word":"urja","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","n","o","p"],"center":"f","pangrams":["planificacion","planifico"],"blocked":["folla","follala","follalo","follan","follo"],"n":8,"target_score":415,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","n","o","p"],"center":"f","pangrams":["planificacion","planifico"],"blocked":["folla","follala","follalo","follan","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follan","points":6},{"word":"follo","points":5}],"n":8,"target_score":415,"words":[
           {"word":"afan","display":"afán","points":1},
           {"word":"afana","points":5},
           {"word":"afanan","points":6},
@@ -256026,7 +256026,7 @@
           {"word":"titea","points":5},
           {"word":"titee","display":"titeé","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","d","e","m","n","o","r","z"],"center":"z","pangrams":["amenazador","amenazadora"],"blocked":["zorra"],"n":8,"target_score":496,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","d","e","m","n","o","r","z"],"center":"z","pangrams":["amenazador","amenazadora"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":496,"words":[
           {"word":"adereza","points":7},
           {"word":"aderezada","points":9},
           {"word":"aderezado","points":9},
@@ -257392,7 +257392,7 @@
           {"word":"refrenen","points":8},
           {"word":"refreno","points":7}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","h","n","o","p","u","z"],"center":"a","pangrams":["chapuzon"],"blocked":["naca","naco","panocha","pocha"],"n":8,"target_score":280,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","h","n","o","p","u","z"],"center":"a","pangrams":["chapuzon"],"blocked":["naca","naco","panocha","pocha"],"profane":[{"word":"panocha","points":7}],"n":8,"target_score":280,"words":[
           {"word":"acacha","points":6},
           {"word":"acachan","points":7},
           {"word":"acacho","display":"acachó","points":6},
@@ -258546,7 +258546,7 @@
           {"word":"tutee","points":5},
           {"word":"ureter","display":"uréter","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","b","d","e","m","o","r","z"],"center":"z","pangrams":["embarazado"],"blocked":["zorra"],"n":8,"target_score":343,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","b","d","e","m","o","r","z"],"center":"z","pangrams":["embarazado"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":343,"words":[
           {"word":"abraza","points":6},
           {"word":"abrazaba","points":8},
           {"word":"abrazada","points":8},
@@ -259860,7 +259860,7 @@
           {"word":"rilaria","display":"rilaría","points":7},
           {"word":"rilarian","display":"rilarían","points":8}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","i","j","m","n","o"],"center":"j","pangrams":["mejicano"],"blocked":["coja","cojan","cojo"],"n":8,"target_score":280,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","i","j","m","n","o"],"center":"j","pangrams":["mejicano"],"blocked":["coja","cojan","cojo"],"profane":[{"word":"coja","points":1},{"word":"cojan","points":5},{"word":"cojo","points":1}],"n":8,"target_score":280,"words":[
           {"word":"acoja","points":5},
           {"word":"acojan","points":6},
           {"word":"acojina","points":7},
@@ -260841,7 +260841,7 @@
           {"word":"topeto","display":"topetó","points":6},
           {"word":"topo","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["e","i","m","n","p","r","t","u"],"center":"u","pangrams":["interrumpe","interrumpen","interrumpi","interrumpir","interrumpire","interrumpirme","interrumpirte"],"blocked":["putee","puteen"],"n":8,"target_score":312,"words":[
+        {"lang":"es","kind":"pangram","letters":["e","i","m","n","p","r","t","u"],"center":"u","pangrams":["interrumpe","interrumpen","interrumpi","interrumpir","interrumpire","interrumpirme","interrumpirte"],"blocked":["putee","puteen"],"profane":[{"word":"putee","display":"puteé","points":5},{"word":"puteen","points":6}],"n":8,"target_score":312,"words":[
           {"word":"empunte","display":"empunté","points":7},
           {"word":"empunten","points":8},
           {"word":"entrepuente","points":11},
@@ -262026,7 +262026,7 @@
           {"word":"vivaba","points":6},
           {"word":"vivaban","points":7}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","i","l","m","n","o","u"],"center":"u","pangrams":["acumulacion","calumnio","culminacion","iluminacion"],"blocked":["culo","culon","culona"],"n":8,"target_score":459,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","i","l","m","n","o","u"],"center":"u","pangrams":["acumulacion","calumnio","culminacion","iluminacion"],"blocked":["culo","culon","culona"],"profane":[{"word":"culo","points":1},{"word":"culon","display":"culón","points":5},{"word":"culona","points":6}],"n":8,"target_score":459,"words":[
           {"word":"acicula","display":"acícula","points":7},
           {"word":"acucia","points":6},
           {"word":"acucian","points":7},
@@ -263091,7 +263091,7 @@
           {"word":"urdo","points":1},
           {"word":"urdu","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","n","o","p","t","u"],"center":"u","pangrams":["ocupante"],"blocked":["puta","putea","putean","putee","puteen","puteo","puto","puton"],"n":8,"target_score":323,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","n","o","p","t","u"],"center":"u","pangrams":["ocupante"],"blocked":["puta","putea","putean","putee","puteen","puteo","puto","puton"],"profane":[{"word":"puta","points":1},{"word":"putea","points":5},{"word":"putean","points":6},{"word":"putee","display":"puteé","points":5},{"word":"puteen","points":6},{"word":"puteo","points":5},{"word":"puto","points":1},{"word":"puton","display":"putón","points":5}],"n":8,"target_score":323,"words":[
           {"word":"acentua","display":"acentúa","points":7},
           {"word":"acentuan","display":"acentúan","points":8},
           {"word":"acentue","display":"acentúe","points":7},
@@ -264268,7 +264268,7 @@
           {"word":"util","display":"útil","points":1},
           {"word":"utilidad","points":8}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","i","m","n","o","r","t","z"],"center":"z","pangrams":["monitoriza","monitorizan","monitorizar"],"blocked":["zorra"],"n":8,"target_score":364,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","i","m","n","o","r","t","z"],"center":"z","pangrams":["monitoriza","monitorizan","monitorizar"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":364,"words":[
           {"word":"amariza","points":7},
           {"word":"amarizan","points":8},
           {"word":"amarizar","points":8},
@@ -265810,7 +265810,7 @@
           {"word":"zoizo","points":5},
           {"word":"zorito","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","d","g","i","n","o","r","z"],"center":"z","pangrams":["granizado","graznido","organizada","organizado","organizador","organizadora","organizando"],"blocked":["zorra"],"n":8,"target_score":445,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","d","g","i","n","o","r","z"],"center":"z","pangrams":["granizado","graznido","organizada","organizado","organizador","organizadora","organizando"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":445,"words":[
           {"word":"adoniza","points":7},
           {"word":"adonizada","points":9},
           {"word":"adonizado","points":9},
@@ -267380,7 +267380,7 @@
           {"word":"zeda","points":1},
           {"word":"zenda","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","i","j","n","o","r","u"],"center":"j","pangrams":["cirujano"],"blocked":["coja","cojan","cojo"],"n":8,"target_score":336,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","i","j","n","o","r","u"],"center":"j","pangrams":["cirujano"],"blocked":["coja","cojan","cojo"],"profane":[{"word":"coja","points":1},{"word":"cojan","points":5},{"word":"cojo","points":1}],"n":8,"target_score":336,"words":[
           {"word":"acoja","points":5},
           {"word":"acojan","points":6},
           {"word":"acojina","points":7},
@@ -268530,7 +268530,7 @@
           {"word":"vivo","points":1},
           {"word":"voto","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","b","e","f","l","n","o","t"],"center":"f","pangrams":["analfabeto","telefoneaba"],"blocked":["folla","follaba","follaban","follala","follalo","follan","folle","follen","follo"],"n":8,"target_score":333,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","b","e","f","l","n","o","t"],"center":"f","pangrams":["analfabeto","telefoneaba"],"blocked":["folla","follaba","follaban","follala","follalo","follan","folle","follen","follo"],"profane":[{"word":"folla","points":5},{"word":"follaba","points":7},{"word":"follaban","points":8},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follan","points":6},{"word":"folle","display":"follé","points":5},{"word":"follen","points":6},{"word":"follo","points":5}],"n":8,"target_score":333,"words":[
           {"word":"abofetea","points":8},
           {"word":"abofeteaba","points":10},
           {"word":"abofeteaban","points":11},
@@ -270688,7 +270688,7 @@
           {"word":"nicho","points":5},
           {"word":"ocho","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","i","l","n","o","u","v"],"center":"u","pangrams":["ovulacion","valuacion","vinculacion"],"blocked":["culo","culon","culona"],"n":8,"target_score":347,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","i","l","n","o","u","v"],"center":"u","pangrams":["ovulacion","valuacion","vinculacion"],"blocked":["culo","culon","culona"],"profane":[{"word":"culo","points":1},{"word":"culon","display":"culón","points":5},{"word":"culona","points":6}],"n":8,"target_score":347,"words":[
           {"word":"acicula","display":"acícula","points":7},
           {"word":"acucia","points":6},
           {"word":"acucian","points":7},
@@ -271673,7 +271673,7 @@
           {"word":"toda","points":1},
           {"word":"todo","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","m","n","o","r","z"],"center":"z","pangrams":["comenzar","comenzara","comenzaran","comenzare","comenzaron","recomenzar"],"blocked":["zorra"],"n":8,"target_score":467,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","m","n","o","r","z"],"center":"z","pangrams":["comenzar","comenzara","comenzaran","comenzare","comenzaron","recomenzar"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":467,"words":[
           {"word":"acaezca","points":7},
           {"word":"acaezcan","points":8},
           {"word":"aceza","points":5},
@@ -273028,7 +273028,7 @@
           {"word":"votado","points":6},
           {"word":"voto","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","i","n","o","p","t","u"],"center":"u","pangrams":["puntuacion"],"blocked":["puta","puto","puton"],"n":8,"target_score":347,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","i","n","o","p","t","u"],"center":"u","pangrams":["puntuacion"],"blocked":["puta","puto","puton"],"profane":[{"word":"puta","points":1},{"word":"puto","points":1},{"word":"puton","display":"putón","points":5}],"n":8,"target_score":347,"words":[
           {"word":"actua","display":"actúa","points":5},
           {"word":"actuacion","display":"actuación","points":9},
           {"word":"actuan","display":"actúan","points":6},
@@ -274082,7 +274082,7 @@
           {"word":"ropero","points":6},
           {"word":"rore","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","f","i","l","o","p","r","t"],"center":"f","pangrams":["portafolio"],"blocked":["folla","follala","follalo","follar","follara","follaria","follarla","follarlo","follo"],"n":8,"target_score":322,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","f","i","l","o","p","r","t"],"center":"f","pangrams":["portafolio"],"blocked":["folla","follala","follalo","follar","follara","follaria","follarla","follarlo","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follar","points":6},{"word":"follara","points":7},{"word":"follaria","display":"follaría","points":8},{"word":"follarla","points":8},{"word":"follarlo","points":8},{"word":"follo","points":5}],"n":8,"target_score":322,"words":[
           {"word":"afila","points":5},
           {"word":"afilar","points":6},
           {"word":"afilara","points":7},
@@ -275297,7 +275297,7 @@
           {"word":"tomo","points":1},
           {"word":"totuma","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","b","e","f","l","o","r","v"],"center":"f","pangrams":["favorable"],"blocked":["folla","follaba","follala","follalo","follar","follara","follare","follarla","follarlo","folle","follo"],"n":8,"target_score":224,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","b","e","f","l","o","r","v"],"center":"f","pangrams":["favorable"],"blocked":["folla","follaba","follala","follalo","follar","follara","follare","follarla","follarlo","folle","follo"],"profane":[{"word":"folla","points":5},{"word":"follaba","points":7},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follar","points":6},{"word":"follara","points":7},{"word":"follare","display":"follaré","points":7},{"word":"follarla","points":8},{"word":"follarlo","points":8},{"word":"folle","display":"follé","points":5},{"word":"follo","points":5}],"n":8,"target_score":224,"words":[
           {"word":"afable","points":6},
           {"word":"afea","points":1},
           {"word":"afeaba","points":6},
@@ -276361,7 +276361,7 @@
           {"word":"unte","display":"unté","points":1},
           {"word":"unten","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","m","n","o"],"center":"f","pangrams":["filmacion","inflamacion"],"blocked":["folla","follala","follalo","follan","follo"],"n":8,"target_score":431,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","f","i","l","m","n","o"],"center":"f","pangrams":["filmacion","inflamacion"],"blocked":["folla","follala","follalo","follan","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follan","points":6},{"word":"follo","points":5}],"n":8,"target_score":431,"words":[
           {"word":"afama","points":5},
           {"word":"afaman","points":6},
           {"word":"afamo","display":"afamó","points":5},
@@ -277533,7 +277533,7 @@
           {"word":"ungen","points":5},
           {"word":"urgen","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","e","g","i","n","o","r","z"],"center":"z","pangrams":["organizare","reorganiza","reorganizar","reorganizo"],"blocked":["zorra"],"n":8,"target_score":349,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","e","g","i","n","o","r","z"],"center":"z","pangrams":["organizare","reorganiza","reorganizar","reorganizo"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":349,"words":[
           {"word":"agoniza","points":7},
           {"word":"agonizan","points":8},
           {"word":"agonizar","points":8},
@@ -278971,7 +278971,7 @@
           {"word":"zoologia","display":"zoología","points":8},
           {"word":"zoologo","display":"zoólogo","points":7}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","i","l","n","o","u"],"center":"u","pangrams":["elocuencia"],"blocked":["culo","culon","culona"],"n":8,"target_score":372,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","i","l","n","o","u"],"center":"u","pangrams":["elocuencia"],"blocked":["culo","culon","culona"],"profane":[{"word":"culo","points":1},{"word":"culon","display":"culón","points":5},{"word":"culona","points":6}],"n":8,"target_score":372,"words":[
           {"word":"acaule","points":6},
           {"word":"acicula","display":"acícula","points":7},
           {"word":"aclueca","points":7},
@@ -280004,7 +280004,7 @@
           {"word":"vivo","points":1},
           {"word":"vocativo","points":8}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","g","l","n","o","u","y"],"center":"c","pangrams":["conyugal"],"blocked":["caga","cagan","cago","culo","culon","culona","naca","naco"],"n":8,"target_score":229,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","g","l","n","o","u","y"],"center":"c","pangrams":["conyugal"],"blocked":["caga","cagan","cago","culo","culon","culona","naca","naco"],"profane":[{"word":"caga","points":1},{"word":"cagan","points":5},{"word":"cago","points":1},{"word":"culo","points":1},{"word":"culon","display":"culón","points":5},{"word":"culona","points":6}],"n":8,"target_score":229,"words":[
           {"word":"acalla","points":6},
           {"word":"acallan","points":7},
           {"word":"acallo","display":"acalló","points":6},
@@ -281034,7 +281034,7 @@
           {"word":"upada","points":5},
           {"word":"upado","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","f","l","m","o","p","r","t"],"center":"f","pangrams":["plataforma"],"blocked":["folla","follala","follalo","follar","follara","follarla","follarlo","follo"],"n":8,"target_score":213,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","f","l","m","o","p","r","t"],"center":"f","pangrams":["plataforma"],"blocked":["folla","follala","follalo","follar","follara","follarla","follarlo","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follar","points":6},{"word":"follara","points":7},{"word":"follarla","points":8},{"word":"follarlo","points":8},{"word":"follo","points":5}],"n":8,"target_score":213,"words":[
           {"word":"afama","points":5},
           {"word":"afamar","points":6},
           {"word":"afamara","display":"afamará","points":7},
@@ -282145,7 +282145,7 @@
           {"word":"rollo","points":5},
           {"word":"rolo","points":1}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","c","e","f","l","m","n","o"],"center":"f","pangrams":["flamenco"],"blocked":["folla","follala","follalo","follan","folle","follen","follo"],"n":8,"target_score":174,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","c","e","f","l","m","n","o"],"center":"f","pangrams":["flamenco"],"blocked":["folla","follala","follalo","follan","folle","follen","follo"],"profane":[{"word":"folla","points":5},{"word":"follala","display":"fóllala","points":7},{"word":"follalo","display":"fóllalo","points":7},{"word":"follan","points":6},{"word":"folle","display":"follé","points":5},{"word":"follen","points":6},{"word":"follo","points":5}],"n":8,"target_score":174,"words":[
           {"word":"acalefa","points":7},
           {"word":"acalefo","points":7},
           {"word":"acefala","display":"acéfala","points":7},
@@ -283186,7 +283186,7 @@
           {"word":"uremico","display":"urémico","points":14},
           {"word":"urico","display":"úrico","points":5}
         ]},
-        {"lang":"es","kind":"pangram","letters":["c","e","l","n","o","t","u","y"],"center":"o","pangrams":["concluyente"],"blocked":["culo","culon","teton"],"n":8,"target_score":345,"words":[
+        {"lang":"es","kind":"pangram","letters":["c","e","l","n","o","t","u","y"],"center":"o","pangrams":["concluyente"],"blocked":["culo","culon","teton"],"profane":[{"word":"culo","points":1},{"word":"culon","display":"culón","points":5},{"word":"teton","display":"tetón","points":5}],"n":8,"target_score":345,"words":[
           {"word":"ceceo","points":5},
           {"word":"celo","points":1},
           {"word":"ceno","points":1},
@@ -284359,7 +284359,7 @@
           {"word":"rafa","points":1},
           {"word":"rafaga","display":"ráfaga","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","d","i","l","n","p","t","u"],"center":"u","pangrams":["puntualidad"],"blocked":["puta","putada"],"n":8,"target_score":373,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","d","i","l","n","p","t","u"],"center":"u","pangrams":["puntualidad"],"blocked":["puta","putada"],"profane":[{"word":"puta","points":1},{"word":"putada","points":6}],"n":8,"target_score":373,"words":[
           {"word":"aduana","points":6},
           {"word":"aduanal","points":7},
           {"word":"adula","points":5},
@@ -285656,7 +285656,7 @@
           {"word":"voceo","points":5},
           {"word":"vocero","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["c","e","l","n","o","q","r","u"],"center":"n","pangrams":["enloquecer","enloquecere"],"blocked":["culon"],"n":8,"target_score":445,"words":[
+        {"lang":"es","kind":"pangram","letters":["c","e","l","n","o","q","r","u"],"center":"n","pangrams":["enloquecer","enloquecere"],"blocked":["culon"],"profane":[{"word":"culon","display":"culón","points":5}],"n":8,"target_score":445,"words":[
           {"word":"ceceen","points":6},
           {"word":"celen","points":5},
           {"word":"cencerree","display":"cencerreé","points":9},
@@ -286826,7 +286826,7 @@
           {"word":"toxicidad","points":16},
           {"word":"toxico","display":"tóxico","points":6}
         ]},
-        {"lang":"es","kind":"pangram","letters":["a","e","f","l","o","r","t","z"],"center":"z","pangrams":["fortaleza"],"blocked":["zorra"],"n":8,"target_score":340,"words":[
+        {"lang":"es","kind":"pangram","letters":["a","e","f","l","o","r","t","z"],"center":"z","pangrams":["fortaleza"],"blocked":["zorra"],"profane":[{"word":"zorra","points":5}],"n":8,"target_score":340,"words":[
           {"word":"alazo","points":5},
           {"word":"alazor","points":6},
           {"word":"aletazo","points":7},

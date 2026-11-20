@@ -156,7 +156,8 @@ class PangramViewModel(
             timer.load()
             // The setting applies only until the first word is saved; after that the board keeps
             // the mode it was saved with.
-            val hardMode = container.settings.settings.first().hardMode(PuzzleKind.PANGRAM, key.language)
+            val settings = container.settings.settings.first()
+            val hardMode = settings.hardMode(PuzzleKind.PANGRAM, key.language)
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)
@@ -166,10 +167,12 @@ class PangramViewModel(
                         saved?.hardMode ?: hardMode,
                         saved?.hints.orEmpty(),
                         saved?.gaveUp ?: false,
+                        settings.curseWords,
                     ) to null
                 } catch (e: Exception) {
                     logger.error("loading pangram progress", e)
-                    PangramGame(puzzle, hardMode = hardMode) to Feedback(R.string.couldnt_load_progress)
+                    PangramGame(puzzle, hardMode = hardMode, curseWords = settings.curseWords) to
+                        Feedback(R.string.couldnt_load_progress)
                 }
             val outer = puzzle.letters.filter { it != puzzle.center }.toMutableList()
             outer.shuffle(SeededGenerator(layoutSeed(key.language, key.kind, key.n, day)))

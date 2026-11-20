@@ -143,14 +143,23 @@ class TilesViewModel(
             val puzzle = container.bank().tilesPuzzles(day).first { it.language == key.language && it.n == key.n }
             timer.load()
             // Tiles reads its hard mode live, like the iOS app, rather than fixing it per board.
-            val solvedTilesLeave = container.settings.settings.first().hardMode(PuzzleKind.TILES, key.language)
+            val settings = container.settings.settings.first()
+            val solvedTilesLeave = settings.hardMode(PuzzleKind.TILES, key.language)
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)
-                    TilesGame(puzzle, saved?.entries.orEmpty(), solvedTilesLeave, saved?.hints.orEmpty(), saved?.gaveUp ?: false) to null
+                    TilesGame(
+                        puzzle,
+                        saved?.entries.orEmpty(),
+                        solvedTilesLeave,
+                        saved?.hints.orEmpty(),
+                        saved?.gaveUp ?: false,
+                        settings.curseWords,
+                    ) to null
                 } catch (e: Exception) {
                     logger.error("loading tiles progress", e)
-                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback(R.string.couldnt_load_progress)
+                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave, curseWords = settings.curseWords) to
+                        Feedback(R.string.couldnt_load_progress)
                 }
             val first = withContext(Dispatchers.Default) { arranged(game, SeededGenerator(layoutSeed(key.language, key.kind, key.n, day))) }
             _state.value = TilesState.Playing(game, first, feedback)

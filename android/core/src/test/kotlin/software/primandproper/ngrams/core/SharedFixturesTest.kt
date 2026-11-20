@@ -101,7 +101,13 @@ class SharedFixturesTest {
             assertEquals(case["targetsEarnStar"].jsonPrimitive.boolean, game.targetsEarnStar, label)
         }
         for (case in fixture.getValue("submissions").jsonArray) {
-            var game = TilesGame(puzzle(case), case["found"].strings, case["solvedTilesLeave"].jsonPrimitive.boolean)
+            var game =
+                TilesGame(
+                    puzzle(case),
+                    case["found"].strings,
+                    case["solvedTilesLeave"].jsonPrimitive.boolean,
+                    curseWords = case.jsonObject.optional("curseWords")?.jsonPrimitive?.boolean ?: false,
+                )
             for (tile in case["taps"].ints) {
                 game = game.toggle(tile)
             }
@@ -142,7 +148,12 @@ class SharedFixturesTest {
         for (case in fixture.getValue("submissions").jsonArray) {
             val game =
                 case["typed"].string.fold(
-                    PangramGame(puzzle, case["found"].strings, case["hardMode"].jsonPrimitive.boolean),
+                    PangramGame(
+                        puzzle,
+                        case["found"].strings,
+                        case["hardMode"].jsonPrimitive.boolean,
+                        curseWords = case.jsonObject.optional("curseWords")?.jsonPrimitive?.boolean ?: false,
+                    ),
                 ) { g, letter -> g.type(letter) }
             val (after, submission) = game.submit()
             val (result, text) =

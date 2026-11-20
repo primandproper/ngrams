@@ -85,6 +85,17 @@ class WordGameTest {
     }
 
     @Test
+    fun `accepts profane words once curse words are on, and nothing else that's blocked`() {
+        val list = GuessList(setOf("lamp"), blocked = setOf("shit", "grue"), profane = setOf("shit"))
+        val game = WordGame(WordPuzzle(Language.EN, 4, "lamp", null)).typed("shit")
+
+        assertEquals(Submission.Blocked("shit"), game.submit(list).submission)
+        val guessed = game.submit(list.withCurseWords)
+        assertEquals(Submission.Guessed("shit"), guessed.submission)
+        assertEquals(Submission.Blocked("grue"), guessed.game.typed("grue").submit(list.withCurseWords).submission)
+    }
+
+    @Test
     fun `makes hard mode guesses keep correct letters in place`() {
         // PLAZA finds L, A, and A in place against LLAMA.
         val game = WordGame(wordPuzzle, listOf("plaza"), hardMode = true).typed("label")

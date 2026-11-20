@@ -18,6 +18,7 @@ struct WordScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.word)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var state = LoadState.loading
 
   var body: some View {
@@ -45,7 +46,7 @@ struct WordScreen: View {
       let list = try await GuessList.loadBundled(language: puzzle.language, n: puzzle.n)
       state = .loaded(
         WordSession(
-          puzzle: puzzle, day: day, list: list,
+          puzzle: puzzle, day: day, list: curseWords ? list.withCurseWords : list,
           hardMode: hardModes.languages.contains(puzzle.language),
           store: ProgressStore(context: context, observer: observer), observer: observer))
     } catch {

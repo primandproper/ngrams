@@ -11,6 +11,7 @@ struct PangramScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.pangram)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var session: PangramSession?
 
   var body: some View {
@@ -30,6 +31,7 @@ struct PangramScreen: View {
         let observer = makeObserver("PangramSession", pillars)
         session = PangramSession(
           puzzle: puzzle, day: day, hardMode: hardModes.languages.contains(puzzle.language),
+          curseWords: curseWords,
           store: ProgressStore(context: context, observer: observer),
           observer: observer)
       }

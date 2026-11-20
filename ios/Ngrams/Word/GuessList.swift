@@ -6,18 +6,26 @@ nonisolated struct GuessList: Sendable {
   let accepted: Set<String>
   /// Valid but offensive words, answered apart from words the list doesn't know.
   let blocked: Set<String>
+  /// The blocked words a player can turn on: swearing, not slurs.
+  let profane: Set<String>
 
-  init(accepted: Set<String>, blocked: Set<String> = []) {
+  init(accepted: Set<String>, blocked: Set<String> = [], profane: Set<String> = []) {
     self.accepted = accepted
     self.blocked = blocked
+    self.profane = profane
   }
 
   /// Parses the generator's one-word-per-line files.
-  init(accepted: String, blocked: String) {
+  init(accepted: String, blocked: String, profane: String = "") {
     func words(_ text: String) -> Set<String> {
       Set(text.split(whereSeparator: \.isNewline).map(String.init))
     }
-    self.init(accepted: words(accepted), blocked: words(blocked))
+    self.init(accepted: words(accepted), blocked: words(blocked), profane: words(profane))
+  }
+
+  /// The list with curse words on: its profane words are guesses like any other.
+  var withCurseWords: GuessList {
+    GuessList(accepted: accepted.union(profane), blocked: blocked.subtracting(profane))
   }
 
   /// Reads the list bundled for `language` and `n`, off the main actor.
@@ -33,7 +41,9 @@ nonisolated struct GuessList: Sendable {
       return try String(contentsOf: url, encoding: .utf8)
     }
     let name = "\(language.rawValue)-\(n)"
-    return GuessList(accepted: try read(name), blocked: try read("\(name)-blocked"))
+    return GuessList(
+      accepted: try read(name), blocked: try read("\(name)-blocked"),
+      profane: try read("\(name)-profane"))
   }
 }
 

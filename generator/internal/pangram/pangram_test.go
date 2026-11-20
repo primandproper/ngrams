@@ -22,7 +22,7 @@ func testLexicon(blocked ...string) *lexicon.Lexicon {
 	for _, word := range blocked {
 		isBlocked[word] = true
 	}
-	return lexicon.New(display, freq, isBlocked, []string{"plaice", "place", "pals"})
+	return lexicon.New(display, freq, isBlocked, nil, []string{"plaice", "place", "pals"})
 }
 
 func testRand() *rand.Rand {

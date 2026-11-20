@@ -640,6 +640,16 @@
         }
       }
     },
+    "Curse words" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groserías"
+          }
+        }
+      }
+    },
     "Day" : {
       "localizations" : {
         "es" : {
@@ -1279,6 +1289,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enviar"
+          }
+        }
+      }
+    },
+    "Swear words count as guesses and found words. They're never an answer, and slurs stay off." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las groserías cuentan como intentos y como palabras encontradas. Nunca son la respuesta, y los insultos discriminatorios siguen bloqueados."
           }
         }
       }

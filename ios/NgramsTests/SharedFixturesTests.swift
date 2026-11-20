@@ -92,7 +92,8 @@ struct SharedFixturesTests {
       let taps = try #require(testCase["taps"] as? [Int])
       var game = TilesGame(
         puzzle: try puzzle(testCase), foundWords: found,
-        solvedTilesLeave: try #require(testCase["solvedTilesLeave"] as? Bool))
+        solvedTilesLeave: try #require(testCase["solvedTilesLeave"] as? Bool),
+        curseWords: testCase["curseWords"] as? Bool ?? false)
       for tile in taps {
         game.toggle(tile)
       }
@@ -137,7 +138,8 @@ struct SharedFixturesTests {
       let typed = try #require(testCase["typed"] as? String)
       var game = PangramGame(
         puzzle: puzzle, foundWords: found,
-        hardMode: try #require(testCase["hardMode"] as? Bool))
+        hardMode: try #require(testCase["hardMode"] as? Bool),
+        curseWords: testCase["curseWords"] as? Bool ?? false)
       for letter in typed {
         game.type(letter)
       }

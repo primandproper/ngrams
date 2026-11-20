@@ -21,6 +21,8 @@ nonisolated struct PangramGame: Sendable {
   let puzzle: PangramPuzzle
   /// Whether the first word found has to be a pangram.
   let hardMode: Bool
+  /// Whether the board's profane words can be found. One found while this was on stays found.
+  let curseWords: Bool
   /// Hints taken, oldest first, each in the game's own terms. A hint never changes the result.
   private(set) var hints: [String] = []
   /// Whether the player had the puzzle solved for them, which gives up the star.
@@ -31,24 +33,29 @@ nonisolated struct PangramGame: Sendable {
   private(set) var current = ""
 
   private let words: [String: PangramWord]
+  private let profane: [String: PangramWord]
 
   /// Starts a board, restoring `foundWords`, `hints` and `gaveUp` from saved progress. Saved
   /// words the board doesn't have (the bank was rebuilt since) are dropped.
   init(
     puzzle: PangramPuzzle, foundWords: [String] = [], hardMode: Bool = false,
-    hints: [String] = [], gaveUp: Bool = false
+    curseWords: Bool = false, hints: [String] = [], gaveUp: Bool = false
   ) {
     self.hints = hints
     self.gaveUp = gaveUp
     self.puzzle = puzzle
     self.hardMode = hardMode
+    self.curseWords = curseWords
+    let profane = Dictionary(
+      puzzle.profane.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
+    self.profane = profane
     let words = Dictionary(
       puzzle.words.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.words = words
 
     var seen: Set<String> = []
     for word in foundWords where seen.insert(word).inserted {
-      if let match = words[word] {
+      if let match = words[word] ?? profane[word] {
         found.append(match)
       }
     }
@@ -175,10 +182,11 @@ nonisolated struct PangramGame: Sendable {
     guard text.contains(puzzle.center) else {
       return .missingCenter
     }
-    if puzzle.blocked.contains(text) {
+    let unlocked = curseWords ? profane[text] : nil
+    if unlocked == nil, puzzle.blocked.contains(text) {
       return .blocked(text)
     }
-    guard let word = words[text] else {
+    guard let word = words[text] ?? unlocked else {
       return .notAWord(text)
     }
     if found.contains(word) {

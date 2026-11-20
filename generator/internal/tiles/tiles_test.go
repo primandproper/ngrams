@@ -20,7 +20,7 @@ func testLexicon() *lexicon.Lexicon {
 		freq[word] = 100
 	}
 
-	return lexicon.New(display, freq, nil, []string{"abcd", "efgh", "ijkl", "mnop", "qrst"})
+	return lexicon.New(display, freq, nil, nil, []string{"abcd", "efgh", "ijkl", "mnop", "qrst"})
 }
 
 func testConfig() *SearchConfig {

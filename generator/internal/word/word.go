@@ -61,17 +61,21 @@ func (g *Generator) Pick(rng *rand.Rand, used map[string]bool) (string, error) {
 }
 
 // Guesses returns every valid word of n letters, sorted, split into the ones a guess may
-// be and the blocked ones, which the app answers apart from words it doesn't know.
-func Guesses(lex *lexicon.Lexicon, n int) (accepted, blocked []string) {
+// be and the blocked ones, which the app answers apart from words it doesn't know. profane
+// are the blocked words a player can turn on.
+func Guesses(lex *lexicon.Lexicon, n int) (accepted, blocked, profane []string) {
 	for _, word := range lex.Words() {
 		if utf8.RuneCountInString(word) != n {
 			continue
 		}
 		if lex.Blocked(word) {
 			blocked = append(blocked, word)
+			if lex.Profane(word) {
+				profane = append(profane, word)
+			}
 		} else {
 			accepted = append(accepted, word)
 		}
 	}
-	return accepted, blocked
+	return accepted, blocked, profane
 }

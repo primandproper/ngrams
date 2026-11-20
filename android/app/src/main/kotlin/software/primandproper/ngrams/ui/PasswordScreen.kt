@@ -115,11 +115,12 @@ class PasswordViewModel(
     private suspend fun load() {
         try {
             val puzzle = container.bank().wordPuzzles(day).first { it.language == key.language && it.n == key.n }
-            list = container.guessList(key.language, key.n)
+            val settings = container.settings.settings.first()
+            list = container.guessList(key.language, key.n).let { if (settings.curseWords) it.withCurseWords else it }
             timer.load()
             // The setting applies only until the first guess is saved; after that the puzzle keeps
             // the mode it was saved with.
-            val hardMode = container.settings.settings.first().hardMode(PuzzleKind.WORD, key.language)
+            val hardMode = settings.hardMode(PuzzleKind.WORD, key.language)
             _state.value =
                 try {
                     val saved = container.progress.find(key)

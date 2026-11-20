@@ -162,6 +162,8 @@ nonisolated struct TilesPuzzle: Sendable, Hashable, Identifiable {
   let words: [TilesWord]
   /// Folded spellings of offensive words the tiles can build. They score nothing.
   let blocked: Set<String>
+  /// The blocked words a player can turn on, which then score like any other.
+  var profane: [TilesWord] = []
 
   var id: String { "\(language.rawValue)-\(n)" }
 }
@@ -194,6 +196,8 @@ nonisolated struct PangramPuzzle: Sendable, Hashable, Identifiable {
   let pangrams: Set<String>
   /// Folded spellings of offensive words the letters can build. They score nothing.
   let blocked: Set<String>
+  /// The blocked words a player can turn on, which then score like any other.
+  var profane: [PangramWord] = []
 
   var id: String { "\(language.rawValue)-\(n)" }
 
@@ -253,7 +257,7 @@ nonisolated private struct PuzzleFile: Decodable {
   var pangram: PangramPuzzle?
 
   private enum CodingKeys: String, CodingKey {
-    case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked, answer, display
+    case lang, kind, n, tiles, targets, bonus, targetScore, words, blocked, profane, answer, display
     case letters, center, pangrams
   }
 
@@ -290,11 +294,12 @@ nonisolated private struct PuzzleFile: Decodable {
     let center = try container.decode(String.self, forKey: .center)
     let words = try container.decode([PangramWord].self, forKey: .words)
     let pangrams = try container.decode([String].self, forKey: .pangrams)
+    let profane = try container.decodeIfPresent([PangramWord].self, forKey: .profane) ?? []
     let allowed = Set(letters)
     guard let centerLetter = center.first, allowed.contains(centerLetter) else {
       throw BankError.badPangramWord(center)
     }
-    for word in words.map(\.word)
+    for word in (words + profane).map(\.word)
     where !word.contains(centerLetter) || !Set(word).isSubset(of: allowed) {
       throw BankError.badPangramWord(word)
     }
@@ -307,7 +312,8 @@ nonisolated private struct PuzzleFile: Decodable {
       targetScore: try container.decode(Int.self, forKey: .targetScore),
       words: words,
       pangrams: Set(pangrams),
-      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []))
+      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []),
+      profane: profane)
   }
 
   private static func tiles(
@@ -316,7 +322,8 @@ nonisolated private struct PuzzleFile: Decodable {
     let board = try container.decode([String].self, forKey: .tiles)
     let targets = try container.decode([[Int]].self, forKey: .targets)
     let words = try container.decode([TilesWord].self, forKey: .words)
-    for index in targets.flatMap(\.self) + words.flatMap(\.tiles)
+    let profane = try container.decodeIfPresent([TilesWord].self, forKey: .profane) ?? []
+    for index in targets.flatMap(\.self) + (words + profane).flatMap(\.tiles)
     where !board.indices.contains(index) {
       throw BankError.badTileIndex(index, tiles: board.count)
     }
@@ -329,6 +336,7 @@ nonisolated private struct PuzzleFile: Decodable {
       bonus: try container.decode(Int.self, forKey: .bonus),
       targetScore: try container.decode(Int.self, forKey: .targetScore),
       words: words,
-      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []))
+      blocked: Set(try container.decodeIfPresent([String].self, forKey: .blocked) ?? []),
+      profane: profane)
   }
 }

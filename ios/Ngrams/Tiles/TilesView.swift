@@ -11,6 +11,7 @@ struct TilesScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.tiles)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var session: TilesSession?
 
   var body: some View {
@@ -31,6 +32,7 @@ struct TilesScreen: View {
         session = TilesSession(
           puzzle: puzzle, day: day,
           solvedTilesLeave: hardModes.languages.contains(puzzle.language),
+          curseWords: curseWords,
           store: ProgressStore(context: context, observer: observer), observer: observer)
       }
     }

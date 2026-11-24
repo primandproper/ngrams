@@ -39,12 +39,10 @@ import androidx.compose.material.icons.outlined.Support
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -90,7 +88,6 @@ import software.primandproper.ngrams.core.PuzzleKind
 import software.primandproper.ngrams.core.PuzzleLine
 import software.primandproper.ngrams.core.formattedTime
 import software.primandproper.ngrams.progress.PuzzleTimer
-import java.time.Duration
 import kotlin.math.roundToInt
 
 /**
@@ -336,9 +333,6 @@ fun percent(rate: Double?): String = rate?.let { "${(it * 100).roundToInt()}%" }
 @Composable
 fun LineStatsView(
     stats: LineStats,
-    highlight: Int? = null,
-    /** The time a just-finished puzzle took. */
-    time: Duration? = null,
     showTimer: Boolean = false,
 ) {
     Column(
@@ -351,14 +345,16 @@ fun LineStatsView(
             Figure("${stats.currentStreak}", stringResource(R.string.streak))
             Figure("${stats.bestStreak}", stringResource(R.string.best_streak))
         }
-        if (showTimer && (time != null || stats.bestTime != null)) {
-            Row(Modifier.fillMaxWidth()) {
-                if (time != null) Figure(formattedTime(time), stringResource(R.string.time))
-                Figure(stats.bestTime?.let(::formattedTime) ?: "–", stringResource(R.string.best_time))
+        Row(Modifier.fillMaxWidth()) {
+            val bestTime = stats.bestTime
+            if (showTimer && bestTime != null) {
+                Figure(formattedTime(bestTime), stringResource(R.string.best_time))
             }
+            Figure("${stats.hints}", stringResource(R.string.hints))
+            Figure("${stats.givenUp}", stringResource(R.string.solved_for_you))
         }
         if (stats.line.kind == PuzzleKind.WORD) {
-            GuessDistribution(stats.guessCounts, highlight)
+            GuessDistribution(stats.guessCounts)
         }
         Text(
             stringResource(if (stats.line.kind == PuzzleKind.WORD) R.string.streaks_count_solves else R.string.streaks_count_stars),
@@ -383,10 +379,7 @@ private fun RowScope.Figure(
 }
 
 @Composable
-private fun GuessDistribution(
-    counts: List<Int>,
-    highlight: Int?,
-) {
+private fun GuessDistribution(counts: List<Int>) {
     val most = maxOf(counts.maxOrNull() ?: 0, 1)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.guesses), style = MaterialTheme.typography.titleMedium)
@@ -403,10 +396,7 @@ private fun GuessDistribution(
                         Modifier
                             .width(maxOf(30.dp, maxWidth * (count.toFloat() / most)))
                             .height(22.dp)
-                            .background(
-                                if (index + 1 == highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                RoundedCornerShape(4.dp),
-                            ),
+                            .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)),
                         contentAlignment = Alignment.CenterEnd,
                     ) {
                         Text(
@@ -419,27 +409,6 @@ private fun GuessDistribution(
                     }
                 }
             }
-        }
-    }
-}
-
-/** One line's stats in a sheet, shown when a puzzle is finished. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LineStatsSheet(
-    line: PuzzleLine,
-    stats: LineStats?,
-    highlight: Int? = null,
-    time: Duration? = null,
-    showTimer: Boolean = false,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(line.title(interfaceLanguage()), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp))
-        if (stats == null) {
-            Text(stringResource(R.string.no_stats), modifier = Modifier.padding(16.dp))
-        } else {
-            LineStatsView(stats, highlight, time, showTimer)
         }
     }
 }

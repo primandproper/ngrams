@@ -41,13 +41,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,22 +72,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
-import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
-import software.primandproper.ngrams.core.PuzzleLine
 import software.primandproper.ngrams.core.SeededGenerator
 import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.TilesGame
@@ -111,8 +103,6 @@ sealed interface TilesState {
         /** The order the board shows tiles in, unsolved tiles first. Shuffling changes only this. */
         val order: List<Int>,
         val feedback: Feedback? = null,
-        /** Set by the word that earns the star, so its stats open once. */
-        val justFinished: Boolean = false,
         /** Whether the board is being solved for the player, a tile at a time. */
         val solving: Boolean = false,
     ) : TilesState {
@@ -144,9 +134,6 @@ class TilesViewModel(
     private val _state = MutableStateFlow<TilesState>(TilesState.Loading)
     val state: StateFlow<TilesState> = _state
 
-    val stats: StateFlow<LineStats?> =
-        container.stats(container.today()).map { it[key.line] }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
     init {
         viewModelScope.launch { load() }
     }
@@ -156,14 +143,23 @@ class TilesViewModel(
             val puzzle = container.bank().tilesPuzzles(day).first { it.language == key.language && it.n == key.n }
             timer.load()
             // Tiles reads its hard mode live, like the iOS app, rather than fixing it per board.
-            val solvedTilesLeave = container.settings.settings.first().hardMode(PuzzleKind.TILES, key.language)
+            val settings = container.settings.settings.first()
+            val solvedTilesLeave = settings.hardMode(PuzzleKind.TILES, key.language)
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)
-                    TilesGame(puzzle, saved?.entries.orEmpty(), solvedTilesLeave, saved?.hints.orEmpty(), saved?.gaveUp ?: false) to null
+                    TilesGame(
+                        puzzle,
+                        saved?.entries.orEmpty(),
+                        solvedTilesLeave,
+                        saved?.hints.orEmpty(),
+                        saved?.gaveUp ?: false,
+                        settings.curseWords,
+                    ) to null
                 } catch (e: Exception) {
                     logger.error("loading tiles progress", e)
-                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave) to Feedback(R.string.couldnt_load_progress)
+                    TilesGame(puzzle, solvedTilesLeave = solvedTilesLeave, curseWords = settings.curseWords) to
+                        Feedback(R.string.couldnt_load_progress)
                 }
             val first = withContext(Dispatchers.Default) { arranged(game, SeededGenerator(layoutSeed(key.language, key.kind, key.n, day))) }
             _state.value = TilesState.Playing(game, first, feedback)
@@ -235,7 +231,7 @@ class TilesViewModel(
                 play { it.copy(game = it.game.giveUp(listOf(it.game.targetText(target)))) }
                 delay(SOLVE_PACE_MS * 2)
             }
-            play { it.copy(solving = false, justFinished = true) }
+            play { it.copy(solving = false) }
             val (stretches, at) = timer.entry(completes = true)
             try {
                 container.progress.giveUp(key, words, stretches = stretches, at = at)
@@ -280,8 +276,7 @@ class TilesViewModel(
                 is TilesSubmission.NotAWord -> Feedback(R.string.not_on_list, listOf(submission.text), rejected = true)
                 TilesSubmission.Empty -> null
             }
-        val justFinished = !playing.game.isOver && game.isOver
-        _state.value = playing.copy(game = game, feedback = feedback ?: playing.feedback, justFinished = justFinished)
+        _state.value = playing.copy(game = game, feedback = feedback ?: playing.feedback)
         when (submission) {
             is TilesSubmission.Found -> save(submission.word, game)
             is TilesSubmission.Blocked -> logger.debug("spelled a blocked word")
@@ -305,8 +300,6 @@ class TilesViewModel(
     }
 
     fun feedbackShown(shown: Feedback) = play { if (it.feedback == shown) it.copy(feedback = null) else it }
-
-    fun finishShown() = play { it.copy(justFinished = false) }
 }
 
 /** The wait between tiles as a board is solved for the player. */
@@ -328,20 +321,10 @@ fun TilesScreen(
     val showTimer = showsTimer(container)
     val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
-    val stats by model.stats.collectAsStateWithLifecycle()
     val playing = state as? TilesState.Playing
-    var showingStats by rememberSaveable { mutableStateOf(false) }
     val interfaceLanguage = interfaceLanguage()
 
-    LaunchedEffect(playing?.justFinished) {
-        if (playing?.justFinished == true) {
-            // Cleared only after the sheet opens: clearing it changes this effect's key, which
-            // would cancel the wait.
-            delay(1_000)
-            showingStats = true
-            model.finishShown()
-        }
-    }
+    ReturnHomeWhenWon(playing?.game?.earnedStar, onBack)
 
     Scaffold(
         topBar = {
@@ -378,12 +361,6 @@ fun TilesScreen(
                     Board(current, model)
                 }
             }
-        }
-    }
-
-    if (showingStats && playing != null) {
-        LineStatsSheet(PuzzleLine(language, PuzzleKind.TILES, n), stats, time = timing.elapsed, showTimer = showTimer) {
-            showingStats = false
         }
     }
 }

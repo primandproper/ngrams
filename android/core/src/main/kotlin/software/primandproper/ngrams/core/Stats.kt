@@ -67,6 +67,10 @@ data class LineStats(
     val guessCounts: List<Int> = List(WordGame.MAX_GUESSES) { 0 },
     /** The fastest timed success. */
     val bestTime: Duration? = null,
+    /** Every hint taken, even on a puzzle with no guess or word yet. */
+    val hints: Int = 0,
+    /** Puzzles the player had solved for them. */
+    val givenUp: Int = 0,
 ) {
     val successRate: Double? get() = if (decided == 0) null else successes.toDouble() / decided
 }
@@ -82,6 +86,8 @@ object StatsBook {
         val guesses: Int? = null,
         val completedAt: Instant? = null,
         val time: Duration? = null,
+        val hints: Int = 0,
+        val gaveUp: Boolean = false,
     )
 
     /**
@@ -120,6 +126,8 @@ object StatsBook {
                                 ?.takeIf { outcome.succeeded }
                                 ?.let { time -> lineStats.bestTime?.let { minOf(it, time) } ?: time }
                                 ?: lineStats.bestTime,
+                        hints = lineStats.hints + outcome.hints,
+                        givenUp = lineStats.givenUp + if (outcome.gaveUp) 1 else 0,
                     )
 
                 val onTime =
@@ -153,6 +161,8 @@ object StatsBook {
                 guesses = (status as? Status.Won)?.guesses,
                 completedAt = record.completedAt,
                 time = record.time,
+                hints = record.hints.size,
+                gaveUp = game.gaveUp,
             )
     }
 
@@ -171,6 +181,8 @@ object StatsBook {
                 succeeded = game.earnedStar,
                 completedAt = record.completedAt,
                 time = record.time,
+                hints = record.hints.size,
+                gaveUp = game.gaveUp,
             )
     }
 
@@ -189,6 +201,8 @@ object StatsBook {
                 succeeded = game.earnedStar,
                 completedAt = record.completedAt,
                 time = record.time,
+                hints = record.hints.size,
+                gaveUp = game.gaveUp,
             )
     }
 }

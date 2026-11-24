@@ -179,6 +179,25 @@ struct GuessListTests {
     #expect(list.blocked.isEmpty)
   }
 
+  @Test("accepts profane words once curse words are on, and nothing else that's blocked")
+  func curseWords() {
+    let list = GuessList(accepted: ["lamp"], blocked: ["shit", "grue"], profane: ["shit"])
+    var off = WordGame(puzzle: WordPuzzle(language: .en, n: 4, answer: "lamp", display: nil))
+    var on = off
+    for letter in "shit" {
+      off.type(letter)
+      on.type(letter)
+    }
+
+    #expect(off.submit(against: list) == .blocked("shit"))
+    #expect(on.submit(against: list.withCurseWords) == .guessed("shit"))
+
+    for letter in "grue" {
+      on.type(letter)
+    }
+    #expect(on.submit(against: list.withCurseWords) == .blocked("grue"))
+  }
+
   @Test("loads every bundled list")
   func loadsBundled() async throws {
     for language in Language.allCases {
@@ -186,6 +205,8 @@ struct GuessListTests {
         let list = try await GuessList.loadBundled(language: language, n: n)
         #expect(list.accepted.count > 1000)
         #expect(list.accepted.allSatisfy { $0.count == n })
+        #expect(!list.profane.isEmpty)
+        #expect(list.profane.isSubset(of: list.blocked))
       }
     }
   }

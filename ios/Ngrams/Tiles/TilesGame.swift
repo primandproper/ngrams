@@ -20,20 +20,27 @@ nonisolated struct TilesGame: Sendable {
   /// Whether a found target's tiles leave the board, so no other word can use them. Quartiles
   /// keeps them in play; this is the harder variant.
   let solvedTilesLeave: Bool
+  /// Whether the board's profane words can be found. One found while this was on stays found.
+  let curseWords: Bool
 
   private let words: [String: TilesWord]
+  private let profane: [String: TilesWord]
   private let targetIndex: [String: Int]
 
   /// Starts a board, restoring `foundWords`, `hints` and `gaveUp` from saved progress. Saved
   /// words the board doesn't have (the bank was rebuilt since) are dropped.
   init(
     puzzle: TilesPuzzle, foundWords: [String] = [], solvedTilesLeave: Bool = false,
-    hints: [String] = [], gaveUp: Bool = false
+    curseWords: Bool = false, hints: [String] = [], gaveUp: Bool = false
   ) {
     self.hints = hints
     self.gaveUp = gaveUp
     self.puzzle = puzzle
     self.solvedTilesLeave = solvedTilesLeave
+    self.curseWords = curseWords
+    let profane = Dictionary(
+      puzzle.profane.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
+    self.profane = profane
     let words = Dictionary(
       puzzle.words.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.words = words
@@ -45,7 +52,7 @@ nonisolated struct TilesGame: Sendable {
 
     var seen: Set<String> = []
     for word in foundWords where seen.insert(word).inserted {
-      if let match = words[word] {
+      if let match = words[word] ?? profane[word] {
         found.append(match)
       }
     }
@@ -197,10 +204,11 @@ nonisolated struct TilesGame: Sendable {
     }
     selection.removeAll()
 
-    if puzzle.blocked.contains(text) {
+    let unlocked = curseWords ? profane[text] : nil
+    if unlocked == nil, puzzle.blocked.contains(text) {
       return .blocked(text)
     }
-    guard let word = words[text] else {
+    guard let word = words[text] ?? unlocked else {
       return .notAWord(text)
     }
     if found.contains(word) {

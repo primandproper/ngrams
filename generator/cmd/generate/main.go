@@ -32,7 +32,8 @@ func main() {
 func run(args []string) error {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
 	dataDir := fs.String("data", "../data/raw", "directory holding the downloaded source data")
-	blocklistDir := fs.String("blocklists", "../data/blocklists", "directory holding <lang>.txt blocklists")
+	blocklistDir := fs.String("blocklists", "../data/blocklists", "directory holding <lang>.txt and <lang>-profanity.txt blocklists")
+	exclusionDir := fs.String("exclusions", "../data/exclusions", "directory holding <lang>.txt lists of words kept out of targets and answers")
 	out := fs.String("out", "../data/bank/puzzles.json", "where to write the bank")
 	guessDir := fs.String("guesses", "../data/bank/guesses", "where to write each word size's accepted guesses")
 	langs := fs.String("langs", "en,es", "comma-separated languages")
@@ -119,7 +120,9 @@ func run(args []string) error {
 	lexicons := map[string]*lexicon.Lexicon{}
 	for _, lang := range splitList(*langs) {
 		loadStarted := time.Now()
-		lex, loadErr := lexicon.Load(lang, &lexicon.Config{DataDir: *dataDir, BlocklistDir: *blocklistDir, MinCount: *minCount})
+		lex, loadErr := lexicon.Load(lang, &lexicon.Config{
+			DataDir: *dataDir, BlocklistDir: *blocklistDir, ExclusionDir: *exclusionDir, MinCount: *minCount,
+		})
 		if loadErr != nil {
 			return fmt.Errorf("loading %s: %w", lang, loadErr)
 		}
@@ -141,11 +144,12 @@ func run(args []string) error {
 
 	for _, lang := range cfg.Languages {
 		for _, n := range wordSizes {
-			accepted, blocked := word.Guesses(lang.Lexicon, n)
-			if err = writeGuesses(*guessDir, lang.Code, n, accepted, blocked); err != nil {
+			accepted, blocked, profane := word.Guesses(lang.Lexicon, n)
+			if err = writeGuesses(*guessDir, lang.Code, n, accepted, blocked, profane); err != nil {
 				return err
 			}
-			logger.Info("wrote guesses", "lang", lang.Code, "n", n, "accepted", len(accepted), "blocked", len(blocked))
+			logger.Info("wrote guesses", "lang", lang.Code, "n", n,
+				"accepted", len(accepted), "blocked", len(blocked), "profane", len(profane))
 		}
 	}
 
@@ -193,12 +197,14 @@ func loadFrozen(path, through string) ([]bank.Day, error) {
 	return existing.Days[:kept], nil
 }
 
-// writeGuesses writes one word size's accepted guesses as <lang>-<n>.txt and its blocked
-// words as <lang>-<n>-blocked.txt, one word per line.
-func writeGuesses(dir, lang string, n int, accepted, blocked []string) error {
+// writeGuesses writes one word size's accepted guesses as <lang>-<n>.txt, its blocked
+// words as <lang>-<n>-blocked.txt, and the blocked words a player can turn on as
+// <lang>-<n>-profane.txt, one word per line.
+func writeGuesses(dir, lang string, n int, accepted, blocked, profane []string) error {
 	for name, words := range map[string][]string{
 		fmt.Sprintf("%s-%d.txt", lang, n):         accepted,
 		fmt.Sprintf("%s-%d-blocked.txt", lang, n): blocked,
+		fmt.Sprintf("%s-%d-profane.txt", lang, n): profane,
 	} {
 		err := writeFile(filepath.Join(dir, name), func(w io.Writer) error {
 			for _, word := range words {

@@ -42,6 +42,8 @@ data class Settings(
     val pangramFoundOrder: FoundWordOrder = FoundWordOrder.ALPHABETICAL,
     /** Whether puzzles show their time. Times are kept either way. */
     val showTimer: Boolean = true,
+    /** Whether swear words count as guesses and found words. Slurs never do. */
+    val curseWords: Boolean = false,
 ) {
     /** Whether puzzles in [language] are shown: every language until the player chooses. */
     fun plays(language: Language): Boolean = languages?.contains(language) ?: true
@@ -92,6 +94,7 @@ class SettingsStore(
         val grouping = stringPreferencesKey("homeGrouping")
         val pangramFoundOrder = stringPreferencesKey("pangramFoundOrder")
         val showTimer = booleanPreferencesKey("showTimer")
+        val curseWords = booleanPreferencesKey("curseWords")
     }
 
     val settings: Flow<Settings> =
@@ -115,6 +118,7 @@ class SettingsStore(
             pangramFoundOrder =
                 FoundWordOrder.entries.firstOrNull { it.code == this[Keys.pangramFoundOrder] } ?: FoundWordOrder.ALPHABETICAL,
             showTimer = this[Keys.showTimer] ?: true,
+            curseWords = this[Keys.curseWords] ?: false,
         )
 
     suspend fun setLanguages(languages: Set<Language>) = edit { it[Keys.languages] = languageCodes(languages) }
@@ -134,6 +138,8 @@ class SettingsStore(
     suspend fun setPangramFoundOrder(order: FoundWordOrder) = edit { it[Keys.pangramFoundOrder] = order.code }
 
     suspend fun setShowTimer(show: Boolean) = edit { it[Keys.showTimer] = show }
+
+    suspend fun setCurseWords(on: Boolean) = edit { it[Keys.curseWords] = on }
 
     private suspend fun edit(change: (MutablePreferences) -> Unit) {
         try {

@@ -6,8 +6,8 @@ extension DSTheme {
   /// Android theme can match.
   ///
   /// The theme has no room for an app's own roles, so the games borrow the tokens nearest them:
-  /// - `primary`: a correct letter, a selected tile, the center letter, a highlighted bar
-  /// - `secondary`: a letter in the word, a typed letter's cell, the other bars
+  /// - `primary`: a correct letter, a selected tile, the center letter
+  /// - `secondary`: a letter in the word, a typed letter's cell, the guess bars
   /// - `tertiary`: the star and the streak flame
   /// - `success`: solved tiles, at 20% opacity
   /// - `cardBackground`: tiles, wedges, and absent keys

@@ -92,7 +92,8 @@ struct SharedFixturesTests {
       let taps = try #require(testCase["taps"] as? [Int])
       var game = TilesGame(
         puzzle: try puzzle(testCase), foundWords: found,
-        solvedTilesLeave: try #require(testCase["solvedTilesLeave"] as? Bool))
+        solvedTilesLeave: try #require(testCase["solvedTilesLeave"] as? Bool),
+        curseWords: testCase["curseWords"] as? Bool ?? false)
       for tile in taps {
         game.toggle(tile)
       }
@@ -137,7 +138,8 @@ struct SharedFixturesTests {
       let typed = try #require(testCase["typed"] as? String)
       var game = PangramGame(
         puzzle: puzzle, foundWords: found,
-        hardMode: try #require(testCase["hardMode"] as? Bool))
+        hardMode: try #require(testCase["hardMode"] as? Bool),
+        curseWords: testCase["curseWords"] as? Bool ?? false)
       for letter in typed {
         game.type(letter)
       }
@@ -274,6 +276,8 @@ struct SharedFixturesTests {
         #expect(actual.bestStreak == expected["bestStreak"] as? Int, "\(name)")
         #expect(actual.guessCounts == expected["guessCounts"] as? [Int], "\(name)")
         #expect(actual.bestTime == expected["bestTime"] as? TimeInterval, "\(name)")
+        #expect(actual.hints == expected["hints"] as? Int ?? 0, "\(name)")
+        #expect(actual.givenUp == expected["givenUp"] as? Int ?? 0, "\(name)")
       }
     }
   }
@@ -350,15 +354,6 @@ struct SharedFixturesTests {
         case "tiles": ShareText.tiles(try tiles(testCase), on: day, in: language)
         default: ShareText.pangram(try pangram(testCase), on: day, in: language)
         }
-      #expect(text == testCase["text"] as? String)
-    }
-    for testCase in try cases(fixture, "days") {
-      let games = try #require(testCase["games"] as? [Object])
-      let text = ShareText.day(
-        words: try games.filter { $0["kind"] as? String == "word" }.map(word),
-        tiles: try games.filter { $0["kind"] as? String == "tiles" }.map(tiles),
-        pangrams: try games.filter { $0["kind"] as? String == "pangram" }.map(pangram),
-        on: day, in: interface(testCase))
       #expect(text == testCase["text"] as? String)
     }
     for testCase in try cases(fixture, "dayNames") {

@@ -11,6 +11,7 @@ struct TilesScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.tiles)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var session: TilesSession?
 
   var body: some View {
@@ -31,6 +32,7 @@ struct TilesScreen: View {
         session = TilesSession(
           puzzle: puzzle, day: day,
           solvedTilesLeave: hardModes.languages.contains(puzzle.language),
+          curseWords: curseWords,
           store: ProgressStore(context: context, observer: observer), observer: observer)
       }
     }
@@ -42,7 +44,6 @@ struct TilesView: View {
 
   @Environment(\.dsTheme) private var theme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var showingStats = false
   /// Words rejected since the view opened, each of which shakes the current word.
   @State private var rejections = 0
 
@@ -71,6 +72,7 @@ struct TilesView: View {
       }
     }
     .sensoryFeedback(.error, trigger: rejections)
+    .returnsHome(whenWon: session.game.earnedStar)
     .sensoryFeedback(trigger: session.game.found.count) { old, new in
       new > old && !session.solving ? .success : nil
     }
@@ -78,20 +80,6 @@ struct TilesView: View {
       new.count > old.count && !session.solving ? .selection : nil
     }
     .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
-    .onChange(of: session.finished) { wasFinished, finished in
-      if !wasFinished, finished {
-        Task {
-          try? await Task.sleep(for: .seconds(1))
-          showingStats = true
-        }
-      }
-    }
-    .sheet(isPresented: $showingStats) {
-      let puzzle = session.game.puzzle
-      LineStatsSheet(
-        line: PuzzleLine(language: puzzle.language, kind: .tiles, n: puzzle.n),
-        time: session.timer.elapsed)
-    }
     .toolbar {
       if !session.game.found.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {

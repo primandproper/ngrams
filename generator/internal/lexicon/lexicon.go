@@ -1,5 +1,6 @@
 // Package lexicon loads one language's word data: every valid word, how common each is,
-// which are blocked, and which are fair to use as targets and answers.
+// which are blocked or excluded, which blocked words a player can unlock, and which are fair
+// to use as targets and answers.
 package lexicon
 
 import (
@@ -26,6 +27,7 @@ type (
 		display map[string]string // folded → spelling shown to the player
 		freq    map[string]int    // folded → subtitle count; absent means obscure
 		blocked map[string]bool   // valid, but never a target, and boards avoid them
+		profane map[string]bool   // blocked words a player can turn on: swearing, not slurs
 		words   []string          // sorted, every valid word
 		targets []string          // sorted, words fair to use as targets
 		answers []string          // sorted, targets in base form, fair to use as word answers
@@ -36,19 +38,23 @@ type (
 		_            struct{} `json:"-"`
 		DataDir      string
 		BlocklistDir string
+		// ExclusionDir holds <lang>.txt lists of real words that are never targets or answers:
+		// names and foreign words the frequency list counts as common.
+		ExclusionDir string
 		// MinCount is the fewest subtitle occurrences for a word to count as common.
 		MinCount int
 	}
 )
 
 // New builds a lexicon from folded words. display maps every valid word to the spelling
-// shown to the player, freq holds the common words' counts, and targets must be valid words.
-// Every target is also an answer.
-func New(display map[string]string, freq map[string]int, blocked map[string]bool, targets []string) *Lexicon {
+// shown to the player, freq holds the common words' counts, profane words must be blocked,
+// and targets must be valid words. Every target is also an answer.
+func New(display map[string]string, freq map[string]int, blocked, profane map[string]bool, targets []string) *Lexicon {
 	l := &Lexicon{
 		display: display,
 		freq:    freq,
 		blocked: blocked,
+		profane: profane,
 		words:   slices.Sorted(maps.Keys(display)),
 		targets: slices.Clone(targets),
 	}
@@ -58,18 +64,28 @@ func New(display map[string]string, freq map[string]int, blocked map[string]bool
 	return l
 }
 
-// Load reads a supported language's dictionary, frequency list, and blocklist.
+// Load reads a supported language's dictionary, frequency list, blocklists, and exclusions.
+// BlocklistDir holds two lists per language: <lang>.txt, words blocked for everyone, and
+// <lang>-profanity.txt, words blocked until a player turns curse words on.
 func Load(lang string, cfg *Config) (*Lexicon, error) {
-	blocked, err := loadBlocklist(filepath.Join(cfg.BlocklistDir, lang+".txt"))
+	blocked, err := loadWordList(filepath.Join(cfg.BlocklistDir, lang+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	profane, err := loadWordList(filepath.Join(cfg.BlocklistDir, lang+"-profanity.txt"))
+	if err != nil {
+		return nil, err
+	}
+	excluded, err := loadWordList(filepath.Join(cfg.ExclusionDir, lang+".txt"))
 	if err != nil {
 		return nil, err
 	}
 
 	switch lang {
 	case "en":
-		return loadEnglish(filepath.Join(cfg.DataDir, "en"), cfg.MinCount, blocked)
+		return loadEnglish(filepath.Join(cfg.DataDir, "en"), cfg.MinCount, blocked, profane, excluded)
 	case "es":
-		return loadSpanish(filepath.Join(cfg.DataDir, "es"), cfg.MinCount, blocked)
+		return loadSpanish(filepath.Join(cfg.DataDir, "es"), cfg.MinCount, blocked, profane, excluded)
 	default:
 		return nil, fmt.Errorf("unsupported language %q", lang)
 	}
@@ -92,6 +108,11 @@ func (l *Lexicon) Count(word string) (int, bool) {
 // Blocked reports whether a word is valid but offensive.
 func (l *Lexicon) Blocked(word string) bool {
 	return l.blocked[word]
+}
+
+// Profane reports whether a blocked word is one a player can turn on.
+func (l *Lexicon) Profane(word string) bool {
+	return l.profane[word]
 }
 
 // Size is the number of valid words.
@@ -144,9 +165,9 @@ func Fold(word string) (string, bool) {
 	return b.String(), b.Len() > 0
 }
 
-// loadBlocklist reads one word per line, ignoring blank lines and # comments.
-func loadBlocklist(path string) (map[string]bool, error) {
-	blocked := map[string]bool{}
+// loadWordList reads one word per line, ignoring blank lines and # comments.
+func loadWordList(path string) (map[string]bool, error) {
+	words := map[string]bool{}
 	err := eachLine(path, func(lineNum int, line string) error {
 		entry, _, _ := strings.Cut(line, "#")
 		if entry = strings.TrimSpace(entry); entry == "" {
@@ -156,16 +177,27 @@ func loadBlocklist(path string) (map[string]bool, error) {
 		if !ok {
 			return fmt.Errorf("line %d: %q isn't a plain word", lineNum, entry)
 		}
-		blocked[word] = true
+		words[word] = true
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return blocked, nil
+	return words, nil
 }
 
-func loadEnglish(dir string, minCount int, blocked map[string]bool) (*Lexicon, error) {
+// loadEnglish reads ENABLE and its frequency list. A word on both blocklists stays blocked
+// for everyone.
+func loadEnglish(dir string, minCount int, never, profane, excluded map[string]bool) (*Lexicon, error) {
+	blocked := maps.Clone(never)
+	unlockable := map[string]bool{}
+	for word := range profane {
+		blocked[word] = true
+		if !never[word] {
+			unlockable[word] = true
+		}
+	}
+
 	display := map[string]string{}
 	err := eachLine(filepath.Join(dir, "enable1.txt"), func(_ int, line string) error {
 		if word, ok := Fold(strings.TrimSpace(line)); ok {
@@ -184,12 +216,12 @@ func loadEnglish(dir string, minCount int, blocked map[string]bool) (*Lexicon, e
 
 	var targets []string
 	for word := range display {
-		if top[word] && !blocked[word] {
+		if top[word] && !blocked[word] && !excluded[word] {
 			targets = append(targets, word)
 		}
 	}
 
-	lex := New(display, freq, blocked, targets)
+	lex := New(display, freq, blocked, unlockable, targets)
 	lex.answers = slices.DeleteFunc(slices.Clone(lex.targets), func(word string) bool {
 		return englishInflection(word, display)
 	})

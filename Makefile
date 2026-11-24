@@ -6,6 +6,7 @@ ANDROID_DIR   := android
 SCRIPTS_DIR   := scripts
 RAW_DATA_DIR  := data/raw
 BLOCKLIST_DIR := data/blocklists
+EXCLUSION_DIR := data/exclusions
 BANK_FILE     := data/bank/puzzles.json
 GUESS_DIR     := data/bank/guesses
 SCREENSHOTS   := ios/build/screenshots
@@ -131,7 +132,7 @@ icon:
 # Pass generator flags through ARGS, e.g. make bank ARGS="-print -langs es".
 .PHONY: bank
 bank: data
-	@$(SCRIPTS_DIR)/generate_bank.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(BANK_FILE) $(GUESS_DIR) \
+	@$(SCRIPTS_DIR)/generate_bank.sh $(GENERATOR_DIR) $(RAW_DATA_DIR) $(BLOCKLIST_DIR) $(EXCLUSION_DIR) $(BANK_FILE) $(GUESS_DIR) \
 		-start $(BANK_START) -days $(BANK_DAYS) -seed $(BANK_SEED) $(ARGS)
 
 ## RELEASE

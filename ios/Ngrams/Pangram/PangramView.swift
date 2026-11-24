@@ -11,6 +11,7 @@ struct PangramScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.pangram)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var session: PangramSession?
 
   var body: some View {
@@ -30,6 +31,7 @@ struct PangramScreen: View {
         let observer = makeObserver("PangramSession", pillars)
         session = PangramSession(
           puzzle: puzzle, day: day, hardMode: hardModes.languages.contains(puzzle.language),
+          curseWords: curseWords,
           store: ProgressStore(context: context, observer: observer),
           observer: observer)
       }
@@ -42,7 +44,6 @@ struct PangramView: View {
 
   @Environment(\.dsTheme) private var theme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var showingStats = false
   /// Words rejected since the view opened, each of which shakes the current word.
   @State private var rejections = 0
   /// Full turns the ring has spun through, one per shuffle.
@@ -72,6 +73,7 @@ struct PangramView: View {
       }
     }
     .sensoryFeedback(.error, trigger: rejections)
+    .returnsHome(whenWon: session.game.earnedStar)
     .sensoryFeedback(trigger: session.game.found.count) { old, new in
       new > old && !session.solving ? .success : nil
     }
@@ -79,20 +81,6 @@ struct PangramView: View {
       new.count > old.count && !session.solving ? .selection : nil
     }
     .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
-    .onChange(of: session.finished) { wasFinished, finished in
-      if !wasFinished, finished {
-        Task {
-          try? await Task.sleep(for: .seconds(1))
-          showingStats = true
-        }
-      }
-    }
-    .sheet(isPresented: $showingStats) {
-      let puzzle = session.game.puzzle
-      LineStatsSheet(
-        line: PuzzleLine(language: puzzle.language, kind: .pangram, n: puzzle.n),
-        time: session.timer.elapsed)
-    }
     .toolbar {
       if !session.game.found.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {

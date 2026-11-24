@@ -47,7 +47,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,14 +90,12 @@ import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.FoundWordOrder
 import software.primandproper.ngrams.core.Language
-import software.primandproper.ngrams.core.LineStats
 import software.primandproper.ngrams.core.PangramGame
 import software.primandproper.ngrams.core.PangramSubmission
 import software.primandproper.ngrams.core.PangramWord
 import software.primandproper.ngrams.core.ProgressKey
 import software.primandproper.ngrams.core.PuzzleDay
 import software.primandproper.ngrams.core.PuzzleKind
-import software.primandproper.ngrams.core.PuzzleLine
 import software.primandproper.ngrams.core.SeededGenerator
 import software.primandproper.ngrams.core.ShareText
 import software.primandproper.ngrams.core.layoutSeed
@@ -121,8 +118,6 @@ sealed interface PangramState {
         /** Every letter but the center, in the order the wheel shows them. Shuffling changes only this. */
         val outer: List<Char>,
         val feedback: Feedback? = null,
-        /** Set by the word that earns the star, or by solving, so its stats open once. */
-        val justFinished: Boolean = false,
         /** Whether the board is being solved for the player, a word at a time. */
         val solving: Boolean = false,
     ) : PangramState
@@ -146,9 +141,6 @@ class PangramViewModel(
     private val _state = MutableStateFlow<PangramState>(PangramState.Loading)
     val state: StateFlow<PangramState> = _state
 
-    val stats: StateFlow<LineStats?> =
-        container.stats(container.today()).map { it[key.line] }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
     val order: StateFlow<FoundWordOrder> =
         container.settings.settings
             .map { it.pangramFoundOrder }
@@ -164,7 +156,8 @@ class PangramViewModel(
             timer.load()
             // The setting applies only until the first word is saved; after that the board keeps
             // the mode it was saved with.
-            val hardMode = container.settings.settings.first().hardMode(PuzzleKind.PANGRAM, key.language)
+            val settings = container.settings.settings.first()
+            val hardMode = settings.hardMode(PuzzleKind.PANGRAM, key.language)
             val (game, feedback) =
                 try {
                     val saved = container.progress.find(key)
@@ -174,10 +167,12 @@ class PangramViewModel(
                         saved?.hardMode ?: hardMode,
                         saved?.hints.orEmpty(),
                         saved?.gaveUp ?: false,
+                        settings.curseWords,
                     ) to null
                 } catch (e: Exception) {
                     logger.error("loading pangram progress", e)
-                    PangramGame(puzzle, hardMode = hardMode) to Feedback(R.string.couldnt_load_progress)
+                    PangramGame(puzzle, hardMode = hardMode, curseWords = settings.curseWords) to
+                        Feedback(R.string.couldnt_load_progress)
                 }
             val outer = puzzle.letters.filter { it != puzzle.center }.toMutableList()
             outer.shuffle(SeededGenerator(layoutSeed(key.language, key.kind, key.n, day)))
@@ -238,7 +233,7 @@ class PangramViewModel(
                 play { it.copy(game = it.game.giveUp(listOf(word))) }
                 delay(SOLVE_PACE_MS * 6)
             }
-            play { it.copy(solving = false, justFinished = true) }
+            play { it.copy(solving = false) }
             val (stretches, at) = timer.entry(completes = true)
             try {
                 container.progress.giveUp(key, words, playing.game.hardMode, stretches, at)
@@ -282,8 +277,7 @@ class PangramViewModel(
                 PangramSubmission.NeedsPangram -> Feedback(R.string.needs_pangram, rejected = true)
                 PangramSubmission.Empty -> null
             }
-        val justFinished = !playing.game.earnedStar && game.earnedStar
-        _state.value = playing.copy(game = game, feedback = feedback ?: playing.feedback, justFinished = justFinished)
+        _state.value = playing.copy(game = game, feedback = feedback ?: playing.feedback)
         when (submission) {
             is PangramSubmission.Found -> save(submission.word, game)
             is PangramSubmission.Blocked -> logger.debug("spelled a blocked word")
@@ -307,8 +301,6 @@ class PangramViewModel(
     }
 
     fun feedbackShown(shown: Feedback) = play { if (it.feedback == shown) it.copy(feedback = null) else it }
-
-    fun finishShown() = play { it.copy(justFinished = false) }
 }
 
 /** The wait between letters as a board is solved for the player. */
@@ -327,21 +319,11 @@ fun PangramScreen(
     val showTimer = showsTimer(container)
     val timing by model.timer.state.collectAsStateWithLifecycle()
     val state by model.state.collectAsStateWithLifecycle()
-    val stats by model.stats.collectAsStateWithLifecycle()
     val order by model.order.collectAsStateWithLifecycle()
     val playing = state as? PangramState.Playing
-    var showingStats by rememberSaveable { mutableStateOf(false) }
     val interfaceLanguage = interfaceLanguage()
 
-    LaunchedEffect(playing?.justFinished) {
-        if (playing?.justFinished == true) {
-            // Cleared only after the sheet opens: clearing it changes this effect's key, which
-            // would cancel the wait.
-            delay(1_000)
-            showingStats = true
-            model.finishShown()
-        }
-    }
+    ReturnHomeWhenWon(playing?.game?.earnedStar, onBack)
 
     Scaffold(
         topBar = {
@@ -384,12 +366,6 @@ fun PangramScreen(
                     Board(current, order, model)
                 }
             }
-        }
-    }
-
-    if (showingStats) {
-        LineStatsSheet(PuzzleLine(language, PuzzleKind.PANGRAM, n), stats, time = timing.elapsed, showTimer = showTimer) {
-            showingStats = false
         }
     }
 }

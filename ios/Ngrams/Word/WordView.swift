@@ -18,6 +18,7 @@ struct WordScreen: View {
   @Environment(\.modelContext) private var context
   @Environment(\.pillars) private var pillars
   @AppStorage(SettingsKey.hardMode(.word)) private var hardModes = LanguageSelection([])
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @State private var state = LoadState.loading
 
   var body: some View {
@@ -45,7 +46,7 @@ struct WordScreen: View {
       let list = try await GuessList.loadBundled(language: puzzle.language, n: puzzle.n)
       state = .loaded(
         WordSession(
-          puzzle: puzzle, day: day, list: list,
+          puzzle: puzzle, day: day, list: curseWords ? list.withCurseWords : list,
           hardMode: hardModes.languages.contains(puzzle.language),
           store: ProgressStore(context: context, observer: observer), observer: observer))
     } catch {
@@ -60,7 +61,6 @@ struct WordView: View {
   @Bindable var session: WordSession
 
   @Environment(\.dsTheme) private var theme
-  @State private var showingStats = false
   /// Guesses rejected since the view opened, each of which shakes the row being typed.
   @State private var rejections = 0
 
@@ -83,24 +83,11 @@ struct WordView: View {
     }
     .sensoryFeedback(.error, trigger: rejections)
     .sensoryFeedback(.success, trigger: solvedIn)
+    .returnsHome(whenWon: solvedIn != nil)
     .sensoryFeedback(trigger: session.game.current) { old, new in
       new.count > old.count && !session.solving ? .selection : nil
     }
     .sensoryFeedback(.impact(weight: .light), trigger: session.game.hints.count)
-    .onChange(of: session.finished) { wasFinished, finished in
-      if !wasFinished, finished {
-        Task {
-          try? await Task.sleep(for: .seconds(1))
-          showingStats = true
-        }
-      }
-    }
-    .sheet(isPresented: $showingStats) {
-      let puzzle = session.game.puzzle
-      LineStatsSheet(
-        line: PuzzleLine(language: puzzle.language, kind: .word, n: puzzle.n),
-        highlight: solvedIn, time: session.timer.elapsed)
-    }
     .toolbar {
       if session.game.isOver {
         ToolbarItem(placement: .topBarTrailing) {

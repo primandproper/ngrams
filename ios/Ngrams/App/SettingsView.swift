@@ -6,6 +6,7 @@ nonisolated enum SettingsKey {
   static let languages = "languages"
   static let homeGrouping = "homeGrouping"
   static let showTimer = "showTimer"
+  static let curseWords = "curseWords"
 
   /// The languages a game's hard mode is on for, as a `LanguageSelection`.
   static func hardMode(_ kind: PuzzleKind) -> String {
@@ -29,6 +30,7 @@ struct SettingsView: View {
   @AppStorage(SettingsKey.hardMode(.pangram)) private var pangramHardMode = LanguageSelection([])
   @AppStorage(SettingsKey.languages) private var languages: LanguageSelection?
   @AppStorage(SettingsKey.showTimer) private var showTimer = true
+  @AppStorage(SettingsKey.curseWords) private var curseWords = false
   @Environment(\.dismiss) private var dismiss
 
   private var played: [Language] {
@@ -73,6 +75,13 @@ struct SettingsView: View {
           Toggle("Show timer", isOn: $showTimer)
         } footer: {
           Text("Times are kept either way, so turning this back on shows them all.")
+        }
+        Section {
+          Toggle("Curse words", isOn: $curseWords)
+        } footer: {
+          Text(
+            "Swear words count as guesses and found words. They're never an answer, and slurs stay off."
+          )
         }
         Section {
           NavigationLink("Acknowledgements") { AcknowledgementsView() }

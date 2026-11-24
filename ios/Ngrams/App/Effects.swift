@@ -96,6 +96,12 @@ extension View {
   func starEntrance(_ earned: Bool) -> some View {
     modifier(StarEntrance(earned: earned))
   }
+
+  /// Goes back to home a moment after `won` turns on. A puzzle opened already won stays open,
+  /// and so does one lost or solved for the player, whose answer is still to be read.
+  func returnsHome(whenWon won: Bool) -> some View {
+    modifier(ReturnHome(won: won))
+  }
 }
 
 extension AnyTransition {
@@ -115,5 +121,29 @@ struct PulseStyle: ButtonStyle {
       .scaleEffect(!reduceMotion && configuration.isPressed ? 0.9 : 1)
       .brightness(configuration.isPressed ? -0.08 : 0)
       .animation(.spring(response: 0.25, dampingFraction: 0.5), value: configuration.isPressed)
+  }
+}
+
+private struct ReturnHome: ViewModifier {
+  let won: Bool
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var returning = false
+
+  func body(content: Content) -> some View {
+    content
+      .onChange(of: won) { was, won in
+        if !was, won {
+          returning = true
+        }
+      }
+      // A task, so leaving first cancels the wait.
+      .task(id: returning) {
+        guard returning else { return }
+        try? await Task.sleep(for: .seconds(1.5))
+        if !Task.isCancelled {
+          dismiss()
+        }
+      }
   }
 }

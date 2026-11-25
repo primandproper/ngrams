@@ -7,6 +7,9 @@ nonisolated enum SettingsKey {
   static let homeGrouping = "homeGrouping"
   static let showTimer = "showTimer"
   static let curseWords = "curseWords"
+  /// Whether the curse words setting is offered at all. Off, the switch is hidden and a stored
+  /// "on" is ignored: unlockable profanity would cost the App Store listing its 4+ rating.
+  static let curseWordsAvailable = false
 
   /// The languages a game's hard mode is on for, as a `LanguageSelection`.
   static func hardMode(_ kind: PuzzleKind) -> String {
@@ -76,12 +79,14 @@ struct SettingsView: View {
         } footer: {
           Text("Times are kept either way, so turning this back on shows them all.")
         }
-        Section {
-          Toggle("Curse words", isOn: $curseWords)
-        } footer: {
-          Text(
-            "Swear words count as guesses and found words. They're never an answer, and slurs stay off."
-          )
+        if SettingsKey.curseWordsAvailable {
+          Section {
+            Toggle("Curse words", isOn: $curseWords)
+          } footer: {
+            Text(
+              "Swear words count as guesses and found words. They're never an answer, and slurs stay off."
+            )
+          }
         }
         Section {
           NavigationLink("Acknowledgements") { AcknowledgementsView() }

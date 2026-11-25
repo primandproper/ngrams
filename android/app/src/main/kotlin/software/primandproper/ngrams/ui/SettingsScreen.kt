@@ -32,6 +32,7 @@ import software.primandproper.ngrams.AppContainer
 import software.primandproper.ngrams.R
 import software.primandproper.ngrams.core.Language
 import software.primandproper.ngrams.core.PuzzleKind
+import software.primandproper.ngrams.settings.CURSE_WORDS_AVAILABLE
 import software.primandproper.ngrams.settings.Settings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,9 +98,11 @@ fun SettingsScreen(
             SwitchRow(stringResource(R.string.show_timer), settings.showTimer) { scope.launch { store.setShowTimer(it) } }
             Footer(stringResource(R.string.show_timer_footer))
             HorizontalDivider()
-            SwitchRow(stringResource(R.string.curse_words), settings.curseWords) { scope.launch { store.setCurseWords(it) } }
-            Footer(stringResource(R.string.curse_words_footer))
-            HorizontalDivider()
+            if (CURSE_WORDS_AVAILABLE) {
+                SwitchRow(stringResource(R.string.curse_words), settings.curseWords) { scope.launch { store.setCurseWords(it) } }
+                Footer(stringResource(R.string.curse_words_footer))
+                HorizontalDivider()
+            }
             ListItem(
                 modifier = Modifier.clickable(onClick = onAcknowledgements),
                 headlineContent = { Text(stringResource(R.string.acknowledgements)) },

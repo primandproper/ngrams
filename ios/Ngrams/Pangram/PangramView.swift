@@ -31,7 +31,7 @@ struct PangramScreen: View {
         let observer = makeObserver("PangramSession", pillars)
         session = PangramSession(
           puzzle: puzzle, day: day, hardMode: hardModes.languages.contains(puzzle.language),
-          curseWords: curseWords,
+          curseWords: SettingsKey.curseWordsAvailable && curseWords,
           store: ProgressStore(context: context, observer: observer),
           observer: observer)
       }

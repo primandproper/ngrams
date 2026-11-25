@@ -377,7 +377,10 @@ per-language config.
   the apps hold no scoring rules of their own. Frozen days gain or lose `profane` words as
   the lists change, the one thing about a frozen board that follows today's data, since it
   changes nothing a player without the setting sees. The setting is read when a puzzle
-  opens, and a word found or guessed while it was on stays after it is turned off. Spanish
+  opens, and a word found or guessed while it was on stays after it is turned off. The
+  switch is hidden and reads as off on both platforms since 1.1.0 (`curseWordsAvailable`,
+  `CURSE_WORDS_AVAILABLE`): unlockable profanity means answering the stores' age-rating
+  questionnaires with some, which costs the 4+ and Everyone ratings. Spanish
   `puto` sits with the profanity although it is also a slur, because its forms include
   `puta` and a stem brings its whole family. Spanish entries are stems, so blocking one blocks every form it
   expands to; English entries are exact forms, so compounds need their own entries. Stems

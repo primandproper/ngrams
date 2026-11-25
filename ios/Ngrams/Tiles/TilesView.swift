@@ -32,7 +32,7 @@ struct TilesScreen: View {
         session = TilesSession(
           puzzle: puzzle, day: day,
           solvedTilesLeave: hardModes.languages.contains(puzzle.language),
-          curseWords: curseWords,
+          curseWords: SettingsKey.curseWordsAvailable && curseWords,
           store: ProgressStore(context: context, observer: observer), observer: observer)
       }
     }

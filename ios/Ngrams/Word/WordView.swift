@@ -46,7 +46,8 @@ struct WordScreen: View {
       let list = try await GuessList.loadBundled(language: puzzle.language, n: puzzle.n)
       state = .loaded(
         WordSession(
-          puzzle: puzzle, day: day, list: curseWords ? list.withCurseWords : list,
+          puzzle: puzzle, day: day,
+          list: SettingsKey.curseWordsAvailable && curseWords ? list.withCurseWords : list,
           hardMode: hardModes.languages.contains(puzzle.language),
           store: ProgressStore(context: context, observer: observer), observer: observer))
     } catch {

@@ -85,8 +85,18 @@ app_store:
     marketing_url: ""
     # "Year plus owner"; the form adds the ©.
     copyright: 2026 Jeffrey D
-    # Not asked on the first version. 4000 characters.
-    whats_new: ""
+    # Asked from the second version on. 4000 characters.
+    whats_new: |-
+      The biggest update yet, after a month of playing every day:
+
+      • Hints: every game can give you a hint, or solve the puzzle for you when you're stuck. Your stats keep count of both.
+      • The whole app now speaks Spanish, and each game's hard mode is set per language.
+      • Every puzzle is timed. Hide the timer in Settings if you'd rather not know.
+      • Animations and haptics in every game.
+      • Password: hard mode locks the letters you've ruled out, and holding delete clears the row.
+      • Tiles: a board ends once there are no words left to find, and tells you when every hidden word would earn the star.
+      • Finishing a puzzle takes you back to home.
+      • Names and foreign words no longer turn up as answers.
     version_release: Manually release this version
     # ITSAppUsesNonExemptEncryption is false in the Info.plist, so the form doesn't ask.
     export_compliance: No non-exempt encryption
@@ -131,7 +141,17 @@ app_store:
         Todos los retos vienen dentro de la app, así que funciona sin conexión. Tu progreso se queda en tu iPhone y la app no recopila nada sobre ti.
       # 100 bytes; ñ and accented letters take two.
       keywords: palabras,diario,adivinar,anagrama,letras,fichas,pangrama,vocabulario,ortografía,inglés,español
-      whats_new: ""
+      whats_new: |-
+        La actualización más grande hasta ahora, después de un mes de jugar todos los días:
+
+        • Pistas: cada juego puede darte una pista, o resolver el reto por ti cuando te atores. Tus estadísticas llevan la cuenta de ambas.
+        • Toda la app ahora está en español, y el modo difícil de cada juego se elige por idioma.
+        • Cada reto lleva su tiempo. Oculta el cronómetro en Ajustes si prefieres no saberlo.
+        • Animaciones y vibraciones en todos los juegos.
+        • Contraseña: el modo difícil bloquea las letras que ya descartaste, y mantener presionado borrar limpia la fila.
+        • Fichas: el tablero termina cuando ya no quedan palabras por encontrar, y te avisa cuando todas las palabras ocultas alcanzarían para la estrella.
+        • Al terminar un reto regresas al inicio.
+        • Los nombres propios y las palabras extranjeras ya no aparecen como respuestas.
 
   app_review:
     # Name, email, and phone (international format, leading +) go in the form, not this public

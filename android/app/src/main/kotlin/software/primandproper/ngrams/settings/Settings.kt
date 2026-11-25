@@ -32,6 +32,12 @@ enum class HomeGrouping(
     N("n", R.string.grouping_n),
 }
 
+/**
+ * Whether the curse words setting is offered at all. Off, the switch is hidden and a stored "on"
+ * is ignored: unlockable profanity would cost the Play listing its Everyone rating.
+ */
+const val CURSE_WORDS_AVAILABLE = false
+
 /** App-wide settings. */
 data class Settings(
     /** The languages the player wants puzzles in, or null until they first choose. */
@@ -118,7 +124,7 @@ class SettingsStore(
             pangramFoundOrder =
                 FoundWordOrder.entries.firstOrNull { it.code == this[Keys.pangramFoundOrder] } ?: FoundWordOrder.ALPHABETICAL,
             showTimer = this[Keys.showTimer] ?: true,
-            curseWords = this[Keys.curseWords] ?: false,
+            curseWords = CURSE_WORDS_AVAILABLE && this[Keys.curseWords] ?: false,
         )
 
     suspend fun setLanguages(languages: Set<Language>) = edit { it[Keys.languages] = languageCodes(languages) }
